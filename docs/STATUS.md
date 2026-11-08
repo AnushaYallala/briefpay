@@ -9,10 +9,10 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-08 by Claude: T-30 conditional contract done |
+| Last updated | 2026-11-08 by Claude: T-24 campaign setup + launch done |
 | Overall phase | **Day 0: backend skeleton, schema, money math, state machines, ledger built; no features yet** (plain-English summary: `docs/PROGRESS_SUMMARY.md`) |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
-| Next task to pick up | Track B: **T-24** (campaign setup + launch, deadline rule), then **T-22** (pledge gate/service), **T-25** (outcome engine + clock) · see also `docs/GAPS_AND_FIXES.md` · Track B: **T-02** (human, sandbox keys), **T-08**, then **T-20** |
+| Next task to pick up | Track B: **T-20** (real PayPalClient on the SDK; sandbox script needs keys), then **T-22** (pledge gate/service), **T-21** (webhooks), **T-25** (outcome engine + clock) · see also `docs/GAPS_AND_FIXES.md` · Track B: **T-02** (human, sandbox keys), **T-08**, then **T-20** |
 | Blockers | None yet |
 | Deployed URLs | API: _not deployed_ · Web: _not deployed_ · Sample site: _not deployed_ |
 | Repo | https://github.com/AnushaYallala/briefpay (origin; T-01 still needs LICENSE visible in About + secret scanning) |
@@ -58,7 +58,7 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 | T-21 | Webhook endpoint: signature verify, dedupe, job enqueue, monotonic processors for authorization/capture/refund/payout events (§9.5 table) | §9.5 |  | TODO |  | Save real event samples to `backend/tests/fixtures/webhooks/` |
 | T-22 | Pledge Gate + pledge service: `pledges/order`, `pledges/authorize`, webhook effects, progress, goal-reached trigger | §8.2, §9.2 |  | TODO |  | |
 | T-23 | UI: public campaign page (progress "held, not charged", countdown, PayPal button `intent=authorize`, pledge board AG Grid) | §11 #8 |  | TODO |  | A-11 |
-| T-24 | Campaign setup API + launch (needs signed contract); deadline rule (`≤ opens_at + 72h − 2h`) | §8.2, §6.1 | Claude | IN_PROGRESS | t-24-campaign-setup | |
+| T-24 | Campaign setup API + launch (needs signed contract); deadline rule (`≤ opens_at + 72h − 2h`) | §8.2, §6.1 | Claude | DONE | t-24-campaign-setup | Setup (goal from contract + fees), launch (window re-checked), public view with lead controls and plain-words blockers. 48 tests; mutation-checked 19/19 after one added test (D-032). UI is screen #7/#8, not built |
 | T-25 | Campaign outcome engine + clock job (every 60 s): goal reached / deadline → enqueue plan builds; `demo/campaigns/{id}/expire`; honor-period warnings; relaunch | §8.2, §6.1 |  | TODO |  | `decide_campaign_outcome` is a pure function with tests |
 | T-27 | UI: campaign setup + lead panel (close and capture, cancel, relaunch, simulate deadline) | §11 #7, #8 |  | TODO |  | |
 
@@ -159,6 +159,14 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-08 · Claude · T-24
+- Did: `services/campaign_rules.py` (pure: `goal_for`, `deadline_window`, `validate_deadline`, `validate_terms`, `CampaignParams`), `services/campaign_ops.py` (`setup_campaign`, `launch`, `blocker_details`, `blockers`, `pledge_totals`, `campaign_view`), `routers/campaigns.py` (`POST /projects/{id}/campaigns`, `GET /campaigns/{id}` public, `POST /campaigns/{id}/launch`).
+- State now: T-24 DONE (branch t-24-campaign-setup). A launched campaign is `OPEN` with `opens_at` set and the project is `PLEDGING`.
+- Tests: `cd backend && .venv/Scripts/python -m pytest -q` -> 592 passed (48 new: 17 pure, 31 API). Mutation-checked: 19 breakages; 2 survived at first (contract-unsigned guard, live-campaign guard), a test now forces both; all caught.
+- Contract changes: D-032 (no SPEC text changes).
+- Next step: T-20: install `paypal-server-sdk`, introspect its real controllers (orders create/authorize, payments authorizations get/capture/void/reauthorize, captures get/refund, transaction search) instead of relying on memory; implement `services/paypal_client.py` as the ONLY module importing the SDK, with a `PayPalReader` (G-06/G-08 reads) and `PayPalWriter` (executor writes) implementation plus `httpx` for Payouts and webhook verification; unit-test with mocked HTTP; write the sandbox script (needs keys) and `paypal_io.configure(...)` wiring at startup. Then T-22 uses an `OrderGateway` for the buyer-side order/authorize calls.
+- Gotchas: (1) `held_not_charged` is derived from the campaign state, not from pledges. (2) The deadline is stored in UTC; SQLite returns it naive, so always pass it through `campaign_rules.as_utc`. (3) `launch` re-validates the window against the real opening time, so a lead who waits too long gets `DEADLINE_TOO_SOON`. (4) The default 48 h deadline suggestion (Strategist, T-46) is not in the API yet; the lead picks. (5) Relaunch after FAILED is T-25.
 
 ### 2026-11-08 · Claude · T-30
 - Did: `services/contract_service.py` (`offer`, `accept`, `render_terms`, `terms_hash`, `contract_view`, `approved_brd`, `freelancer_member`, `get_contract`), `templates/contract.md.j2`, `routers/contract.py` (`POST /projects/{id}/contract/offer`, `GET /projects/{id}/contract`, `POST /projects/{id}/contract/accept`). SPEC 10 gained the GET row.

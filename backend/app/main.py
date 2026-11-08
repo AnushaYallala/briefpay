@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 
 from app.config import get_settings
 from app.db import SessionLocal
-from app.routers import auth, ba, brd, contract, health, jobs, plans, projects
+from app.routers import auth, ba, brd, campaigns, contract, health, jobs, plans, projects
 from app.services import job_handlers  # noqa: F401  (registers job handlers)
 from app.services.jobs import JobRunner
 
@@ -41,5 +41,5 @@ async def http_error(_request, exc: HTTPException) -> JSONResponse:
                         status_code=exc.status_code)
 
 
-for r in (health.router, auth.router, jobs.router, projects.router, ba.router, brd.router, contract.router, plans.router):
+for r in (health.router, auth.router, jobs.router, projects.router, ba.router, brd.router, contract.router, campaigns.router, plans.router):
     app.include_router(r, prefix="/api")

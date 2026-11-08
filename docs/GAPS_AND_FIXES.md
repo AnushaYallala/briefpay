@@ -6,7 +6,7 @@ A running list of everything that is **missing, risky, unverified, or was found 
 - **Fixes** are problems that were found and already resolved, kept so the reasoning is not lost.
 - IDs are permanent. When a gap is closed, move it to Fixes (keep the ID) and say how.
 
-_Last updated: 2026-11-08, end of T-30._
+_Last updated: 2026-11-08, end of T-24._
 
 ---
 
@@ -57,6 +57,9 @@ _Last updated: 2026-11-08, end of T-30._
 | GAP-32 | Low | The freelancer cannot **decline** a contract offer or withdraw; the lead can only re-offer. A freelancer who never responds blocks the project at CONTRACTING. | Add a decline action that frees the lead to invite someone else (needs a rule for replacing the freelancer member). |
 | GAP-33 | Low | The 'PayPal email must not be a sponsor's' check compares only to sponsors' **login** emails. A sponsor's separate PayPal payer email is unknown until they pledge; the Guardian's S-01 flag covers it later. | Acceptable; documented in D-031. |
 | GAP-34 | Low | The contract text is a fixed template with a demo disclaimer; there is no way for the parties to add clauses. | Out of scope (spec 4.5: legal contracts). |
+| GAP-35 | Low | The campaign API does not suggest a deadline (the Strategist's default 48 h / extend-if-needed advice is T-46). The lead just picks within the window. | T-46. |
+| GAP-36 | Low | A campaign cannot be edited or cancelled in SETUP other than by setting it up again; there is no 'delete draft'. | Acceptable; cancel/relaunch comes with T-25. |
+| GAP-37 | Low | Deadlines are validated against the server clock; if the API's clock is wrong (free hosting restarts), the window is wrong. | Render clocks are NTP-synced; note for the README. |
 
 ---
 
@@ -82,6 +85,8 @@ _Last updated: 2026-11-08, end of T-30._
 | FIX-16 | T-15 | A vague assertion (`... == 409 or ... == 409`) in the full-loop test could not fail. | Pinned to `BRD_CLOSED`. My mutation script also crashed on a syntax-breaking mutant because it parsed pytest's last line; it now uses the process exit code. |
 | FIX-17 | T-15 | **Git repository damage from an interrupted command:** the branch pointer file `refs/heads/t-15-brd-approvals` was left full of null bytes when a session was cut off mid-write, so `git` reported 'current branch appears to be broken' and every command failed. | Diagnosed read-only first (`git fsck`, reflogs); confirmed the T-15 commit object `2d7e4cc` existed and held exactly the T-15 files and that `main`/other branches were intact; rewrote only that one pointer file; `fsck` clean, working tree clean; re-ran all 519 tests; then pushed and merged. No work lost. If it recurs: check `.git/logs/refs/heads/<branch>` for the last good hash. |
 | FIX-18 | T-30 | Two contract tests used `or True` / `in (A, B)` assertions that could not fail. | Replaced with exact expected values (the code's behaviour is deterministic). |
+| FIX-19 | T-24 | At launch a bad deadline returned HTTP 409 while the same mistake at setup returned 422, and the error code was derived by searching the message text for 'at least' / 'at most', which is fragile. | Blockers now carry their own code and status (`blocker_details`); both steps answer 422 `DEADLINE_TOO_SOON/LATE`. Found by the tests. |
+| FIX-20 | T-24 | Two of my own new tests were wrong or meaningless (a time-zone case with bad arithmetic and a 'property' that asserted fixed numbers while ignoring one of its inputs). | The zone case now tests the exact 70 h edge in IST; the property now draws every valid deadline and every pledge time before it. |
 
 ---
 

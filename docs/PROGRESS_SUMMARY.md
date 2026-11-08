@@ -4,6 +4,29 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 14 · Campaign setup and launch (T-24) · Sun Nov 8
+
+**What now exists**
+- **Setting up the Pledge-If campaign.** After the freelancer signs, the lead sets the campaign's deadline (and optionally the smallest allowed pledge, a suggested share, and whether to close the moment the goal is reached or only at the deadline). **The goal is not typed in: it is the signed contract price plus any payout fee**, so there is never a surplus to refund. Setting up again simply updates the one draft campaign.
+- **A deadline that PayPal can honour.** A PayPal hold is only guaranteed for 3 days. So a campaign must run at least 1 hour and at most 70 hours (72 minus a 2-hour safety margin) after it opens; that way even the very first hold is still guaranteed when the campaign ends. The rule is checked when you set it up and again at the moment you launch (so waiting too long after setup is caught). I tested it right down to the second on each edge, in other time zones, and with a property test that no hold can be older than the guarantee when the campaign ends.
+- **Launch.** The lead clicks launch: the campaign opens, the clock starts, the project moves to the pledging stage and the ledger records both changes. A campaign can't be launched twice, and nobody but the lead can set up or launch.
+- **The public campaign page data.** Anyone, without logging in, can see: the goal, the deadline and seconds left, how much has been pledged and by how many people, how much is still needed, and a flag saying money is "held, not charged" until the funds are actually captured. It counts only confirmed holds, not abandoned or cancelled ones, and it contains no emails.
+- **Help for the lead.** The lead's view adds: whether launching is possible and, if not, the reasons in plain words (so a greyed-out button can explain itself), the allowed deadline range, and the earliest moment any hold stops being guaranteed.
+- 592 automated tests pass (48 new). I broke nineteen rules on purpose; two slipped through, I added a test for them, and now all are caught.
+
+**What it does NOT do yet**
+Nobody can pledge yet: that needs the real PayPal connection (next), and there are no screens. The Strategist's suggested deadline isn't wired in.
+
+**Decision to know about:** D-032 (the exact setup, window and public-view rules).
+
+**Progress:** 16 of ~45 tasks done.
+
+**Needed from you:** from here on PayPal is the critical path: the next two increments (the PayPal client, then pledging) are where the sandbox keys become essential. Please set up the sandbox accounts and app (all accounts US-based; Payouts and Transaction search enabled) and put the Client ID and Secret in your local `.env`.
+
+**Next increment:** T-20, the real PayPal client built on the official SDK, with its method names taken from the installed package rather than memory, plus a sandbox script that will prove authorize, capture, void and payout work as assumed once your keys are in.
+
+---
+
 ## Increment 13 · The conditional contract (T-30) · Sun Nov 8
 
 **What now exists**
