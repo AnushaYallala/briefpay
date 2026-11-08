@@ -1,0 +1,112 @@
+# Decision Log
+
+Short records of decisions that affect contracts or architecture. Append new decisions at the bottom with the next number. Never delete; mark superseded ones.
+
+Format:
+```
+## D-00N · Title · YYYY-MM-DD · Status: Accepted | Superseded by D-00M
+Context: …
+Decision: …
+Consequences: …
+```
+
+---
+
+## D-001 · Three agents with separated authority · 2026-11-08 · Accepted
+Context: The idea has a BA agent, a verification agent, and an agent that checks payments. Judges reward agentic AI but money movement must be safe.
+Decision: BA Agent (requirements → BRD), Verification Agent (work vs. BRD), Payment Guardian (payout correctness). No agent can call PayPal write endpoints, compute money, or change state. Guardian = deterministic rules + an LLM that can only escalate (ALLOW→HOLD), never relax.
+Consequences: All money decisions are unit-testable; the "AI checks the AI" story is credible.
+
+## D-002 · PostgreSQL on Aiven instead of MySQL · 2026-11-08 · Accepted
+Context: The team planned MySQL on Aiven's free tier. Aiven has retired the free MySQL plan for new services (MySQL now starts at the paid Developer tier); a free PostgreSQL plan is still offered.
+Decision: Use Aiven free PostgreSQL. Keep the schema portable (SQLAlchemy generic types, `JSON`, `BIGINT`, no PG-only features) so MySQL works if someone already has a free MySQL service.
+Consequences: `DATABASE_URL` uses `postgresql+psycopg://`. Neon's free plan is the drop-in fallback. Render's free Postgres is rejected because it expires after 30 days, which would fall inside the judging period.
+
+## D-003 · In-process job runner, no separate worker · 2026-11-08 · Accepted
+Context: Render has no free background worker instance type; free web services sleep when idle.
+Decision: LLM and webhook processing run as rows in a `jobs` table, executed by an asyncio task started in FastAPI's lifespan. UI polls `/api/jobs/{id}`.
+Consequences: Jobs survive restarts; a sleeping service resumes jobs on wake. Poll fallback needed for PayPal status.
+
+## D-004 · Images stored in the database · 2026-11-08 · Superseded by D-011
+Context: Render free has no persistent disk; avoiding another vendor saves setup time.
+Decision: `blobs` table behind a `BlobStore` interface; images re-encoded to ≤ 1600 px, ≤ 400 KB.
+Consequences: Fits Aiven's ~1 GB free storage for demo volumes. Swap to object storage later by implementing `BlobStore`.
+
+## D-005 · Gemini as primary LLM with replay fixtures · 2026-11-08 · Accepted
+Context: Team prefers Gemini or an open model; demo must be reliable.
+Decision: `GeminiModel` (structured JSON output, vision) primary; `HuggingFaceModel` optional text fallback; `ReplayModel` serves recorded outputs keyed by input hash; `replay_or_real` records missing fixtures.
+Consequences: Demo can run fully offline from the LLM. Prompt changes bump `PROMPT_VERSION` and invalidate fixtures for that agent.
+
+## D-006 · BA score: LLM judges coverage, code computes the number · 2026-11-08 · Accepted
+Context: "Ask until score ≥ 90" needs a stable, explainable score.
+Decision: 10 weighted dimensions with 5 coverage levels from the LLM; code sums, applies 5 hard gates (cap 89), and downgrades claims without source references.
+Consequences: Score is reproducible and each point is traceable to transcript lines or answers.
+
+## D-007 · Single payout per contract in MVP; milestones optional · 2026-11-08 · Superseded by D-019
+Context: 4.5 days of build time.
+Decision: One implicit 100% milestone. The `milestones` table exists for the SHOULD feature.
+Consequences: Settlement and Guardian logic already take `milestone_id` so adding milestones later doesn't change contracts.
+
+## D-008 · Never use the word "escrow" in judge-facing text · 2026-11-08 · Accepted
+Context: PayPal Orders capture is not escrow; funds sit in the platform account.
+Decision: Say "pooled funds held by the platform until verified approval."
+Consequences: README states production boundaries (SPEC §19.3).
+
+## D-009 · Bearer-token auth instead of cookies · 2026-11-08 · Accepted
+Context: `*.onrender.com` subdomains are separate sites, and the frontend is a static site (D-010) that can't proxy `/api`.
+Decision: `POST /auth/login` returns a JWT; the frontend keeps it in memory + `sessionStorage` and sends `Authorization: Bearer`. API enables CORS for `CORS_ORIGINS`.
+Consequences: No cookie/CSRF issues. Acceptable for a sandbox demo; production would need proper auth.
+
+## D-010 · Next.js static export on a Render static site · 2026-11-08 · Accepted
+Context: Must be 100% free. Render free web services sleep after 15 min and share 750 instance hours/month; static sites are free and don't sleep.
+Decision: `output: "export"`; every page is a client component; dynamic pages use query params (`/project?id=12`); no Next API routes, server actions or rewrites.
+Consequences: Only the API can sleep; the UI loads instantly and shows a wake-up message while the API starts.
+
+## D-011 · Cloudinary for images · 2026-11-08 · Accepted (supersedes D-004)
+Context: Team chose Cloudinary; its free plan needs no card. Keeps images out of the ~1 GB free database.
+Decision: Signed direct browser uploads (backend signs folder, random `public_id`, `type=authenticated`, allowed formats, incoming size-limit transformation). `POST /images` verifies the asset via the Admin API before it can be used as evidence. Delivery via short-lived signed URLs. The verifier downloads image bytes server-side (Cloudinary host only) to send to Gemini. `LocalImageStore` for dev/tests without an account.
+Consequences: Images never pass through the sleeping API on upload; API secret stays server-side.
+
+## D-012 · Free tier only · 2026-11-08 · Accepted
+Context: The team requires everything to cost $0.
+Decision: Render Hobby (1 free web service + static sites), Aiven free Postgres, Cloudinary free, Gemini free tier (no billing), PayPal sandbox, GitHub public repo + Actions, AG Grid Community, cloudflared quick tunnels. No credit card on any service. See SPEC §5.5.
+Consequences: Design around sleep/cold starts, Gemini rate limits (replay fixtures, batched judge calls), and AG Grid Community features. A task needing a paid feature is marked BLOCKED with a free alternative proposed.
+
+## D-013 · APIMatic: Context Plugin + SDK + PayPal-side verification · 2026-11-08 · Accepted
+Context: APIMatic is a sponsor with its own prize. The APIMatic-generated Python SDK covers Orders, Payments, Transaction Search, Subscriptions and Vault, but not Payouts or webhook verification.
+Decision: (1) All AI coding tools use the APIMatic Context Plugin for PayPal. (2) `PayPalClient` uses the SDK for Orders, Payments and Transaction Search; `httpx` only for Payouts and webhook verification. (3) Payment Guardian adds G-13 (each counted contribution has a COMPLETED capture in PayPal's records) and sources G-09's platform balance from Transaction Search. (4) A reconciliation job matches our ledger to PayPal's transactions. (5) Care plan via Subscriptions is COULD.
+Consequences: APIMatic use is part of the safety story, not decoration. Search data can lag, so "not indexed yet" never fails a rule.
+
+## D-014 · Pledge-If (dominant assurance) replaces direct-capture funding · 2026-11-08 · Accepted
+Context: Many group projects fail because nobody wants to pay first. PayPal supports authorize-then-capture-or-void.
+Decision: Pledges are Orders `AUTHORIZE` holds. Goal reached → capture all (pro-rata so Σ = goal). Deadline missed or lead cancels → void all holds (nobody is charged). *Amended by D-020: no bond, no bonus.* Goal = contract amount + fees (no surplus).
+Consequences: Uses Orders, Payments authorizations, Payouts. The v1 states `FUNDING`/`FUNDED` and the `contributions` table are removed. Campaigns have rounds; relaunch is supported.
+
+## D-015 · Conditional freelancer contract before the campaign · 2026-11-08 · Accepted
+Context: Pledgers should know who they fund and for how much; capturing money with no freelancer is a bad failure case.
+Decision: BRD approved → freelancer signs a conditional contract (BRD hash, price, locked PayPal email) → campaign setup → pledging.
+Consequences: Goal is fixed by the contract; the freelancer's email is known to Guardian rules from the start.
+
+## D-016 · MoneyPlan + MoneyExecutor chokepoint; Guardian reviews every plan · 2026-11-08 · Accepted
+Context: Captures, voids, payouts and refunds all move or release money and need the same safety story.
+Decision: Every PayPal write is a step in an immutable, hash-identified MoneyPlan built by pure code (`PlanBuilder`), reviewed by the Guardian (15 rules, 4 soft flags, escalate-only LLM), approved by policy (auto on ALLOW for capture/failure plans; human for freelancer payout and refunds) and executed only by `MoneyExecutor`.
+Consequences: One audit path; tamper simulations for every plan kind; a unit test enforces that no other module calls PayPal write methods.
+
+## D-017 · Organizer bond and POOL/BOND buckets · 2026-11-08 · Superseded by D-020
+Context: The bonus promise must be backed by real money, and cancelling must not dodge it.
+Decision: The lead authorizes a bond (= bonus pool, 1–10% of goal) before launch. Success → void. Failure or lead cancel → capture and pay pro-rata to pledgers. Ledger buckets keep bond money separate from pledge money.
+Consequences: Guardian rules G-07/G-13 prove bond money only pays bonuses and pool money only pays the freelancer or refunds.
+
+## D-018 · 72-hour campaign cap · 2026-11-08 · Accepted
+Context: A PayPal authorization is valid 29 days but only guaranteed for a 3-day honor period; later capture depends on risk and funds. Reauthorization rules are ambiguous in the docs.
+Decision: `PLEDGE_MAX_HOURS = 72`; deadline ≤ `opens_at + 72h − 2h` (amended by D-020: no bond); default close policy `EARLY_ON_GOAL`; reauthorization is SHOULD.
+Consequences: Campaigns are short by design. The UI explains why the deadline picker is limited.
+
+## D-019 · Scope cuts for v2 · 2026-11-08 · Accepted
+Decision: Cut milestone payouts (supersedes D-007), surplus-refund logic, the Hugging Face adapter (amends D-005: Gemini + Replay only), "Ask the ledger", care-plan subscriptions, and the generated API client. Strategist LLM nudges are first in the cut order.
+Consequences: APIMatic use now rests on authorizations/captures/refunds, Transaction Search and the Context Plugin (D-013 still applies).
+
+## D-020 · Remove organizer bond and bonus; plain assurance contract · 2026-11-08 · Accepted (supersedes D-017)
+Context: A bonus paid to pledgers on failure is a pure loss for the organizer, so nobody would fund it. The user asked to remove it.
+Decision: No bond, no bonus, no BOND bucket. Failure or lead cancel → void all holds and nobody is charged (settlement kind `RELEASE_HOLDS`, was `FAIL_SETTLEMENT`). Launch needs only a signed contract. Deadline ≤ `opens_at + PLEDGE_MAX_HOURS − HONOR_SAFETY_MARGIN`. Guardian: 13 hard rules, 3 soft flags. `BONUS_*` env vars, `bonds` table and bond endpoints are removed.
+Consequences: This is a standard all-or-nothing assurance contract, not a dominant one: no financial incentive to pledge early, only the no-risk guarantee. Pitch language must not say "dominant assurance" or "you can't lose and may gain".
