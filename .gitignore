@@ -1,0 +1,13 @@
+.env
+.env.local
+*.pem
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+backend/local_images/
+backend/*.db
+node_modules/
+.next/
+out/
+.claude/
