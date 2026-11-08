@@ -6,7 +6,7 @@ A running list of everything that is **missing, risky, unverified, or was found 
 - **Fixes** are problems that were found and already resolved, kept so the reasoning is not lost.
 - IDs are permanent. When a gap is closed, move it to Fixes (keep the ID) and say how.
 
-_Last updated: 2026-11-08, end of T-14._
+_Last updated: 2026-11-08, end of T-15._
 
 ---
 
@@ -50,6 +50,10 @@ _Last updated: 2026-11-08, end of T-14._
 | GAP-25 | Low | The BRD schema is strict (sitemap paths lowercase `/a-b`, hints complete, 30 requirements max). A real model may break it often enough to fail the job. | Loosen after the first live Gemini run. Same family as GAP-02. |
 | GAP-26 | Low | BRD Markdown is rendered with names from the database at generation time; renaming a user later changes nothing in the stored Markdown, and the hash covers only the JSON content. | Acceptable; note for the UI (prefer rendering names from ids). |
 | GAP-27 | Low | No PDF export of the BRD (SHOULD). | Cut-order item 4. |
+| GAP-28 | Medium | **One unresponsive sponsor blocks the whole project.** Approval must be unanimous, the voter set is frozen once the BRD is under review (D-026), and there is no way to remove or replace a sponsor. | Decide a policy before the demo scenario matters: lead can remove a non-responding sponsor (re-opening the vote), or a deadline-based quorum. Needs a SPEC decision. |
+| GAP-29 | Low | A sponsor can reject repeatedly; each rejection forces a new BA round and a new BRD. There is no limit or cool-down. | Rate limit rejections per BRD version, or require the lead's confirmation after N rejections. |
+| GAP-30 | Low | A rejection question uses `dimension = "BRD"`, which is not one of the ten rubric dimensions. The UI must show a null `dimension_name` as 'BRD feedback'; the scorer does not map it to a coverage gap. | Frontend note (T-16); acceptable. |
+| GAP-31 | Low | No notification when a BRD is ready, approved or rejected; sponsors must open the app. | Email notifications are COULD (spec 4.3). |
 
 ---
 
@@ -71,6 +75,8 @@ _Last updated: 2026-11-08, end of T-14._
 | FIX-12 | T-14 | **Security bug in my own BRD renderer, found by its tests:** the heading guard only escaped a single marker followed by a space, so an AI-drafted description containing `## Injected` (or `---`, a code fence, a table row, `2)` lists) would have become real structure in an approved document. | Any line that begins with a Markdown structure character now gets a leading backslash, in paragraphs and one-line fields; tests cover each marker and a full hostile draft. |
 | FIX-13 | T-14 | The shared `World` test fixture pre-creates an approved BRD and a contract (for the money tests), which silently turned the first generated BRD into version 2. | BRD tests delete them in their fixture; STATUS notes the trap. |
 | FIX-14 | T-14 | Mutation testing showed the hash tests only proved determinism, not that the hash is `sha256(canonical_json(content))` as the spec requires and other components must reproduce. | Added a test that recomputes the hash independently, including key-order independence. |
+| FIX-15 | T-15 | Mutation testing found two approval rules enforced by only one layer in the tests: the 'decision counts only on the exact hash' filter and the service-level 'freelancers cannot vote' check (the router check masked it). | Added tests that force the situation (a stale-hash row; calling the service directly). |
+| FIX-16 | T-15 | A vague assertion (`... == 409 or ... == 409`) in the full-loop test could not fail. | Pinned to `BRD_CLOSED`. My mutation script also crashed on a syntax-breaking mutant because it parsed pytest's last line; it now uses the process exit code. |
 
 ---
 

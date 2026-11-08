@@ -4,6 +4,29 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 12 · BRD approvals (T-15) · Sun Nov 8
+
+**What now exists**
+- **Sponsors vote on the exact document they read.** Each sponsor (and the lead, who is also a sponsor) approves or rejects the BRD, and the vote only counts for the document fingerprint they actually saw. If the document changes, or they send an old fingerprint, the vote is refused with a clear message and nothing is saved. Votes never carry over from one version to the next.
+- **Everyone must approve.** When the last sponsor approves, the BRD locks: it becomes APPROVED, gets a lock time, the ledger records "BRD locked" with the fingerprint, and the project moves on to the contract stage. After that nobody can approve, reject or change it.
+- **Rejecting reopens the conversation.** A rejection needs a written reason. The reason becomes a new question to all sponsors in the BA conversation (for example: "Meena asked for changes to BRD v1: 'Add a page for boat safety'. How should the document change?"). The project goes back to the requirements stage, the transcript can be edited again, and once the question is answered the system re-scores, the lead generates version 2, and everyone approves afresh.
+- **Small human touches that matter:** clicking approve twice does nothing extra; an approver who changes their mind can withdraw by rejecting with a reason; every decision is written to the ledger with who, which version, which fingerprint and any comment; the BRD page shows who has approved and who is still awaited.
+- I ran the whole loop through the real endpoints: v1, one approval, one rejection, an answer, a re-score, v2, three approvals, lock.
+- 519 automated tests pass (16 new). I broke thirteen rules on purpose; two slipped through at first, I added tests for them, and now all are caught.
+
+**What it does NOT do yet**
+There's no screen to vote on, and one risk is recorded: if a sponsor never responds, the project cannot move forward, and there's no way yet for the lead to remove them (GAP-28 in the gaps file).
+
+**Decision to know about:** D-030 (the exact voting rules).
+
+**Progress:** 14 of ~45 tasks done. The requirements side of the product (project, transcript, AI analysis, questions, BRD, approvals) is now complete in the API.
+
+**Needed from you:** unchanged: the Gemini key and model name, and the PayPal sandbox setup. Both are now the main things that stand between this and a real end-to-end run.
+
+**Next increment:** T-30, the conditional contract: the lead offers the freelancer a price and delivery time; the freelancer reviews the locked BRD and signs, which locks their PayPal email. The contract is tied to the approved BRD fingerprint and says it's "effective only if the campaign funds".
+
+---
+
 ## Increment 11 · The BRD generator (T-14) · Sun Nov 8
 
 **What now exists**

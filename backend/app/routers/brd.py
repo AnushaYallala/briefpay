@@ -1,12 +1,13 @@
-"""BRD endpoints (SPEC 10): generate (lead), read (public), download Markdown (public). Approvals arrive with T-15."""
+"""BRD endpoints (SPEC 10): generate (lead), read (public), download Markdown (public), decide (sponsors, hash-bound)."""
 from fastapi import APIRouter, Depends, Response
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.auth import api_error, current_user, require_member
 from app.db import get_db
 from app.models import BRD, BRDApproval, Project, User
-from app.services import ba_service, brd_service
+from app.services import ba_service, brd_approvals, brd_service
 
 router = APIRouter()
 
@@ -46,6 +47,31 @@ def generate(project_id: int, user: User = Depends(current_user), db: Session = 
         raise api_error(e.status, e.code, e.message) from e
     db.commit()
     return {"job_id": job_id}
+
+
+class DecisionIn(BaseModel):
+    decision: str
+    brd_sha256: str = Field(min_length=64, max_length=64)
+    comment: str | None = Field(default=None, max_length=2000)
+
+
+@router.post("/projects/{project_id}/brd/{version}/decision")
+def decide(project_id: int, version: int, body: DecisionIn, user: User = Depends(current_user),
+           db: Session = Depends(get_db)) -> dict:
+    """A sponsor (the lead included) approves or rejects the exact document hash they read."""
+    member = require_member(db, project_id, user, ("LEAD", "SPONSOR"))
+    project = _project(db, project_id)
+    brd = brd_service.latest_brd(db, project_id, version)
+    if brd is None:
+        raise api_error(404, "NO_BRD", "No such BRD version")
+    try:
+        result = brd_approvals.decide(db, project, brd, member, body.decision, body.brd_sha256, body.comment)
+    except brd_service.BRDError as e:
+        db.rollback()
+        details = {"current_sha256": brd.sha256} if e.code == "HASH_MISMATCH" else {}
+        raise api_error(e.status, e.code, e.message, details) from e
+    db.commit()
+    return result
 
 
 @router.get("/projects/{project_id}/brd")

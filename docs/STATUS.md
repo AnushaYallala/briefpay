@@ -9,10 +9,10 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-08 by Claude: T-14 BRD generator done; gaps file started |
+| Last updated | 2026-11-08 by Claude: T-15 BRD approvals done |
 | Overall phase | **Day 0: backend skeleton, schema, money math, state machines, ledger built; no features yet** (plain-English summary: `docs/PROGRESS_SUMMARY.md`) |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
-| Next task to pick up | Track A: **T-15** (BRD approvals, hash-bound, unanimous; reject loops back), then **T-30** (contract) · see also `docs/GAPS_AND_FIXES.md` · Track B: **T-02** (human, sandbox keys), **T-08**, then **T-20** |
+| Next task to pick up | Track A: **T-30** (conditional contract: offer, accept, BRD hash, locked PayPal email), then **T-24** (campaign setup) · see also `docs/GAPS_AND_FIXES.md` · Track B: **T-02** (human, sandbox keys), **T-08**, then **T-20** |
 | Blockers | None yet |
 | Deployed URLs | API: _not deployed_ · Web: _not deployed_ · Sample site: _not deployed_ |
 | Repo | https://github.com/AnushaYallala/briefpay (origin; T-01 still needs LICENSE visible in About + secret scanning) |
@@ -47,7 +47,7 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 | T-12 | BA scoring: prompt, `BAScoreOutput`, code-side total, gates, cap 89, source_refs downgrade + unit tests | §7.1 | Claude | DONE | t-12-ba-scoring | Schemas, pure scoring + gates + cap, prompt `ba-score-v1`, `BAAgent`, `ba_service.score_round`. 67 tests; mutation-checked; demo scene scores 58/79/93. No endpoint yet (T-13). No real Gemini call yet (A-4) (D-027) |
 | T-13 | BA questions: prompt, `BAQuestionsOutput`, answer/skip endpoints, rounds, MAX_ROUNDS + finalize | §7.1 | Claude | DONE | t-13-ba-questions | Question agent + code-side filtering, rounds, answer/skip/finalize, run/view endpoints, `BA_RUN` job, rate limit. 83 tests; mutation-checked (11/11). Whole 58->79->93 scene passes over HTTP. No real Gemini call yet (D-028) |
 | T-14 | BRD generator: prompt, `BRDContent`, REQ codes, Jinja Markdown, sha256 | §7.2 | Claude | DONE | t-14-brd-generator | Schemas, prompt `brd-gen-v1`, `BRDGenerator`, code-side assembly, Jinja renderer with escaping, sha256, `BRD_GENERATE` job, generate/read/download endpoints. 75 tests; mutation-checked (15/15 after one added test). Approvals are T-15. No real Gemini call yet (D-029) |
-| T-15 | BRD approvals (hash-bound, unanimous), reject → new BA round + version bump | §7.2 | Claude | IN_PROGRESS | t-15-brd-approvals | |
+| T-15 | BRD approvals (hash-bound, unanimous), reject → new BA round + version bump | §7.2 | Claude | DONE | t-15-brd-approvals | Hash-bound unanimous decisions, lock + ledger + CONTRACTING, rejection reopens BA with a question for ALL, withdraw-by-reject, stale/foreign hash refused. 16 tests; mutation-checked (all caught after 2 added tests). (D-030) |
 | T-16 | UI: BA Studio | §11 #4 |  | TODO |  | |
 | T-17 | UI: BRD page (AG Grid requirements, approve/reject, download) | §11 #5 |  | TODO |  | |
 
@@ -159,6 +159,14 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-08 · Claude · T-15
+- Did: `services/brd_approvals.py` (`decide`, `decisions_on`, `voters`, locking, rejection-reopens-BA), `POST /projects/{id}/brd/{version}/decision` in `routers/brd.py` (`DecisionIn`), tests `tests/test_brd_approvals.py` (16).
+- State now: T-15 DONE (branch t-15-brd-approvals). A locked BRD (`status APPROVED`, `locked_at`, project `CONTRACTING`) is what T-30 binds to.
+- Tests: `cd backend && .venv/Scripts/python -m pytest -q` -> 519 passed (16 new). Mutation-checked: 13 deliberate breakages; 2 survived at first (old-hash rows counting, freelancer vote at service level), two tests added, all caught.
+- Contract changes: D-030 (no change to SPEC text; a rejection question uses `dimension = "BRD"`).
+- Next step: T-30: `POST /projects/{id}/contract/offer {amount_cents, delivery_days}` (lead, project CONTRACTING, a FREELANCER member must exist, amount <= budget and <= `PAYOUT_MAX_CENTS`) creates a `contracts` row bound to the APPROVED BRD (`brd_id`, `brd_sha256`), `terms_md` rendered by code, `sha256`; `POST /projects/{id}/contract/accept {paypal_email, brd_sha256, terms_sha256}` (the freelancer) checks both hashes, locks `freelancer_paypal_email`, sets `signed_at`, moves the project CONTRACTING -> CAMPAIGN_SETUP, ledger `CONTRACT_SIGNED`; `effective_at` is set later by the capture plan (already done in `plan_lifecycle._on_done`). G-12 already compares `contract.brd_sha256` with the locked BRD hash.
+- Gotchas: (1) Approvals count only on the exact hash, never on a version number. (2) A rejection adds `round` and an OPEN ALL question with dimension `BRD`; the UI must show a null `dimension_name` as 'BRD feedback'. (3) Every sponsor must approve, so an unresponsive sponsor blocks the project (GAP-28). (4) The `BRD_LOCKED` ledger row is the first thing created for a project's money-adjacent audit trail; its meta has the hash.
 
 ### 2026-11-08 · Claude · T-14
 - Did: `schemas/brd.py` (BRDDraft/BRDContent + typed pieces), `agents/prompts/brd_gen.md` + `agents/brd_generator.py` (`BRDGenerator`, `get_brd_generator`/`set_brd_generator`, prompt `brd-gen-v1`), `templates/brd.md.j2` + `services/brd_render.py` (escaping filters, `render_markdown`, `content_hash`), `services/brd_service.py` (`assemble`, `open_items_from_score`, `generate_brd`, `request_generation`, `generate_once`, `latest_brd`, `member_names`), `routers/brd.py` (`POST /projects/{id}/brd/generate` 202, `GET /projects/{id}/brd[?version=]`, `GET /projects/{id}/brd/{version}.md`), `BRD_GENERATE` job. Also: `docs/GAPS_AND_FIXES.md` created, `AGENTS.md` commands filled in, `.github/workflows/ci.yml` added, `requirements.txt` pins corrected (pydantic 2.14.3) and `jinja2` added.
