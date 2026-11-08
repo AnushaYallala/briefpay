@@ -115,3 +115,8 @@ Consequences: This is a standard all-or-nothing assurance contract, not a domina
 Context: SPEC 7.5.1 derives each step's `idempotency_key` from `plan_hash[:16]`, but also defines `plan_hash` over the whole `MoneyPlanSpec` including those keys. That is circular.
 Decision: `plan_hash` is computed over the canonical spec with every step's `idempotency_key` removed. Keys are then derived as `f"{plan_hash[:16]}-{seq}"` and stored on the steps. Implemented in `services/settlement.py`.
 Consequences: Any change to kind, inputs, recipient, amount, op or step order still changes the hash (tested). Keys cannot be chosen independently of the plan, so they stay deterministic across retries.
+
+## D-022 · Retry attempts are part of plan inputs · 2026-11-08 · Accepted
+Context: SPEC 8.6 says a failed payout is retried by building "a new plan (new hash, new review)". But a rebuilt plan with unchanged database state is byte-identical, so it has the same `plan_hash`, the same step idempotency keys (UNIQUE), and would collide with the failed plan.
+Decision: `PlanBuilder` adds `inputs.attempt = N` when N earlier plans of the same kind and scope (project, plus campaign if any) ended `FAILED`, `PARTIAL` or `BLOCKED`. First attempts have no `attempt` key, so their hash is unchanged. When rebuilding an existing plan (Guardian G-01, executor), that plan is excluded from the count so it never counts itself.
+Consequences: Each retry gets fresh idempotency keys and a fresh Guardian review. PayPal-side idempotency still protects a re-run of the *same* plan after a crash, because that reuses the same keys.

@@ -9,10 +9,10 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-08 by Claude: T-06 LLM adapter + job runner done |
+| Last updated | 2026-11-08 by Claude: T-26 PlanBuilder done |
 | Overall phase | **Day 0: backend skeleton, schema, money math, state machines, ledger built; no features yet** (plain-English summary: `docs/PROGRESS_SUMMARY.md`) |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
-| Next task to pick up | Track A: **T-26** (PlanBuilder), then **T-10/T-11** (projects, transcript) + auth · Track B: **T-02** (human, sandbox keys), **T-08**, then **T-20** |
+| Next task to pick up | Track A: **T-41** (Guardian rules; needs T-26 done), then **T-45** (MoneyExecutor), or auth + **T-10/T-11** · Track B: **T-02** (human, sandbox keys), **T-08**, then **T-20** |
 | Blockers | None yet |
 | Deployed URLs | API: _not deployed_ · Web: _not deployed_ · Sample site: _not deployed_ |
 | Repo | https://github.com/AnushaYallala/briefpay (origin; T-01 still needs LICENSE visible in About + secret scanning) |
@@ -77,7 +77,7 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 | ID | Task | Spec | Owner | State | Branch | Notes |
 |---|---|---|---|---|---|---|
 | T-40 | Settlement engine (pure): `split_pro_rata`, `plan_captures`, `plan_refunds`, `plan_freelancer_payout`, `plan_hash` + tests (incl. property tests) | §8.3 | Claude | DONE | t-40-settlement-state-ledger | 13 tests incl. hypothesis property tests; worked examples 1-3 from SPEC 8.3 verified. `plan_hash` excludes idempotency keys (D-021) |
-| T-26 | `PlanBuilder` (pure, reads DB): `CAPTURE_PLEDGES`, `RELEASE_HOLDS`, `FREELANCER_PAYOUT`, `REFUND_CAPTURED` specs + steps + idempotency keys + tests | §7.5.1, §8.3 | Claude | IN_PROGRESS | t-26-plan-builder | Depends on T-40 |
+| T-26 | `PlanBuilder` (pure, reads DB): `CAPTURE_PLEDGES`, `RELEASE_HOLDS`, `FREELANCER_PAYOUT`, `REFUND_CAPTURED` specs + steps + idempotency keys + tests | §7.5.1, §8.3 | Claude | DONE | t-26-plan-builder | Four plan kinds + `save_proposed` + `rebuild` + release policies. 39 tests. Retry attempts in inputs (D-022). `REAUTH_PLEDGES` not built (SHOULD) |
 | T-45 | `MoneyExecutor` + plan lifecycle + approvals API (`plans`, `review`, `approve`) + executor tests (refuses unapproved/mismatched/foreign steps) | §8.4, §8.5, §10 |  | TODO |  | Only module allowed to call PayPal writes |
 | T-41 | Guardian rules G-01…G-13 + soft flags S-01…S-03 (pure; SDK mocked) + one pass/fail test per rule + tamper mutations | §7.5.2–7.5.3, §7.5.6 |  | TODO |  | G-06/G-08 use SDK reads |
 | T-42 | Guardian LLM review (escalate-only) + decision logic + release policies (auto vs human) | §7.5.4–7.5.5 |  | TODO |  | |
@@ -159,6 +159,14 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-08 · Claude · T-26
+- Did: `services/plan_builder.py`: `build_capture_pledges`, `build_release_holds`, `build_freelancer_payout`, `build_refund_captured`, `build` (dispatch), `rebuild` (for Guardian G-01 and the executor), `release_policy_for`, `save_proposed` (idempotent), `live_valid_pledges`. Each returns `BuiltPlan(spec, plan_hash)` with step idempotency keys derived from the hash.
+- State now: T-26 DONE (branch t-26-plan-builder).
+- Tests: `cd backend && .venv/Scripts/python -m pytest -q` -> 102 passed (39 new in `tests/test_plan_builder.py`).
+- Contract changes: D-022 (`inputs.attempt` on retried plans). SPEC 8.6 and 7.5.1 are otherwise unchanged.
+- Next step: T-41 Guardian rules (use `plan_builder.rebuild` for G-01) and T-45 MoneyExecutor (re-run `rebuild` before every execution).
+- Gotchas: (1) "live-valid" = AUTHORIZED + authorization id + `honor_until > now`; stricter than the 29-day validity on purpose. (2) Plans depend on `now`, so callers pass `now`; never read the clock inside a rule. (3) A pledge whose pro-rata capture rounds to 0 gets no step and stays held; unreachable with min pledge 500 but untested. (4) The builder only checks things it needs to compute the plan; deadline, success-condition and approval rules stay in the Guardian (G-09, G-11, G-12). (5) `RELEASE_HOLDS` is allowed from OPEN or FAILING, and voids every AUTHORIZED hold including lapsed ones. (6) Pledge `CREATED` rows never hold money and are ignored everywhere.
 
 ### 2026-11-08 · Claude · T-06
 - Did: `agents/llm_adapter.py` (TextPart/ImagePart, `input_hash`, `ReplayBackend` with record-on-miss, `GeminiBackend` via google-genai 3.0.0 with JSON schema output, `LLMAdapter` with one validation retry and an `agent_runs` row per call, `build_adapter` for `AI_PROVIDER`), `agents/untrusted.py` (`untrusted()` wrapper + `UNTRUSTED_RULE`), `services/jobs.py` (`@register`, `enqueue`, `run_one`, `JobRunner`, crash recovery), `routers/jobs.py`, lifespan wiring in `main.py`.

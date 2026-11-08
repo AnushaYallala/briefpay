@@ -4,6 +4,29 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 4 · Plan builder (T-26) · Sun Nov 8
+
+**What now exists**
+- **The plan builder:** given the current state of a campaign or project, it writes out the exact list of PayPal actions needed, as a fixed "money plan" with a fingerprint. Plain code, no AI. It covers all four plans:
+  - **Capture:** the goal is reached, so charge each pledger their share. The shares add up to exactly the goal, and no one is charged more than they pledged.
+  - **Release:** the deadline was missed or the lead cancelled, so cancel every hold and charge nobody. It refuses to run if anything was already charged.
+  - **Freelancer payout:** only after the latest submission is verified, only to the PayPal email locked into the contract, only the contract amount, and only if the pool really holds that money.
+  - **Refund:** give captured money back to the original payments, and only while the pool still holds it.
+- **Safety by construction:** a hold that has passed its 3-day guarantee is not counted. If anything changes after a plan is previewed (a pledger voids, a hold lapses, the recipient email is edited), rebuilding gives a different fingerprint, which is how the Guardian and the executor will notice.
+- **Retries:** a failed plan can be retried as a new plan with fresh keys instead of clashing with the old one. I found this gap while reviewing my own tests; it is logged as D-022.
+- 102 automated tests pass (39 new).
+
+**What it does NOT do yet**
+Nothing is reviewed or executed. No Guardian rules, no approvals, no PayPal calls. Plans can be built and stored as "proposed", and that is all.
+
+**Progress:** 5 of ~45 tasks done (T-04, T-40, T-07, T-06, T-26).
+
+**Needed from you:** nothing new. Still pending as before: a Gemini key (not blocking), sandbox keys (needed at T-20), and your teammate's demo repo (T-60).
+
+**Next increment:** T-41, the Guardian's 13 deterministic rules plus soft flags and the "simulate tampered plan" mutations. It builds directly on this and needs no keys. After that, the MoneyExecutor (T-45).
+
+---
+
 ## Increment 3 · AI adapter, replay mode, job runner (T-06) · Sun Nov 8
 
 **What now exists**
