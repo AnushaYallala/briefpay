@@ -9,10 +9,10 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-08 by Claude: T-40 settlement + T-07 state machines/ledger done |
+| Last updated | 2026-11-08 by Claude: T-06 LLM adapter + job runner done |
 | Overall phase | **Day 0: backend skeleton, schema, money math, state machines, ledger built; no features yet** (plain-English summary: `docs/PROGRESS_SUMMARY.md`) |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
-| Next task to pick up | Track A: **T-06** (LLM adapter + jobs), then **T-26** (PlanBuilder) · Track B: **T-02** (human, sandbox keys), **T-08**, then **T-20** |
+| Next task to pick up | Track A: **T-26** (PlanBuilder), then **T-10/T-11** (projects, transcript) + auth · Track B: **T-02** (human, sandbox keys), **T-08**, then **T-20** |
 | Blockers | None yet |
 | Deployed URLs | API: _not deployed_ · Web: _not deployed_ · Sample site: _not deployed_ |
 | Repo | https://github.com/AnushaYallala/briefpay (origin; T-01 still needs LICENSE visible in About + secret scanning) |
@@ -35,7 +35,7 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 | T-03 | **Human:** free accounts, **no credit card anywhere**: Aiven free PostgreSQL (CA cert), Cloudinary free plan, Gemini key (AI Studio, no billing), GitHub fine-grained token, Render Hobby workspace | §5.5, §14.3 |  | TODO |  | Note Cloudinary credits + Gemini RPM/RPD in §4 |
 | T-04 | Backend skeleton: FastAPI, config, SQLAlchemy models for **all §6.2 tables**, Alembic initial migration, `/api/healthz` | §6, §10 | Claude | DONE | t-04-backend-foundation | 32 tables, migration 0001, 4 tests pass. SQLite default for local dev; set `DATABASE_URL` for Postgres |
 | T-05 | Frontend skeleton: Next.js static export, Tailwind, query-param routes, API client with Bearer token, login + `/auth/me`, persona switcher, wake-up screen | §5.2, §11, §14.4, §14.5 |  | TODO |  | `npm run build` must produce `out/` |
-| T-06 | LLM adapter (`GeminiModel`, `ReplayModel`), `agent_runs` logging, in-process DB job runner + `GET /jobs/{id}` | §7.0 | Claude | IN_PROGRESS | t-06-llm-adapter-jobs | Verify Gemini model name (A-4). No HF adapter (D-019) |
+| T-06 | LLM adapter (`GeminiModel`, `ReplayModel`), `agent_runs` logging, in-process DB job runner + `GET /jobs/{id}` | §7.0 | Claude | DONE | t-06-llm-adapter-jobs | LLMAdapter + GeminiBackend + ReplayBackend (record on miss), agent_runs logging, DB job runner with retry/backoff + `GET /api/jobs/{id}`. 24 tests. **A-4 still open**: no real Gemini call made yet (needs key + model name) |
 | T-07 | `ProjectService` + `CampaignService` state machines (+ illegal-transition tests); `LedgerService` (append-only, gapless seq, POOL bucket) | §6.1, §6.3 | Claude | DONE | t-40-settlement-state-ledger | Project + campaign state machines (every illegal pair tested), append-only gapless POOL ledger, pool can't go negative. LedgerService has no bond/bonus types (D-020) |
 | T-08 | Configure the **APIMatic Context Plugin** (MCP) in every AI coding tool used; add exact setup steps to AGENTS.md §6; claim free APIMatic subscription | §9.7 |  | TODO |  | Before T-20 |
 
@@ -159,6 +159,14 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-08 · Claude · T-06
+- Did: `agents/llm_adapter.py` (TextPart/ImagePart, `input_hash`, `ReplayBackend` with record-on-miss, `GeminiBackend` via google-genai 3.0.0 with JSON schema output, `LLMAdapter` with one validation retry and an `agent_runs` row per call, `build_adapter` for `AI_PROVIDER`), `agents/untrusted.py` (`untrusted()` wrapper + `UNTRUSTED_RULE`), `services/jobs.py` (`@register`, `enqueue`, `run_one`, `JobRunner`, crash recovery), `routers/jobs.py`, lifespan wiring in `main.py`.
+- State now: T-06 DONE (branch t-06-llm-adapter-jobs).
+- Tests: `cd backend && .venv/Scripts/python -m pytest -q` -> 63 passed. Also smoke-tested the real app: enqueued a job, runner completed it, `/api/jobs/{id}` returned DONE.
+- Contract changes: none. `generate_json` takes an extra `prompt_version` argument (needed for the input hash).
+- Next step: T-26 PlanBuilder (T-40 is done), or auth + projects (T-10/T-11) so jobs and endpoints can be role-checked.
+- Gotchas: (1) **A-4 unverified**: no real Gemini call has been made; set `GEMINI_API_KEY` and `AI_MODEL` and run one call before relying on structured output with the BA schemas (`list[dict]` fields may need flattening). (2) `GET /jobs/{id}` has no auth yet (TODO in code); add membership check once auth exists. (3) `agent_runs` rows are written in their own session so they survive a caller rollback. (4) Agents must wrap user text with `untrusted()` and include `UNTRUSTED_RULE` in the system prompt. (5) Replay fixtures are keyed by prompt text, so any prompt edit needs `PROMPT_VERSION` bumped or fixtures silently miss.
 
 ### 2026-11-08 · Claude · T-40, T-07
 - Did: `services/settlement.py` (split_pro_rata, plan_captures, plan_refunds, plan_freelancer_payout, canonical_json, plan_hash, idempotency_key), `schemas/plans.py` (PlanStep, MoneyPlanSpec), `services/ledger.py` (append-only via ORM event guards, gapless seq, pool balance, sign rules per type, pool never negative), `services/state_machines.py` (ProjectService/CampaignService.transition writing STATE_CHANGE rows).
