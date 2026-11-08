@@ -72,10 +72,27 @@ class BAScoreOutput(BaseModel):
 
 class BAQuestion(BaseModel):
     dimension: Literal["D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8", "D9", "D10"]
-    question: str = Field(max_length=300)
+    question: str = Field(min_length=5, max_length=300)
     rationale: str = Field(max_length=300)
     addressed_to: list[int | Literal["ALL"]]
     suggested_options: list[str] | None = None
+
+    @field_validator("question")
+    @classmethod
+    def plain_and_short(cls, v: str) -> str:
+        if len(v.split()) > 30:
+            raise ValueError("a question must be at most 30 words")
+        return v.strip()
+
+    @field_validator("suggested_options")
+    @classmethod
+    def two_to_four_options(cls, v: list[str] | None) -> list[str] | None:
+        if v is None or v == []:
+            return None
+        v = [o.strip() for o in v if o and o.strip()]
+        if not 2 <= len(v) <= 4 or any(len(o) > 80 for o in v):
+            raise ValueError("suggested_options must be 2 to 4 short options")
+        return v
 
 
 class BAQuestionsOutput(BaseModel):

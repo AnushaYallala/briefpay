@@ -9,10 +9,10 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-08 by Claude: T-12 BA scoring done |
+| Last updated | 2026-11-08 by Claude: T-13 BA question loop + endpoints done |
 | Overall phase | **Day 0: backend skeleton, schema, money math, state machines, ledger built; no features yet** (plain-English summary: `docs/PROGRESS_SUMMARY.md`) |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
-| Next task to pick up | Track A: **T-13** (BA questions + endpoints), then **T-14** (BRD generator) · Track B: **T-02** (human, sandbox keys), **T-08**, then **T-20** |
+| Next task to pick up | Track A: **T-14** (BRD generator), then **T-15** (BRD approvals) · Track B: **T-02** (human, sandbox keys), **T-08**, then **T-20** |
 | Blockers | None yet |
 | Deployed URLs | API: _not deployed_ · Web: _not deployed_ · Sample site: _not deployed_ |
 | Repo | https://github.com/AnushaYallala/briefpay (origin; T-01 still needs LICENSE visible in About + secret scanning) |
@@ -45,7 +45,7 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 | T-10 | Projects + members (sponsors, supporters, freelancer) API | §10 | Claude | DONE | t-10-projects-transcripts | Create/list/get project, idempotent member invites, public vs member views, viewed-tracking. 31 tests (D-026) |
 | T-11 | Transcript upload (text/file), line numbering | §7.1 | Claude | DONE | t-10-projects-transcripts | JSON or file upload (.txt/.vtt/.md), VTT cleaning, line numbering, `GET /projects/{id}/transcript` (added to SPEC 10). 25 tests; mutation-checked (D-026) |
 | T-12 | BA scoring: prompt, `BAScoreOutput`, code-side total, gates, cap 89, source_refs downgrade + unit tests | §7.1 | Claude | DONE | t-12-ba-scoring | Schemas, pure scoring + gates + cap, prompt `ba-score-v1`, `BAAgent`, `ba_service.score_round`. 67 tests; mutation-checked; demo scene scores 58/79/93. No endpoint yet (T-13). No real Gemini call yet (A-4) (D-027) |
-| T-13 | BA questions: prompt, `BAQuestionsOutput`, answer/skip endpoints, rounds, MAX_ROUNDS + finalize | §7.1 | Claude | IN_PROGRESS | t-13-ba-questions | |
+| T-13 | BA questions: prompt, `BAQuestionsOutput`, answer/skip endpoints, rounds, MAX_ROUNDS + finalize | §7.1 | Claude | DONE | t-13-ba-questions | Question agent + code-side filtering, rounds, answer/skip/finalize, run/view endpoints, `BA_RUN` job, rate limit. 83 tests; mutation-checked (11/11). Whole 58->79->93 scene passes over HTTP. No real Gemini call yet (D-028) |
 | T-14 | BRD generator: prompt, `BRDContent`, REQ codes, Jinja Markdown, sha256 | §7.2 |  | TODO |  | |
 | T-15 | BRD approvals (hash-bound, unanimous), reject → new BA round + version bump | §7.2 |  | TODO |  | |
 | T-16 | UI: BA Studio | §11 #4 |  | TODO |  | |
@@ -159,6 +159,14 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-08 · Claude · T-13
+- Did: `services/ba_rounds.py` (`run_round`, `generate_questions`, `filter_questions`, `answer_question`, `skip_question`, `request_run`, `finalize`, fallback questions), `agents/ba_agent.py` additions (`BAQuestionsAgent`, `QuestionInputs`, `get_ba_agents`/`set_ba_agents`, prompt `ba-questions-v1`), `agents/prompts/ba_questions.md`, `routers/ba.py` (`POST /projects/{id}/ba/run` 202, `GET /projects/{id}/ba`, `POST /ba/questions/{qid}/answers|skip`, `POST /projects/{id}/ba/finalize`), `BA_RUN` job handler, stricter `BAQuestion` schema (30 words, 2 to 4 options).
+- State now: T-13 DONE (branch t-13-ba-questions).
+- Tests: `cd backend && .venv/Scripts/python -m pytest -q` -> 437 passed (34 new in `test_ba_rounds.py`, 8 in `test_ba_api.py`). Mutation-checked: 11 deliberate breakages, all caught (one needed an extra defence-in-depth test).
+- Contract changes: D-028 (rounds numbering, completion rules, new `FINALIZED` session state).
+- Next step: T-14 BRD generator: input is the latest `BAScore` (`extracted_requirements_json`, `conflicts_json`, `gates_json.observations.out_of_scope`) plus all Q&A (`ba_rounds.answers_for`); output `BRDContent`; code assigns REQ codes, validates every MUST has an AC, renders Markdown with Jinja, hashes with sha256. `score_at_generation` and `open_items` come from the session score/gaps (a FINALIZED session must list its red gates and dimensions below 1.0). Set the session to `BRD_GENERATED` and project to BRD_REVIEW only when approvals start (T-15 handles the REQUIREMENTS<->BRD_REVIEW loop).
+- Gotchas: (1) A question's answers are shared with every member (names attached). (2) `session.round` increments only when a round fully closes; the `BA_RUN` job then scores the new round. (3) Answers for round N are fed to the scorer as `answer:<id>` references; fabricated ids are downgraded. (4) With no AI configured `POST /ba/run` still returns 202; the job retries and records `not configured`. (5) The default `get_ba_agents()` builds from settings and is only cached when it succeeded. (6) Tests must call `set_ba_agents(...)` and reset it with `set_ba_agents(None)`, otherwise the real engine is used.
 
 ### 2026-11-08 · Claude · T-12
 - Did: `schemas/ba.py` (BAScoreOutput etc. incl. BAQuestion/BAQuestionsOutput for T-13), `services/ba_scoring.py` (pure: weights, exact integer total, valid-ref downgrade, GT-1..GT-5, cap 89, `gaps`), `agents/prompts/ba_score.md` + `agents/ba_agent.py` (`BAAgent.judge`, `BAInputs`, prompt `ba-score-v1`), `services/ba_service.py` (`get_or_create_session`, `build_inputs`, `score_round`, `qa_pairs`, `latest_score`). Test helpers: `tests/ba_factory.py`, `scripted_adapter` in `tests/factories.py`.

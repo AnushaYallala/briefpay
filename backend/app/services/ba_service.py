@@ -66,7 +66,7 @@ def build_inputs(db: Session, project: Project, session: BASession) -> tuple[BAI
         transcript_lines=tx.numbered(t.text), qa=qa,
         previous={"requirements": prev.extracted_requirements_json, "conflicts": prev.conflicts_json} if prev else None)
     meta = {"line_count": t.line_count, "answer_ids": {a["answer_id"] for a in qa},
-            "sponsor_ids": {m.id for m in sponsors}}
+            "sponsor_ids": {m.id for m in sponsors}, "transcript_sha256": t.sha256}
     return inp, meta
 
 
@@ -84,8 +84,8 @@ def score_round(db: Session, project: Project, agent: BAAgent) -> BAScore:
     if project.state != "REQUIREMENTS":
         raise BAError("PROJECT_STATE", f"The BA Agent runs while the project is in REQUIREMENTS (it is {project.state})")
     session = get_or_create_session(db, project)
-    if session.state == "BRD_GENERATED":
-        raise BAError("BA_DONE", "A BRD has already been generated from this session")
+    if session.state in ("BRD_GENERATED", "FINALIZED"):
+        raise BAError("BA_DONE", "This analysis is closed: it was finalized or a BRD was already generated")
     inp, meta = build_inputs(db, project, session)
     try:
         out, run_id = agent.judge(inp, project.id)
@@ -95,6 +95,7 @@ def score_round(db: Session, project: Project, agent: BAAgent) -> BAScore:
     res = score(out, line_count=meta["line_count"], answer_ids=meta["answer_ids"], known_member_ids=meta["sponsor_ids"],
                 sponsor_member_ids=meta["sponsor_ids"], project_has_budget=project.budget_cents > 0,
                 project_has_deadline=project.delivery_days is not None)
+    res.observations["transcript_sha256"] = meta["transcript_sha256"]  # lets a re-run tell "same input" from "new upload"
     dims, gates = result_to_rows(res)
     row = BAScore(session_id=session.id, round=session.round, total=res.total, dimensions_json=dims, gates_json=gates,
                   capped=res.capped, extracted_requirements_json=res.requirements, conflicts_json=res.conflicts,

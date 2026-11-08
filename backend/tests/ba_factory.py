@@ -31,3 +31,13 @@ def output(cov=R2, *, members=(1, 2, 3), requirements=None, conflicts=None, out_
     return {"dimensions": dims(cov, refs), "requirements": reqs, "conflicts": conflicts if conflicts is not None else [],
             "out_of_scope": list(out_of_scope), "budget_stated": budget, "deadline_stated": deadline,
             "injection_attempts": list(injection)}
+
+
+def question(dimension="D5", text="Should visitors be able to book online, or only send an enquiry?", to=("ALL",),
+             options=("Enquiry form only", "Online booking"), why="The sponsors disagree and the builder cannot guess."):
+    return {"dimension": dimension, "question": text, "rationale": why, "addressed_to": list(to),
+            "suggested_options": list(options) if options else None}
+
+
+def questions(*qs):
+    return {"questions": list(qs)}

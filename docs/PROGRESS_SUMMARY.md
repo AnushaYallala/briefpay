@@ -4,6 +4,30 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 10 · The BA question loop and endpoints (T-13) · Sun Nov 8
+
+**What now exists**
+- **The clarification conversation.** After scoring the meeting, the BA Agent writes up to five plain-language questions (30 words at most), aimed at the biggest gaps, with disagreements first. Each question is addressed to the right owners and often comes with 2 to 4 answer choices ("Enquiry form only" / "Online booking"). Code filters the AI's questions: only real sponsors, only topics that still have a gap, never a repeat of something already asked, never more than five. If the AI has nothing usable, a standard question for the biggest gap is asked so the loop never stalls.
+- **How a round works.** Owners answer in the app. A question for named people is complete when all of them answered; a question for everyone needs just one answer; the lead can skip any question. When every question in the round is closed, the system re-scores by itself, asks again if needed, and stops at 90 or after five rounds.
+- **The ready mark can't be faked.** Reaching 90 needs every gate green. After five rounds without that, the lead can "finalize with gaps", and those gaps will be listed as open items in the BRD.
+- **Safe to retry.** If the AI fails halfway, the score already saved is kept and a retry just continues; an unchanged transcript is never re-scored and a round never gets two sets of questions. A replaced transcript is re-scored.
+- **The endpoints the BA Studio screen needs:** run the agent (returns a job to poll), one view with the score breakdown, ten dimensions, red/green gates, score history and every question with its answers and "can I answer this?", answer, skip, and finalize. Only the lead can run, skip and finalize; only sponsors named on a question can answer it; the freelancer can read but never answer. Manual runs are limited to 8 per project per hour.
+- **I ran the whole demo scene through the real endpoints:** the score goes 58, then 79, then 93 and READY, with Lakshmi, Ravi and Meena each answering as themselves.
+- 437 automated tests pass (42 new). I broke eleven rules on purpose and every one was caught.
+
+**What it does NOT do yet**
+It is still the API only, with no screens, and no real Gemini call has been made. The questions' real quality depends on the model and prompt, which I can only judge once a key exists.
+
+**Decision to know about:** D-028 (round numbering, who completes a question, and a new session state called FINALIZED).
+
+**Progress:** 12 of ~45 tasks done.
+
+**Needed from you:** the Gemini key (billing off) and model name. From here the BA Agent and BRD are mostly AI-dependent, so a first real run would catch issues early.
+
+**Next increment:** T-14, the BRD generator: turns the finished analysis into a numbered document (REQ-001...), each with Given/When/Then acceptance criteria and the evidence expected, rendered to Markdown and locked by a fingerprint.
+
+---
+
 ## Increment 9 · BA Agent scoring (T-12) · Sun Nov 8
 
 **What now exists**
