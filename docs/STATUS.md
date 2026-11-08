@@ -42,8 +42,8 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 ### Track A1: Requirements (BA Agent + BRD)
 | ID | Task | Spec | Owner | State | Branch | Notes |
 |---|---|---|---|---|---|---|
-| T-10 | Projects + members (sponsors, supporters, freelancer) API | §10 |  | TODO |  | |
-| T-11 | Transcript upload (text/file), line numbering | §7.1 |  | TODO |  | Sample: `docs/samples/velugu_cove_meeting_transcript.txt` |
+| T-10 | Projects + members (sponsors, supporters, freelancer) API | §10 | Claude | IN_PROGRESS | t-10-projects-transcripts | |
+| T-11 | Transcript upload (text/file), line numbering | §7.1 | Claude | IN_PROGRESS | t-10-projects-transcripts | Sample: `docs/samples/velugu_cove_meeting_transcript.txt` |
 | T-12 | BA scoring: prompt, `BAScoreOutput`, code-side total, gates, cap 89, source_refs downgrade + unit tests | §7.1 |  | TODO |  | |
 | T-13 | BA questions: prompt, `BAQuestionsOutput`, answer/skip endpoints, rounds, MAX_ROUNDS + finalize | §7.1 |  | TODO |  | |
 | T-14 | BRD generator: prompt, `BRDContent`, REQ codes, Jinja Markdown, sha256 | §7.2 |  | TODO |  | |
