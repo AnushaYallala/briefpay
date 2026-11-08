@@ -4,6 +4,29 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 8 · Projects, team invitations and the meeting transcript (T-10, T-11) · Sun Nov 8
+
+**What now exists** (the first thing a real user can do)
+- **Create a project:** sign in, give it a title, location, summary, budget and delivery days. You become the lead. You can invite the other business owners (sponsors) and the freelancer in the same step, with their business names and what each says they will pledge.
+- **Invite people safely:** inviting is idempotent (inviting the same email twice updates, never duplicates). A freelancer can never also be a sponsor, the lead can't be re-invited, and there is only one freelancer per project. Sponsors can only be added before the requirements are reviewed, so the group of people who must approve the BRD can't change under them.
+- **Who sees what:** the project list and project page are public, but the public sees only names, businesses and funding progress. Team members also see each other's emails. Only the lead sees what each person said they would pledge. When an invited owner opens the project it is recorded as "viewed", which the Campaign Strategist will use later.
+- **Upload the meeting transcript:** paste the text, or upload a .txt, .md or .vtt file (video-call caption files are cleaned down to what was said). The system numbers every line, so the BA Agent can later say "see lines 12 to 15". The first upload moves the project into the requirements stage; a newer upload replaces the old one; after the BRD review starts the transcript is locked. Only the lead can upload; only members can read it.
+- **Sanity limit:** a project's budget can't exceed the sandbox payout limit, because the freelancer could never be paid.
+- 336 automated tests pass (67 new). I broke six privacy and permission behaviours on purpose; the tests caught every one. The real sample transcript from the spec uploads correctly.
+
+**What it does NOT do yet**
+No AI reads the transcript yet. There are no screens: all of this is the API the screens will use.
+
+**Decision to know about:** D-026 records the access rules above and one small addition to the spec (an endpoint to read the numbered transcript, which the BA Studio panel needs).
+
+**Progress:** 10 of ~45 tasks done (T-04, T-40, T-07, T-06, T-26, T-41, T-45, T-42, T-10, T-11).
+
+**Needed from you:** the same two items as before, and they now block real progress soon: a Gemini key from Google AI Studio (billing off) plus the model name, because the next increment is the first one that really needs the AI; and the PayPal sandbox setup (T-02).
+
+**Next increment:** the BA Agent, the heart of the first demo scene: it reads the transcript, scores it out of 100 across ten dimensions, finds conflicts such as "booking vs. enquiry only", and applies the hard gates. I will build the scoring math and gates (T-12) first, fully tested without the AI, then the question loop (T-13).
+
+---
+
 ## Increment 7 · The Guardian's AI risk review (T-42) · Sun Nov 8
 
 **What now exists**

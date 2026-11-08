@@ -44,3 +44,8 @@ def require_member(db: Session, project_id: int, user: User, roles: tuple[str, .
     if roles and m.role not in roles:
         raise api_error(403, "FORBIDDEN", f"Requires role {' or '.join(roles)}")
     return m
+
+
+def optional_user(authorization: str | None = Header(default=None), db: Session = Depends(get_db)) -> User | None:
+    """Public pages work without a token; a token that is present but bad is still an error."""
+    return current_user(authorization, db) if authorization else None

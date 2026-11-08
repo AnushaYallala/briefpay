@@ -9,10 +9,10 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-08 by Claude: T-42 Guardian LLM review done |
+| Last updated | 2026-11-08 by Claude: T-10 projects/members + T-11 transcripts done |
 | Overall phase | **Day 0: backend skeleton, schema, money math, state machines, ledger built; no features yet** (plain-English summary: `docs/PROGRESS_SUMMARY.md`) |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
-| Next task to pick up | Track A: **T-10/T-11** (projects + transcript), **T-21** (webhooks; must call `confirm_step`), or **T-25** (campaign clock/outcome) · Track B: **T-02** (human, sandbox keys), **T-08**, then **T-20** |
+| Next task to pick up | Track A: **T-12** (BA scoring), **T-13** (BA questions), or **T-21** (webhooks; must call `confirm_step`) · Track B: **T-02** (human, sandbox keys), **T-08**, then **T-20** |
 | Blockers | None yet |
 | Deployed URLs | API: _not deployed_ · Web: _not deployed_ · Sample site: _not deployed_ |
 | Repo | https://github.com/AnushaYallala/briefpay (origin; T-01 still needs LICENSE visible in About + secret scanning) |
@@ -42,8 +42,8 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 ### Track A1: Requirements (BA Agent + BRD)
 | ID | Task | Spec | Owner | State | Branch | Notes |
 |---|---|---|---|---|---|---|
-| T-10 | Projects + members (sponsors, supporters, freelancer) API | §10 | Claude | IN_PROGRESS | t-10-projects-transcripts | |
-| T-11 | Transcript upload (text/file), line numbering | §7.1 | Claude | IN_PROGRESS | t-10-projects-transcripts | Sample: `docs/samples/velugu_cove_meeting_transcript.txt` |
+| T-10 | Projects + members (sponsors, supporters, freelancer) API | §10 | Claude | DONE | t-10-projects-transcripts | Create/list/get project, idempotent member invites, public vs member views, viewed-tracking. 31 tests (D-026) |
+| T-11 | Transcript upload (text/file), line numbering | §7.1 | Claude | DONE | t-10-projects-transcripts | JSON or file upload (.txt/.vtt/.md), VTT cleaning, line numbering, `GET /projects/{id}/transcript` (added to SPEC 10). 25 tests; mutation-checked (D-026) |
 | T-12 | BA scoring: prompt, `BAScoreOutput`, code-side total, gates, cap 89, source_refs downgrade + unit tests | §7.1 |  | TODO |  | |
 | T-13 | BA questions: prompt, `BAQuestionsOutput`, answer/skip endpoints, rounds, MAX_ROUNDS + finalize | §7.1 |  | TODO |  | |
 | T-14 | BRD generator: prompt, `BRDContent`, REQ codes, Jinja Markdown, sha256 | §7.2 |  | TODO |  | |
@@ -159,6 +159,14 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-08 · Claude · T-10, T-11
+- Did: `routers/projects.py` (create/list/get project, `PUT /members`, `POST /transcripts` JSON or multipart, `GET /transcript`), `services/project_ops.py` (create, `upsert_invitees`, `touch_member`, `campaign_summary`, `add_transcript`), `services/transcripts.py` (pure `normalize`, VTT cleaning, `numbered`), `optional_user` in `auth.py`, `python-multipart` pinned. `docs/SPEC.md` section 10 gained the `GET /projects/{id}/transcript` row.
+- State now: T-10 DONE, T-11 DONE (branch t-10-projects-transcripts).
+- Tests: `cd backend && .venv/Scripts/python -m pytest -q` -> 336 passed (67 new). Mutation-checked: six deliberate breakages (email leak, pledge-plan leak, any-member upload, upload after BRD review, freelancer-as-sponsor, signed-out transcript read) were all caught.
+- Contract changes: D-026 and one new SPEC 10 row.
+- Next step: T-12 BA scoring must number lines with `services.transcripts.numbered` and read `project_ops.latest_transcript`; T-13 questions are addressed to `project_members.id`s (the API already returns them in `members[].id`). Creating the `ba_sessions` row is left to T-12/T-13 (`POST /projects/{id}/ba/run`).
+- Gotchas: (1) `GET /projects/{id}` writes (viewed-tracking) when a member calls it. (2) Members are looked up by lower-cased email, so a person who logs in with the invited email is automatically a member. (3) Do not edit test files with Python inside a bash heredoc when the text contains backslash escapes; a previous attempt corrupted a test file with a NUL byte (fixed by deleting and rewriting it). (4) A project's transcript cannot change after REQUIREMENTS, so a lead who needs to re-upload after BRD review must reject the BRD (which returns the project to REQUIREMENTS, T-15). (5) Supporters are not members until they pledge (T-22).
 
 ### 2026-11-08 · Claude · T-42
 - Did: `agents/guardian_llm.py` (`GuardianLLM`, `GuardianLLMOutput`, `Finding`, `get_guardian_llm`, `set_guardian_llm`, prompt `guardian-llm-v1`), `agents/prompts/guardian_llm.md`, `services/guardian_facts.py` (`build_facts`), `services/guardian_decision.py` (`combine`, escalate-only), `review_plan(..., llm=)` in `plan_lifecycle.py`, review endpoint injects `get_guardian_llm`; plan detail now includes `earliest_honor_until` for capture plans; `LLMAdapter.generate_json(run_ids=[...])` reports the `agent_runs` id.
