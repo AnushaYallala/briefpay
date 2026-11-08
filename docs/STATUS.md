@@ -9,10 +9,10 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-08 by Claude: T-15 BRD approvals done |
+| Last updated | 2026-11-08 by Claude: T-30 conditional contract done |
 | Overall phase | **Day 0: backend skeleton, schema, money math, state machines, ledger built; no features yet** (plain-English summary: `docs/PROGRESS_SUMMARY.md`) |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
-| Next task to pick up | Track A: **T-30** (conditional contract: offer, accept, BRD hash, locked PayPal email), then **T-24** (campaign setup) · see also `docs/GAPS_AND_FIXES.md` · Track B: **T-02** (human, sandbox keys), **T-08**, then **T-20** |
+| Next task to pick up | Track B: **T-24** (campaign setup + launch, deadline rule), then **T-22** (pledge gate/service), **T-25** (outcome engine + clock) · see also `docs/GAPS_AND_FIXES.md` · Track B: **T-02** (human, sandbox keys), **T-08**, then **T-20** |
 | Blockers | None yet |
 | Deployed URLs | API: _not deployed_ · Web: _not deployed_ · Sample site: _not deployed_ |
 | Repo | https://github.com/AnushaYallala/briefpay (origin; T-01 still needs LICENSE visible in About + secret scanning) |
@@ -65,7 +65,7 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 ### Track A2: Contract, build & verify
 | ID | Task | Spec | Owner | State | Branch | Notes |
 |---|---|---|---|---|---|---|
-| T-30 | Conditional contract: offer, accept (BRD hash, PayPal email lock), `effective_at` on capture | §6.2, §10 | Claude | IN_PROGRESS | t-30-contract | UI is screen #6 |
+| T-30 | Conditional contract: offer, accept (BRD hash, PayPal email lock), `effective_at` on capture | §6.2, §10 | Claude | DONE | t-30-contract | Offer (replaces unsigned), accept (both hashes, locks PayPal email), GET for members; terms rendered from template; ledger CONTRACT_SIGNED without email. 25 tests; mutation-checked (D-031). UI is screen #6 (not built) |
 | T-31 | Submissions + `ImageStore` (Cloudinary signed upload, `POST /images`, signed URLs; `LocalImageStore` for dev) + evidence API | §7.3, §10, §12 |  | TODO |  | Verifier fetches image bytes server-side for Gemini |
 | T-32 | AutoChecks: SSRF-safe fetcher, URL/page/repo/commit/file/viewport checks + SSRF tests | §7.3 |  | TODO |  | |
 | T-33 | Verifier questions: prompt, `VerifyQuestion`, skip ACs settled by auto checks | §7.3 |  | TODO |  | |
@@ -159,6 +159,14 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-08 · Claude · T-30
+- Did: `services/contract_service.py` (`offer`, `accept`, `render_terms`, `terms_hash`, `contract_view`, `approved_brd`, `freelancer_member`, `get_contract`), `templates/contract.md.j2`, `routers/contract.py` (`POST /projects/{id}/contract/offer`, `GET /projects/{id}/contract`, `POST /projects/{id}/contract/accept`). SPEC 10 gained the GET row.
+- State now: T-30 DONE (branch t-30-contract). A signed contract has `signed_at`, a locked `freelancer_paypal_email`, `conditional = true`, `effective_at = null`, and the project is in `CAMPAIGN_SETUP`.
+- Tests: `cd backend && .venv/Scripts/python -m pytest -q` -> 544 passed (25 new in `tests/test_contract.py`). Mutation-checked: 15 breakages; 13 caught at first, 1 needed a new test (signed contract replaced after a state rewind), 1 is an equivalent mutant (redundant role check).
+- Contract changes: D-031 and one SPEC 10 row.
+- Next step: T-24: `POST /projects/{id}/campaigns {deadline_at, close_policy, min_pledge_cents?, suggested_share_cents?}` (lead; project `CAMPAIGN_SETUP`; needs the signed contract) creates a `SETUP` campaign with `goal_cents = contract.amount_cents + fee_reserve_cents` (`FEE_RESERVE_PER_ITEM_CENTS` x 1 payout item); `POST /campaigns/{cid}/launch` sets `opens_at = now`, validates `deadline_at <= opens_at + PLEDGE_MAX_HOURS - HONOR_SAFETY_MARGIN_HOURS` (and `> opens_at`), `OPEN`, project CAMPAIGN_SETUP -> PLEDGING; `GET /campaigns/{cid}` public view; relaunch after FAILED is T-25.
+- Gotchas: (1) The lead's and sponsors' login emails cannot be the freelancer's PayPal email, but their future PayPal payer emails are unknown until they pledge (Guardian S-01 covers that). (2) `terms_sha256` covers the text and the numbers; the PayPal email is NOT in it (it is supplied at signing). (3) The contract view shows the freelancer's PayPal email to every member, which is intended. (4) A freelancer cannot decline (GAP-32).
 
 ### 2026-11-08 · Claude · T-15
 - Did: `services/brd_approvals.py` (`decide`, `decisions_on`, `voters`, locking, rejection-reopens-BA), `POST /projects/{id}/brd/{version}/decision` in `routers/brd.py` (`DecisionIn`), tests `tests/test_brd_approvals.py` (16).

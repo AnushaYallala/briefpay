@@ -4,6 +4,31 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 13 · The conditional contract (T-30) · Sun Nov 8
+
+**What now exists**
+- **The offer.** Once the sponsors have locked the BRD, the lead offers the freelancer a price and a delivery time. The price must be positive and within the project budget and the sandbox payout limit; the time must be 1 to 90 days. The system writes the contract text itself from a template, in plain language: who the parties are, what will be built (the BRD version and its fingerprint), the price, the delivery time, and how payment happens. It says clearly that this is a demonstration agreement, not a legally binding contract.
+- **"Effective only if the campaign funds."** The agreement states that it takes effect only if the funding goal is reached; if not, every pledge hold is released, nobody is charged and nothing is owed. It never says "escrow"; it says pooled funds are held by the platform until verified approval.
+- **What the freelancer signs is a fingerprint** of the whole text and every number in it (price, days, BRD fingerprint, who). If the lead changes anything, the old fingerprint stops working and the freelancer must read and sign the new version. A signed contract can never be replaced.
+- **Signing locks their PayPal email.** The freelancer confirms two fingerprints (the BRD and the terms) and the PayPal account to be paid. That email is locked from then on, so a later payout can only go there. The freelancer cannot name a sponsor's own account. Signing moves the project to the campaign stage and writes a ledger entry with the amounts and fingerprints but, deliberately, no email, because the ledger may be shown publicly.
+- **Who can see it:** project members (including the freelancer) can read the contract; strangers cannot.
+- 544 automated tests pass (25 new). I broke fifteen rules on purpose; all are caught or judged harmless.
+
+**What it does NOT do yet**
+No screen. The freelancer cannot decline an offer (the lead just makes a new one). Nothing about the campaign exists yet.
+
+**Housekeeping note:** at the start of this step the repository's current-branch pointer had been blanked when the previous command was cut off mid-write. I checked first, confirmed all commits and files were intact, repaired only that one pointer, re-ran the whole suite and finished the merge. Nothing was lost. It's recorded in the gaps file.
+
+**Decision to know about:** D-031 (what is signed, who can sign, and one added endpoint to read the contract).
+
+**Progress:** 15 of ~45 tasks done.
+
+**Needed from you:** unchanged: the Gemini key and the PayPal sandbox setup. The next steps (campaign, pledges) are where PayPal becomes essential.
+
+**Next increment:** T-24, campaign setup and launch: the goal is fixed by the contract; the lead picks a deadline that respects PayPal's 3-day hold guarantee (72 hours maximum, minus a 2-hour safety margin), launches, and the project goes live for pledging.
+
+---
+
 ## Increment 12 · BRD approvals (T-15) · Sun Nov 8
 
 **What now exists**

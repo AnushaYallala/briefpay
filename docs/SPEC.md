@@ -1056,6 +1056,7 @@ Base `/api`. JSON. Errors: `{"error": {"code": "STRING", "message": "...", "deta
 | POST | `/projects/{id}/brd/{version}/decision` | sponsor | `{decision, brd_sha256, comment?}` |
 | POST | `/projects/{id}/contract/offer` | lead | `{amount_cents, delivery_days}` to the invited freelancer |
 | POST | `/projects/{id}/contract/accept` | freelancer | `{paypal_email, brd_sha256, terms_sha256}` → conditional contract |
+| GET | `/projects/{id}/contract` | member | the offer or signed contract: terms, hashes, status (PayPal email visible to members once signed). Added by D-031 |
 | POST | `/projects/{id}/campaigns` | lead | `{deadline_at, close_policy, min_pledge_cents?, suggested_share_cents?}` → campaign in `SETUP` (goal computed) |
 | GET | `/campaigns/{cid}` | any | public view: goal, pledged (Σ AUTHORIZED), count, deadline, state, countdown. Lead also gets forecast and `honor_until` limits |
 | POST | `/campaigns/{cid}/launch` | lead | requires contract signed → `OPEN` |

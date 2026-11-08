@@ -6,7 +6,7 @@ A running list of everything that is **missing, risky, unverified, or was found 
 - **Fixes** are problems that were found and already resolved, kept so the reasoning is not lost.
 - IDs are permanent. When a gap is closed, move it to Fixes (keep the ID) and say how.
 
-_Last updated: 2026-11-08, end of T-15._
+_Last updated: 2026-11-08, end of T-30._
 
 ---
 
@@ -54,6 +54,9 @@ _Last updated: 2026-11-08, end of T-15._
 | GAP-29 | Low | A sponsor can reject repeatedly; each rejection forces a new BA round and a new BRD. There is no limit or cool-down. | Rate limit rejections per BRD version, or require the lead's confirmation after N rejections. |
 | GAP-30 | Low | A rejection question uses `dimension = "BRD"`, which is not one of the ten rubric dimensions. The UI must show a null `dimension_name` as 'BRD feedback'; the scorer does not map it to a coverage gap. | Frontend note (T-16); acceptable. |
 | GAP-31 | Low | No notification when a BRD is ready, approved or rejected; sponsors must open the app. | Email notifications are COULD (spec 4.3). |
+| GAP-32 | Low | The freelancer cannot **decline** a contract offer or withdraw; the lead can only re-offer. A freelancer who never responds blocks the project at CONTRACTING. | Add a decline action that frees the lead to invite someone else (needs a rule for replacing the freelancer member). |
+| GAP-33 | Low | The 'PayPal email must not be a sponsor's' check compares only to sponsors' **login** emails. A sponsor's separate PayPal payer email is unknown until they pledge; the Guardian's S-01 flag covers it later. | Acceptable; documented in D-031. |
+| GAP-34 | Low | The contract text is a fixed template with a demo disclaimer; there is no way for the parties to add clauses. | Out of scope (spec 4.5: legal contracts). |
 
 ---
 
@@ -77,6 +80,8 @@ _Last updated: 2026-11-08, end of T-15._
 | FIX-14 | T-14 | Mutation testing showed the hash tests only proved determinism, not that the hash is `sha256(canonical_json(content))` as the spec requires and other components must reproduce. | Added a test that recomputes the hash independently, including key-order independence. |
 | FIX-15 | T-15 | Mutation testing found two approval rules enforced by only one layer in the tests: the 'decision counts only on the exact hash' filter and the service-level 'freelancers cannot vote' check (the router check masked it). | Added tests that force the situation (a stale-hash row; calling the service directly). |
 | FIX-16 | T-15 | A vague assertion (`... == 409 or ... == 409`) in the full-loop test could not fail. | Pinned to `BRD_CLOSED`. My mutation script also crashed on a syntax-breaking mutant because it parsed pytest's last line; it now uses the process exit code. |
+| FIX-17 | T-15 | **Git repository damage from an interrupted command:** the branch pointer file `refs/heads/t-15-brd-approvals` was left full of null bytes when a session was cut off mid-write, so `git` reported 'current branch appears to be broken' and every command failed. | Diagnosed read-only first (`git fsck`, reflogs); confirmed the T-15 commit object `2d7e4cc` existed and held exactly the T-15 files and that `main`/other branches were intact; rewrote only that one pointer file; `fsck` clean, working tree clean; re-ran all 519 tests; then pushed and merged. No work lost. If it recurs: check `.git/logs/refs/heads/<branch>` for the last good hash. |
+| FIX-18 | T-30 | Two contract tests used `or True` / `in (A, B)` assertions that could not fail. | Replaced with exact expected values (the code's behaviour is deterministic). |
 
 ---
 
@@ -86,3 +91,4 @@ These were deliberately-broken versions of the code that no test caught. Each wa
 | When | Mutant | Why harmless |
 |---|---|---|
 | T-12 | "Unknown member ids satisfy GT-5" (remove the `if m in known_member_ids` filter in the gate) | Extra unknown ids can never cover a missing sponsor, so the result is identical. The behaviour that matters (stripping unknown ids from stored requirements) is tested separately. |
+| T-30 | "Anyone may sign" (remove the `member.role != "FREELANCER"` check in `accept`) | A second check (`contract.freelancer_member_id != member.id`) rejects every non-freelancer with the same error, so the two checks are redundant. Kept both as defence in depth. |
