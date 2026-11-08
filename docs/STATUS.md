@@ -9,10 +9,10 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-09 by Claude: T-50/T-51 back-end endpoints done (ledger, money, agent-runs, reconcile); UI still TODO |
+| Last updated | 2026-11-09 by Claude: T-32 auto checks and SSRF-safe fetcher in REVIEW |
 | Overall phase | **Day 0: backend skeleton, schema, money math, state machines, ledger built; no features yet** (plain-English summary: `docs/PROGRESS_SUMMARY.md`) |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
-| Next task to pick up | Not blocked: **T-31/T-32** (submissions, auto checks), **T-47** (Strategist AI wording), **T-43/T-44** (poll fallback) · **Human:** write BLK-01/BLK-02 files or advise · run `backend/scripts/sandbox_check.py` once keys exist |
+| Next task to pick up | Not blocked: **T-31** (submissions API, ImageStore, evidence; wires in T-32), **T-47** (Strategist AI wording), **T-43/T-44** (poll fallback) · **Human:** write BLK-01/BLK-02 files or advise · run `backend/scripts/sandbox_check.py` once keys exist |
 | Blockers | **BLK-01** (T-22 pledge service/endpoints), **BLK-02** (T-25 clock and lead actions), **BLK-03** (pledge-state helper used by two webhook events): the assistant's attempts to write those files were stopped by a safety check; see `docs/GAPS_AND_FIXES.md` section 0 for the full designs |
 | Deployed URLs | API: _not deployed_ · Web: _not deployed_ · Sample site: _not deployed_ |
 | Repo | https://github.com/AnushaYallala/briefpay (origin; T-01 still needs LICENSE visible in About + secret scanning) |
@@ -67,7 +67,7 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 |---|---|---|---|---|---|---|
 | T-30 | Conditional contract: offer, accept (BRD hash, PayPal email lock), `effective_at` on capture | §6.2, §10 | Claude | DONE | t-30-contract | Offer (replaces unsigned), accept (both hashes, locks PayPal email), GET for members; terms rendered from template; ledger CONTRACT_SIGNED without email. 25 tests; mutation-checked (D-031). UI is screen #6 (not built) |
 | T-31 | Submissions + `ImageStore` (Cloudinary signed upload, `POST /images`, signed URLs; `LocalImageStore` for dev) + evidence API | §7.3, §10, §12 |  | TODO |  | Verifier fetches image bytes server-side for Gemini |
-| T-32 | AutoChecks: SSRF-safe fetcher, URL/page/repo/commit/file/viewport checks + SSRF tests | §7.3 |  | TODO |  | |
+| T-32 | AutoChecks: SSRF-safe fetcher, URL/page/repo/commit/file/viewport checks + SSRF tests | §7.3 |  | REVIEW |  | `safe_fetch.py` (SSRF-safe) + `autochecks.py` (URL_REACHABLE, PAGE_CONTAINS, REPO_PUBLIC, COMMIT_EXISTS, FILE_EXISTS + snippet check, MOBILE_VIEWPORT). 117 tests, no network; mutation-checked. Not yet run per submission or saved to `auto_checks` (T-31) (D-038) |
 | T-33 | Verifier questions: prompt, `VerifyQuestion`, skip ACs settled by auto checks | §7.3 |  | TODO |  | |
 | T-34 | Verifier judge (vision) + snippet-in-repo check + deterministic aggregation + follow-up round + attempts | §7.3 |  | TODO |  | One judge call per submission |
 | T-35 | UI: freelancer portal (contract, submit, evidence uploaders) | §11 #6, #9 |  | TODO |  | |
@@ -159,6 +159,13 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-09 · Claude · T-32 (REVIEW)
+- Did: `services/safe_fetch.py` (SSRF-safe GET with address pinning, redirect re-checks, size and time caps), `services/autochecks.py` (`AutoChecker` with the six checks, `snippet_in_file`, strict GitHub URL/sha/path parsing). `tests/test_chokepoint.py` now names `safe_fetch.py` as the one other HTTP importer and guards it (GET only, no PayPal, only `autochecks.py` uses it).
+- Tests: `cd backend && .venv/Scripts/python -m pytest -q` -> 1008 passed (117 new). Mutation-checked: 33 breakages; 31 caught, 2 equivalent on this Python (IPv4-mapped and 6to4/Teredo are already non-global; kept as defence in depth). Planted violations for the new chokepoint guards all fail as they should.
+- Contract changes: D-038 (no SPEC changes).
+- Next step: T-31 submissions: `POST /projects/{id}/submissions` (creates attempt, enqueues a job that builds `AutoChecker` from settings, runs default checks plus each BRD `auto_check_hint`, saves `auto_checks` rows), `GET /submissions/{sid}`, ImageStore and evidence.
+- Gotchas: (1) Build the production fetcher with `SafeFetcher(allow_local=settings.app_env == "dev")` only if the demo site is on localhost; otherwise leave it off. (2) Treat ERROR results as 'ask again', not as FAIL. (3) A stray `\b` inside a Python heredoc wrote a backspace character into a regex again (FIX-29): write files with the editor tools.
 
 ### 2026-11-09 · Claude · T-50/T-51 back end (endpoints done; grids are UI work)
 - Did: `services/ledger_views.py` (ledger rows with running balance, chips, names, public masking; money box; agent runs), `services/reconcile.py` (I-1..I-8), `routers/ledger.py` (`/projects/{id}/ledger`, `/money`, `/agent-runs`, `/admin/reconcile`). Webhook mismatch and reversed-capture events now leave an alert memo in the ledger (closes GAP-46).

@@ -10,6 +10,7 @@ APP = Path(__file__).resolve().parents[1] / "app"
 WRITE_METHODS = ("capture_authorization", "void_authorization", "refund_capture", "create_payout_batch", "reauthorize")
 ALLOWED_CALLERS = {"money_executor.py"}
 ALLOWED_DEFINERS = {"paypal_io.py", "paypal_client.py"}       # Protocol / placeholders / the real client (T-20)
+URL_FETCHERS = {"safe_fetch.py"}                           # the one read-only fetcher for freelancer-supplied URLs (T-32)
 SDK_IMPORTERS = {"paypal_client.py"}                           # only this module may import the PayPal SDK
 
 
@@ -82,6 +83,20 @@ def test_buyer_side_order_calls_stay_behind_the_pledge_gate():
 def test_nothing_but_the_paypal_client_imports_an_http_library():
     """Payouts and webhook verification use httpx, but only inside paypal_client.py; no other module may open a connection."""
     for path, text in sources():
-        if path.name in SDK_IMPORTERS:
+        if path.name in SDK_IMPORTERS | URL_FETCHERS:
             continue
         assert not re.search(r"^\s*(import|from)\s+(httpx|requests|urllib3|aiohttp)", text, re.M), f"{path.relative_to(APP)} imports an HTTP library"
+
+
+def test_the_url_fetcher_can_only_read_and_knows_nothing_about_paypal():
+    """safe_fetch.py opens connections to addresses a freelancer typed in. It must never write, and never be a way to PayPal."""
+    for name in URL_FETCHERS:
+        text = (APP / "services" / name).read_text(encoding="utf-8")
+        assert not re.search(r"\.(post|put|patch|delete|request|send)\(|\"(POST|PUT|PATCH|DELETE)\"", text, re.I), f"{name} must only GET"
+        assert "paypal" not in text.lower(), f"{name} must not know about PayPal"
+        assert 'client.stream("GET"' in text
+
+
+def test_only_the_check_modules_use_the_url_fetcher():
+    users = sorted(p.name for p, t in sources() if "safe_fetch" in t and p.name != "safe_fetch.py")
+    assert users == ["autochecks.py"]

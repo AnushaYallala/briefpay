@@ -4,6 +4,26 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 20 · Checking the freelancer's work ourselves (T-32) · Mon Nov 9
+
+**What now exists**
+- **A safe way to look at the freelancer's website.** The freelancer types the web address, so we treat it as untrusted: it must be `https`, with no password in it, on the normal port. We look up the address ourselves, refuse anything that points inside our own network or to cloud-internal addresses, and then connect to exactly the address we checked. Redirects are followed at most three times and every hop is checked again. Pages over 2 MB or slower than 10 seconds are dropped. No cookies are kept.
+- **Six automatic checks, no AI involved.** The site loads; a page contains specific words (only text a visitor can see, not hidden code); the GitHub repository exists and is public; the commit exists; a file exists at that commit (and a code snippet the freelancer pasted really is in it); the site declares a mobile layout.
+- **Honest results.** Each check says PASS, FAIL or ERROR. ERROR means "we couldn't look" (site down, GitHub rate limit), which is neither a pass nor proof of failure.
+- **A safety rule kept.** Only the PayPal module may open connections to PayPal. This fetcher is the one other module allowed to use the internet; a new test makes sure it can only read, never mentions PayPal, and is used only by the checks.
+- 1,008 automated tests pass (117 new, none touch the real internet). I broke 33 things on purpose; 31 were caught and the other 2 change nothing on this Python version. I also caught myself writing an invisible stray character into one of the new tests, which would have made it useless; it's fixed and the test now fails when it should.
+
+**What it does NOT do yet**
+Nothing runs these checks for a real submission yet. The submission screen, saving results and the evidence upload are the next increment (T-31). Pages that build themselves in the browser will only show what the server sends.
+
+**Progress:** 21 of ~45 tasks done or in review.
+
+**Needed from you:** the same: a decision on BLK-01/02/03, PayPal sandbox keys, the Gemini key. A GitHub token (optional) would avoid GitHub's low anonymous limit.
+
+**Next increment:** submissions and evidence (T-31): the freelancer submits repo, commit and live URL, the checks run in the background and the results are saved and shown.
+
+---
+
 ## Increment 19 · The public ledger, money box and AI audit trail (back end of T-50/T-51) · Mon Nov 9
 
 **What now exists**
