@@ -46,7 +46,7 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 | T-11 | Transcript upload (text/file), line numbering | §7.1 | Claude | DONE | t-10-projects-transcripts | JSON or file upload (.txt/.vtt/.md), VTT cleaning, line numbering, `GET /projects/{id}/transcript` (added to SPEC 10). 25 tests; mutation-checked (D-026) |
 | T-12 | BA scoring: prompt, `BAScoreOutput`, code-side total, gates, cap 89, source_refs downgrade + unit tests | §7.1 | Claude | DONE | t-12-ba-scoring | Schemas, pure scoring + gates + cap, prompt `ba-score-v1`, `BAAgent`, `ba_service.score_round`. 67 tests; mutation-checked; demo scene scores 58/79/93. No endpoint yet (T-13). No real Gemini call yet (A-4) (D-027) |
 | T-13 | BA questions: prompt, `BAQuestionsOutput`, answer/skip endpoints, rounds, MAX_ROUNDS + finalize | §7.1 | Claude | DONE | t-13-ba-questions | Question agent + code-side filtering, rounds, answer/skip/finalize, run/view endpoints, `BA_RUN` job, rate limit. 83 tests; mutation-checked (11/11). Whole 58->79->93 scene passes over HTTP. No real Gemini call yet (D-028) |
-| T-14 | BRD generator: prompt, `BRDContent`, REQ codes, Jinja Markdown, sha256 | §7.2 |  | TODO |  | |
+| T-14 | BRD generator: prompt, `BRDContent`, REQ codes, Jinja Markdown, sha256 | §7.2 | Claude | IN_PROGRESS | t-14-brd-generator | |
 | T-15 | BRD approvals (hash-bound, unanimous), reject → new BA round + version bump | §7.2 |  | TODO |  | |
 | T-16 | UI: BA Studio | §11 #4 |  | TODO |  | |
 | T-17 | UI: BRD page (AG Grid requirements, approve/reject, download) | §11 #5 |  | TODO |  | |
