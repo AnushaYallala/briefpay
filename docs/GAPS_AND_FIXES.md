@@ -6,7 +6,7 @@ A running list of everything that is **missing, risky, unverified, or was found 
 - **Fixes** are problems that were found and already resolved, kept so the reasoning is not lost.
 - IDs are permanent. When a gap is closed, move it to Fixes (keep the ID) and say how.
 
-_Last updated: 2026-11-09, end of T-21._
+_Last updated: 2026-11-09, end of T-50/T-51 back end._
 
 ---
 
@@ -82,10 +82,12 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | GAP-43 | Low | The one-time extension is remembered as a marker inside a report's JSON, not in a column; deleting report rows would reset the limit. | Add a `deadline_extended_at` column if it ever matters (needs a SPEC 6.2 change). |
 | GAP-44 | Medium | The Strategist (and anything that reads pledges) has only ever seen pledge rows created directly in tests, because the pledge service is blocked (BLK-01). Its behaviour on real pledges is unverified. | Resolved when BLK-01 is. |
 | GAP-45 | Medium | Webhook field paths (`supplementary_data.related_ids.authorization_id` on captures, the refund's `up` link, payout item `payout_item.sender_item_id`, batch `batch_header.payout_batch_id`) come from PayPal's documented shapes, not real sandbox events (A-3). | Save the first real events to `backend/tests/fixtures/webhooks/` and replay them in tests. |
-| GAP-46 | Medium | `RECONCILIATION_MISMATCH` (PayPal captured a different amount than approved) and `ALERT` (a capture was reversed) are recorded only in the job's result: no ledger memo, no banner. | T-50: surface them in `GET /projects/{id}/money` and the UI. |
+| GAP-46 | Medium (**closed in T-50**: alert memos in the ledger, shown in the Money box) | `RECONCILIATION_MISMATCH` (PayPal captured a different amount than approved) and `ALERT` (a capture was reversed) are recorded only in the job's result: no ledger memo, no banner. | T-50: surface them in `GET /projects/{id}/money` and the UI. |
 | GAP-47 | Low | As the spec asks, events with a bad signature are stored (verified = false). Anyone can post junk to the public endpoint and grow that table. | Cap or prune unverified rows, or rate-limit by IP. |
 | GAP-48 | Medium | No poll fallback yet: if a webhook never arrives (sleeping free server, PayPal outage), a SENT step waits forever. | T-43: poll captures, refunds and payout batches while steps are SENT. |
 | GAP-49 | Low | A payout RETURNED after it succeeded puts the money back in the pool but the project stays PAID. | Decide a resolution path (re-pay after fixing the email, or refund). |
+| GAP-50 | Low | Ledger rows have `paypal_match: null`; the per-row check against PayPal (SPEC 11.1 #12, SHOULD) is not built. | Needs a PayPal read per row (or a batch Transaction Search); do after sandbox keys exist. |
+| GAP-51 | Low | `/admin/reconcile` is open to any signed-in user in demo mode; there is no admin role. | Add an admin flag or env allowlist before any non-demo deployment. |
 
 ---
 
@@ -120,6 +122,7 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | FIX-25 | T-46 | Mutation testing showed no test distinguished measuring the 3-day honor limit from the campaign's *opening* versus from *now*, nor exercised the service's own guard when a queued job runs after the campaign ended. | Added a test with a campaign that opened 30 hours ago and one for the late-running job. |
 | FIX-26 | T-21 | **Double-payment risk in my own first draft:** a payout item reported `UNCLAIMED` (money already taken by PayPal, waiting for the recipient to claim it) was treated as a failure, which would have let a retry pay the freelancer a second time. | `UNCLAIMED` is a waiting state; only RETURNED/REFUNDED count as the money coming back; a test proves a second payout cannot start. Found by re-reading before testing. |
 | FIX-27 | T-21 | An end-to-end test executed a plan by hand while the approval had already queued the real executor job, which then re-ran with the unconfigured writer and failed the plan. Also a leftover always-passing line in the UNCLAIMED test. | The test now drives the real path (the queued job, a fake PayPal installed); the always-passing line was replaced with a real check. |
+| FIX-28 | T-50 | The email mask in ledger meta swallowed the comma after an address (`a@b.com,` became `[hidden]`), found by a test. Also a test funded the project twice. | Tightened the pattern to word characters; test no longer double-funds. |
 
 ---
 

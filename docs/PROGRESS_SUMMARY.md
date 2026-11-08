@@ -4,6 +4,27 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 19 · The public ledger, money box and AI audit trail (back end of T-50/T-51) · Mon Nov 9
+
+**What now exists**
+- **The ledger as data for the grid.** Every money and AI event for a project, in order, each with the running pot balance, a plain chip (Held, Captured, Paid, Refunded...), the person's display name, the PayPal reference and who did it. A totals row sits at the bottom. Anyone with the link can read it; email addresses are removed for the public, while project members see the full row.
+- **The "Money" box.** The pot balance, how many pledges are on hold and for how much (clearly labelled as not charged), the next deadline by which the holds must be honoured, open money plans, payouts waiting to be claimed, and any alerts.
+- **The AI audit trail.** Every AI call for a project: which agent, model, version, how long, whether it was valid, and what it answered. Newest first, filterable.
+- **A reconciliation report** that checks the eight money rules from the spec: the pot matches the pledges, is never negative and only pays the freelancer or refunds; captures add up to the goal exactly; the ledger has no gaps; no pledge is both charged and released; the platform's PayPal balance covers all pots (shown as "not checked" when PayPal can't be asked, never hidden); and holds are never counted as money. I planted a violation for each rule to prove the check actually fires.
+- **Alerts now show.** When PayPal captures a different amount than we approved, or reverses a capture, a note is written to the ledger and appears in the Money box. Nothing is booked.
+- 891 automated tests pass (20 new). I broke twenty things on purpose; all were caught. One real bug found by a test: my email-hiding also swallowed a comma after an address; fixed.
+
+**What it does NOT do yet**
+The grids themselves (UI) are not built. The "PayPal match" tick column is empty. The reconciliation report is open to any signed-in user in demo mode because there is no admin role yet.
+
+**Progress:** 20 of ~45 tasks done or in review; back ends of T-50/T-51 done.
+
+**Needed from you:** the same: a decision on BLK-01/02/03, PayPal sandbox keys, the Gemini key.
+
+**Next increment:** submissions and automatic checks (T-31/T-32): the freelancer submits a repo and live URL, and the system checks them.
+
+---
+
 ## Increment 18 · Webhooks: PayPal telling us what happened (T-21) · Mon Nov 9
 
 **What now exists**

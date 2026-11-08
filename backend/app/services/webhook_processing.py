@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import MoneyPlanStep, PayoutItem, Pledge
+from app.models import LedgerEntry, MoneyPlanStep, PayoutItem, Pledge
 from app.services import ledger, plan_lifecycle
 from app.services.guardian_rules import PayPalUnavailable
 from app.services.paypal_client import value_to_cents
@@ -83,7 +83,10 @@ def _capture_event(db: Session, event_type: str, resource: dict, now: datetime) 
     if event_type == "PAYMENT.CAPTURE.COMPLETED":
         got = _amount_cents(resource)
         if got is not None and got != step.amount_cents:  # money moved differently from the approved plan: do not paper over it
-            return {"effect": "RECONCILIATION_MISMATCH", "step_id": step.id, "expected_cents": step.amount_cents, "paypal_cents": got}
+            detail = {"step_id": step.id, "expected_cents": step.amount_cents, "paypal_cents": got}
+            _memo_once(db, _project_of_step(db, step), "plan_step", step.id,
+                       {"reconciliation": "RECONCILIATION_MISMATCH", "capture_id": capture_id, "plan_id": step.plan_id, **detail})
+            return {"effect": "RECONCILIATION_MISMATCH", **detail}
         plan_lifecycle.confirm_step(db, step, paypal_ref=capture_id, now=now)
         return {"effect": "STEP_CONFIRMED", "step_id": step.id}
     if event_type == "PAYMENT.CAPTURE.DECLINED":
@@ -156,6 +159,16 @@ def _apply_payout_item(db: Session, sender_item_id: str | None, status: str | No
     return {"effect": "IGNORED", "status": status}
 
 
+def _memo_once(db: Session, project_id: int, ref_type: str, ref_id: int, meta: dict) -> None:
+    """A GUARDIAN_DECISION memo (amount 0) that the money box shows as an alert. Written once per object and kind."""
+    kind = meta.get("reconciliation") or meta.get("alert")
+    for e in db.scalars(select(LedgerEntry).where(LedgerEntry.project_id == project_id, LedgerEntry.type == "GUARDIAN_DECISION",
+                                                  LedgerEntry.ref_type == ref_type, LedgerEntry.ref_id == str(ref_id))):
+        if (e.meta_json or {}).get("reconciliation", (e.meta_json or {}).get("alert")) == kind:
+            return
+    ledger.append(db, project_id, "GUARDIAN_DECISION", actor="agent:guardian", ref_type=ref_type, ref_id=ref_id, meta=meta)
+
+
 def _project_of_step(db: Session, step: MoneyPlanStep) -> int:
     from app.models import MoneyPlan
     return db.get(MoneyPlan, step.plan_id).project_id
@@ -198,5 +211,9 @@ def process(db: Session, event: dict, *, payout_reader, now: datetime | None = N
     if event_type == "PAYMENT.AUTHORIZATION.CREATED":
         return {"effect": "NOT_HANDLED", "why": "needs pledge_state (BLK-03)"}
     if event_type == "PAYMENT.CAPTURE.REVERSED":
-        return {"effect": "ALERT", "why": "a capture was reversed (chargeback-like); resolving it is out of scope", "capture_id": resource.get("id")}
+        capture_id = resource.get("id")
+        pledge = db.scalars(select(Pledge).where(Pledge.paypal_capture_id == capture_id)).first() if capture_id else None
+        if pledge is not None:  # money already counted in the POOL was taken back: say so loudly, but book nothing
+            _memo_once(db, pledge.project_id, "pledge", pledge.id, {"alert": "CAPTURE_REVERSED", "capture_id": capture_id})
+        return {"effect": "ALERT", "why": "a capture was reversed (chargeback-like); resolving it is out of scope", "capture_id": capture_id}
     return {"effect": "INFORMATIONAL" if event_type == "CHECKOUT.ORDER.APPROVED" else "IGNORED"}

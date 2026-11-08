@@ -9,10 +9,10 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-09 by Claude: T-21 webhooks in REVIEW (pledge events wait on BLK-03) |
+| Last updated | 2026-11-09 by Claude: T-50/T-51 back-end endpoints done (ledger, money, agent-runs, reconcile); UI still TODO |
 | Overall phase | **Day 0: backend skeleton, schema, money math, state machines, ledger built; no features yet** (plain-English summary: `docs/PROGRESS_SUMMARY.md`) |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
-| Next task to pick up | Not blocked: **T-50/T-51** (ledger, money and audit-trail API), **T-31/T-32** (submissions, auto checks), **T-47** (Strategist AI wording) · **Human:** write BLK-01/BLK-02 files or advise · run `backend/scripts/sandbox_check.py` once keys exist |
+| Next task to pick up | Not blocked: **T-31/T-32** (submissions, auto checks), **T-47** (Strategist AI wording), **T-43/T-44** (poll fallback) · **Human:** write BLK-01/BLK-02 files or advise · run `backend/scripts/sandbox_check.py` once keys exist |
 | Blockers | **BLK-01** (T-22 pledge service/endpoints), **BLK-02** (T-25 clock and lead actions), **BLK-03** (pledge-state helper used by two webhook events): the assistant's attempts to write those files were stopped by a safety check; see `docs/GAPS_AND_FIXES.md` section 0 for the full designs |
 | Deployed URLs | API: _not deployed_ · Web: _not deployed_ · Sample site: _not deployed_ |
 | Repo | https://github.com/AnushaYallala/briefpay (origin; T-01 still needs LICENSE visible in About + secret scanning) |
@@ -91,8 +91,8 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 ### Track C: Ledger, polish, ship
 | ID | Task | Spec | Owner | State | Branch | Notes |
 |---|---|---|---|---|---|---|
-| T-50 | UI: ledger AG Grid Community (type chips, pinned totals, filters, CSV, meta modal, live refresh) | §11 #12 |  | TODO |  | No Enterprise features |
-| T-51 | UI: AI audit trail AG Grid | §11 #13 |  | TODO |  | |
+| T-50 | UI: ledger AG Grid Community (type chips, pinned totals, filters, CSV, meta modal, live refresh) | §11 #12 |  | TODO |  | No Enterprise features. **Back end done** (`GET /projects/{id}/ledger`, `/money`; D-037); only the grid is left |
+| T-51 | UI: AI audit trail AG Grid | §11 #13 |  | TODO |  | **Back end done** (`GET /projects/{id}/agent-runs`); only the grid is left |
 | T-52 | `seed.py`: Velugu Cove project through BRD + contract; **a project whose round 1 has failed** (holds voided, nothing charged); **a project at `PAYOUT_READY`**; record replay fixtures | §16 |  | TODO |  | Don't pre-authorize live pledges more than ~2 days before recording |
 | T-60 | Sample site v1 (missing form) + v2 (complete) in its own public repo; record both commit SHAs in §4 | §15 |  | TODO |  | |
 | T-61a | Deploy hello-world API to Render (gets webhook URL early) | §14 |  | TODO |  | |
@@ -159,6 +159,13 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-09 · Claude · T-50/T-51 back end (endpoints done; grids are UI work)
+- Did: `services/ledger_views.py` (ledger rows with running balance, chips, names, public masking; money box; agent runs), `services/reconcile.py` (I-1..I-8), `routers/ledger.py` (`/projects/{id}/ledger`, `/money`, `/agent-runs`, `/admin/reconcile`). Webhook mismatch and reversed-capture events now leave an alert memo in the ledger (closes GAP-46).
+- Tests: `cd backend && .venv/Scripts/python -m pytest -q` -> 891 passed (20 new). Mutation-checked: 20 breakages, all caught; every invariant has a test with a planted violation.
+- Contract changes: D-037 (no SPEC changes).
+- Next step: T-31/T-32 submissions and automatic checks.
+- Gotchas: (1) `/admin/reconcile` is demo-mode only because no admin role exists. (2) `paypal_match` in ledger rows is null (GAP-50). (3) Test helper `approved_payout` already funds the project; do not call `funded` first.
 
 ### 2026-11-09 · Claude · T-21 (REVIEW; two event types wait on BLK-03)
 - Did: `routers/webhooks.py` (receiver), `services/webhook_processing.py` (`process`, `NotReady`, matching and per-event handlers), `PROCESS_WEBHOOK` job handler, `paypal_io` roles `WebhookVerifier` and `PayoutReader` + `reset_to_placeholders()`; the client fills both roles.

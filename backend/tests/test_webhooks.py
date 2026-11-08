@@ -105,7 +105,25 @@ def test_a_capture_amount_different_from_the_approved_plan_is_flagged_not_booked
     before = ledger_count(w)
     out = run(w, event("PAYMENT.CAPTURE.COMPLETED", capture_resource(steps[0], pledges[0].paypal_authorization_id, cents=steps[0].amount_cents + 1)))
     assert out["effect"] == "RECONCILIATION_MISMATCH" and out["paypal_cents"] == steps[0].amount_cents + 1
-    assert steps[0].state == "SENT" and ledger_count(w) == before
+    # not booked: the step waits and the POOL is untouched; one alert memo is written (SPEC 7.6 step 5), and only once
+    assert steps[0].state == "SENT" and ledger_count(w) == before + 1 and ledger.pool_balance(w.db, w.project.id) == 0
+    memo = w.db.scalars(select(LedgerEntry).order_by(LedgerEntry.seq.desc())).first()
+    assert memo.type == "GUARDIAN_DECISION" and memo.amount_cents == 0 and memo.meta_json["reconciliation"] == "RECONCILIATION_MISMATCH"
+    run(w, event("PAYMENT.CAPTURE.COMPLETED", capture_resource(steps[0], pledges[0].paypal_authorization_id, cents=steps[0].amount_cents + 1)))
+    assert ledger_count(w) == before + 1
+
+
+def test_a_reversed_capture_leaves_one_alert_memo_and_books_nothing(w):
+    for h in (15000, 15000, 10000):
+        w.pledge(h)
+    w.capture_all()
+    p = w.db.scalars(select(Pledge)).first()
+    before, pool = ledger_count(w), ledger.pool_balance(w.db, w.project.id)
+    for _ in range(2):
+        assert run(w, event("PAYMENT.CAPTURE.REVERSED", {"id": p.paypal_capture_id}))["effect"] == "ALERT"
+    assert ledger_count(w) == before + 1 and ledger.pool_balance(w.db, w.project.id) == pool
+    memo = w.db.scalars(select(LedgerEntry).order_by(LedgerEntry.seq.desc())).first()
+    assert (memo.ref_type, memo.ref_id, memo.meta_json["alert"]) == ("pledge", str(p.id), "CAPTURE_REVERSED")
 
 
 def test_a_declined_capture_fails_its_step_and_the_plan_ends_partial(w):
