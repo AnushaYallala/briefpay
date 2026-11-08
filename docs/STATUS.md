@@ -54,7 +54,7 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 ### Track B1: Pledge-If (campaigns, holds, webhooks)
 | ID | Task | Spec | Owner | State | Branch | Notes |
 |---|---|---|---|---|---|---|
-| T-20 | `PayPalClient`: SDK for Orders (create `AUTHORIZE`, authorize), Payments (authorization get/capture/void/reauthorize, capture get, refund), Transaction Search; `httpx` for Payouts + webhook verify. **Plus a sandbox script:** authorize→capture (partial, `final_capture`), authorize→void, payout | §9.2–9.4, §9.7 |  | TODO |  | Resolves A-1, A-2, A-8, A-9. Use the Context Plugin for method names |
+| T-20 | `PayPalClient`: SDK for Orders (create `AUTHORIZE`, authorize), Payments (authorization get/capture/void/reauthorize, capture get, refund), Transaction Search; `httpx` for Payouts + webhook verify. **Plus a sandbox script:** authorize→capture (partial, `final_capture`), authorize→void, payout | §9.2–9.4, §9.7 | Claude | IN_PROGRESS | t-20-paypal-client | Resolves A-1, A-2, A-8, A-9. Use the Context Plugin for method names |
 | T-21 | Webhook endpoint: signature verify, dedupe, job enqueue, monotonic processors for authorization/capture/refund/payout events (§9.5 table) | §9.5 |  | TODO |  | Save real event samples to `backend/tests/fixtures/webhooks/` |
 | T-22 | Pledge Gate + pledge service: `pledges/order`, `pledges/authorize`, webhook effects, progress, goal-reached trigger | §8.2, §9.2 |  | TODO |  | |
 | T-23 | UI: public campaign page (progress "held, not charged", countdown, PayPal button `intent=authorize`, pledge board AG Grid) | §11 #8 |  | TODO |  | A-11 |
