@@ -9,11 +9,11 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-08 by Claude: T-20 PayPal client built (REVIEW: needs sandbox keys to verify) |
+| Last updated | 2026-11-08 by Claude: T-22 and T-25 BLOCKED (partial); see docs/GAPS_AND_FIXES.md section 0 |
 | Overall phase | **Day 0: backend skeleton, schema, money math, state machines, ledger built; no features yet** (plain-English summary: `docs/PROGRESS_SUMMARY.md`) |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
-| Next task to pick up | Track B: **T-22** (pledge gate + service, using `PayPalClient.create_authorize_order/authorize_order`), then **T-21** (webhooks: `verify_webhook_signature` exists), **T-25** (outcome engine + clock) · **Human:** run `backend/scripts/sandbox_check.py` once keys exist · see also `docs/GAPS_AND_FIXES.md` · Track B: **T-02** (human, sandbox keys), **T-08**, then **T-20** |
-| Blockers | None yet |
+| Next task to pick up | Not blocked: **T-46** (Strategist deterministic forecast), **T-21** (webhooks), **T-31/T-32** (submissions, auto checks), **T-50/T-51** (ledger + audit-trail API) · **Human:** write BLK-01/BLK-02 files or advise · run `backend/scripts/sandbox_check.py` once keys exist |
+| Blockers | **BLK-01** (T-22 pledge service/endpoints) and **BLK-02** (T-25 clock and lead actions): the assistant's attempts to write those two files were stopped by a safety check; see `docs/GAPS_AND_FIXES.md` section 0 for the full design |
 | Deployed URLs | API: _not deployed_ · Web: _not deployed_ · Sample site: _not deployed_ |
 | Repo | https://github.com/AnushaYallala/briefpay (origin; T-01 still needs LICENSE visible in About + secret scanning) |
 | Demo video | _not recorded_ |
@@ -56,10 +56,10 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 |---|---|---|---|---|---|---|
 | T-20 | `PayPalClient`: SDK for Orders (create `AUTHORIZE`, authorize), Payments (authorization get/capture/void/reauthorize, capture get, refund), Transaction Search; `httpx` for Payouts + webhook verify. **Plus a sandbox script:** authorize→capture (partial, `final_capture`), authorize→void, payout | §9.2–9.4, §9.7 | Claude | REVIEW | t-20-paypal-client | Client built on SDK 2.4.0 (reader, writer, order gateway, payouts, webhook verify, balances) + `scripts/sandbox_check.py`. 89 tests incl. real-model fakes; mutation-checked 22/22. **Needs a human:** run the script with sandbox keys to resolve A-1, A-2, A-8, A-9 (D-033) |
 | T-21 | Webhook endpoint: signature verify, dedupe, job enqueue, monotonic processors for authorization/capture/refund/payout events (§9.5 table) | §9.5 |  | TODO |  | Save real event samples to `backend/tests/fixtures/webhooks/` |
-| T-22 | Pledge Gate + pledge service: `pledges/order`, `pledges/authorize`, webhook effects, progress, goal-reached trigger | §8.2, §9.2 | Claude | IN_PROGRESS | t-22-pledges | PARTIAL on branch t-22-pledges (not merged): `OrderGateway` role in paypal_io + client wiring + pure `pledge_gate.py` (no tests yet). Still to do: `pledge_service.py` (create order, authorize, mark_authorized, board), `routers/pledges.py`, tests |
+| T-22 | Pledge Gate + pledge service: `pledges/order`, `pledges/authorize`, webhook effects, progress, goal-reached trigger | §8.2, §9.2 | Claude | BLOCKED | t-22-pledges | **BLOCKED (partial).** Done and tested: `pledge_gate.py` (56 tests), `OrderGateway` role + client wiring (4 tests). Missing: `pledge_service.py`, `routers/pledges.py` (BLK-01, design in GAPS section 0). Mutation-checked (D-034) |
 | T-23 | UI: public campaign page (progress "held, not charged", countdown, PayPal button `intent=authorize`, pledge board AG Grid) | §11 #8 |  | TODO |  | A-11 |
 | T-24 | Campaign setup API + launch (needs signed contract); deadline rule (`≤ opens_at + 72h − 2h`) | §8.2, §6.1 | Claude | DONE | t-24-campaign-setup | Setup (goal from contract + fees), launch (window re-checked), public view with lead controls and plain-words blockers. 48 tests; mutation-checked 19/19 after one added test (D-032). UI is screen #7/#8, not built |
-| T-25 | Campaign outcome engine + clock job (every 60 s): goal reached / deadline → enqueue plan builds; `demo/campaigns/{id}/expire`; honor-period warnings; relaunch | §8.2, §6.1 |  | TODO |  | `decide_campaign_outcome` is a pure function with tests |
+| T-25 | Campaign outcome engine + clock job (every 60 s): goal reached / deadline → enqueue plan builds; `demo/campaigns/{id}/expire`; honor-period warnings; relaunch | §8.2, §6.1 |  | BLOCKED |  | **BLOCKED (partial).** Done and tested: `campaign_outcome.py` (30 tests). Missing: `campaign_clock.py`, close/cancel/relaunch/demo endpoints, `ClockRunner` (BLK-02, design in GAPS section 0) |
 | T-27 | UI: campaign setup + lead panel (close and capture, cancel, relaunch, simulate deadline) | §11 #7, #8 |  | TODO |  | |
 
 ### Track A2: Contract, build & verify
@@ -159,6 +159,12 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-08 · Claude · T-22 / T-25 blocked, pure parts finished
+- Did: finished and tested the pure parts: `pledge_gate.py` (56 tests), `campaign_outcome.py` (30 tests), `paypal_io.OrderGateway` role (4 tests; the client is also the order gateway). Mutation-checked 21 breakages, all caught. Recorded BLK-01/BLK-02 with the full design in `docs/GAPS_AND_FIXES.md` section 0 and D-034.
+- Blocked: `pledge_service.py` / `routers/pledges.py` and `campaign_clock.py` + lead endpoints: the writes were stopped by a safety check; not retried.
+- State now: tests 771 passing on branch t-22-pledges (merged to main).
+- Next step: take any unblocked task (see snapshot). Anything that needs pledges or clock behaviour can create `pledges` rows directly in tests.
 
 ### 2026-11-08 · Claude · T-22 (partial, branch t-22-pledges, NOT merged)
 - Did: `paypal_io.OrderGateway` / `UnconfiguredOrders` / `get_orders()` / `configure(orders=...)`; `PayPalClient` registers itself as the order gateway; `services/pledge_gate.py` (pure: `check_new_pledge`, `check_authorize_allowed`, `check_hold`, `clean_display_name`, `hold_times`, `GateError`).

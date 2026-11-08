@@ -4,6 +4,26 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 16 · Blockers recorded; the safe parts of pledging and the clock finished
+
+**What happened.** While building pledging (T-22) and the campaign clock (T-25), an automated safety check stopped two of the files I was writing: the one that takes a pledge and creates the PayPal order, and the one that starts the capture or release plan. I was told not to produce that content again, even reworded, so I did not retry. I don't know what triggered it. Both files are code that starts money-related steps; the neighbouring pure-logic files went through without trouble. I wrote the blockers down (BLK-01 and BLK-02 in the gaps file, new "Blockers" section at the top) with the complete design, so a person can write those two files, or tell me how to proceed.
+
+**What I finished around them (all tested).**
+- **The Pledge Gate rules.** The freelancer can never fund their own job; only an open campaign before its deadline takes pledges; an amount must be at least the minimum and no more than what's still needed (and none once the goal is reached); a hold only counts if PayPal says it was placed, for exactly the amount asked; holds are guaranteed for 3 days and valid for 29; the public name is tidied and checked. A race that slightly over-pledges is allowed on purpose, because the capture is split fairly down to exactly the goal.
+- **The capture-or-release decision.** One function answers what should happen to an open campaign: a lead cancel always releases; a funded campaign is captured at once (or at the deadline, if the lead chose that), or when the lead closes it; an unfunded campaign is released only at its deadline; closing an unfunded campaign changes nothing. It counts only holds PayPal still guarantees.
+- **A separate "order" role for the PayPal connection**, so taking a pledge and moving money are different permissions.
+- 771 automated tests pass (90 new for these pieces). I broke twenty-one rules on purpose and every one was caught.
+
+**What this blocks.** Nobody can pledge yet, and no campaign is captured or released automatically. Everything else downstream (webhooks, execution, screens) can still be built and tested by creating pledge rows directly.
+
+**What I need from you.** Either someone writes the two files from the design in `docs/GAPS_AND_FIXES.md` section 0 (BLK-01, BLK-02), or you tell me how you would like me to proceed. I'm carrying on with tasks that are not blocked.
+
+**Progress:** 17 of ~45 tasks done or in review; 2 blocked (partial).
+
+**Next increment:** the Strategist's deterministic forecast (T-46): the success probability, deadline suggestion and who-to-nudge ranking, all plain arithmetic and fully testable.
+
+---
+
 ## Increment 15 · The real PayPal client (T-20) · Sun Nov 8
 
 **What now exists**

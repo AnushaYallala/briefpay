@@ -440,6 +440,7 @@ def test_with_credentials_the_same_client_becomes_reader_and_writer():
     try:
         c = pc.configure_from_settings(SimpleNamespace(paypal_client_id="id", paypal_client_secret="secret", paypal_env="sandbox"))
         assert isinstance(c, pc.PayPalClient) and paypal_io.get_reader() is c and paypal_io.get_writer() is c
+        assert paypal_io.get_orders() is c, "the client is also the buyer-side order gateway"
     finally:
         paypal_io.configure(reader=paypal_io.UnconfiguredReader(), writer=paypal_io.UnconfiguredWriter(), orders=paypal_io.UnconfiguredOrders())
 

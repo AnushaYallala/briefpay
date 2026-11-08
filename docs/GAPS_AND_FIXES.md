@@ -6,7 +6,20 @@ A running list of everything that is **missing, risky, unverified, or was found 
 - **Fixes** are problems that were found and already resolved, kept so the reasoning is not lost.
 - IDs are permanent. When a gap is closed, move it to Fixes (keep the ID) and say how.
 
-_Last updated: 2026-11-08, end of T-20._
+_Last updated: 2026-11-08, after the T-22/T-25 blockers._
+
+---
+
+## 0. Blockers (work that could not be completed by the assistant)
+
+These are NOT ordinary gaps: the assistant tried to write these files and the attempt was stopped by an automated safety check. It was told not to produce that content again, even reworded, so it did not retry. The cause is not known. Both stopped files are the code that *starts money-related flows* (taking a pledge, starting a capture or release plan). The pure-logic neighbours of both files were written and tested without any problem.
+
+| ID | Task | File that could not be written | What it must do (design is final and in `docs/STATUS.md`) | Unblock by |
+|---|---|---|---|---|
+| BLK-01 | T-22 pledging | `backend/app/services/pledge_service.py`, then `backend/app/routers/pledges.py` | **Start a pledge:** clean the display name, run `pledge_gate.check_new_pledge`, apply the per-user rate limit (10 attempts per hour), insert a `pledges` row `CREATED` with a placeholder order id, call `orders.create_authorize_order(amount, currency, custom_id="camp:{cid}:pledge:{pid}", description, request_id="order-{pid}")`, store the real order id. **Authorize:** find the pledge by order id and campaign, check it belongs to the caller, run `check_authorize_allowed`, call `orders.authorize_order(order_id, request_id="authz-{pid}")`, run `check_hold`; on success set `AUTHORIZED` with authorization id, payer email and id, `authorized_at`, `honor_until` and `valid_until` from `hold_times`, write a `PLEDGE_AUTHORIZED` ledger memo (amount 0), mark a sponsor `PLEDGED`, set `campaign.goal_reached_at` when held >= goal; on a decline mark the pledge `DENIED` and commit it before returning HTTP 402. Idempotent when already authorized. **Board:** `GET /campaigns/{id}/pledges` (public: name, amount, status chip, time, no emails; lead: plus payer email and `honor_until`, and CREATED rows). Supporters must NOT become project members (membership would expose member emails). Endpoints: `POST /campaigns/{id}/pledges/order`, `POST .../pledges/authorize`, `GET .../pledges`. | A human writes the two files from this design (the pure gate and the order gateway already exist and are tested), or the assistant is given a different way to proceed. |
+| BLK-02 | T-25 outcome engine and clock | `backend/app/services/campaign_clock.py` (and the endpoints that use it) | **Tick** every `CLOCK_INTERVAL_SECONDS` over OPEN campaigns: compute live holds (`plan_builder.live_valid_pledges`), set `goal_reached_at` once, ask `decide_campaign_outcome`, and for CAPTURE or RELEASE build the plan with `plan_builder.build`, `save_proposed(proposed_by="system")`, then `plan_lifecycle.review_plan(..., llm=get_guardian_llm())` (it auto-approves on ALLOW and queues the executor). Never build a second capture or release plan for a campaign on its own (any existing plan means a human decides). Expire `CREATED` pledges older than 1 hour. A `ClockRunner` asyncio task in the app lifespan. **Lead actions:** `POST /campaigns/{id}/close` (needs the goal met; plan proposed by `user:<lead>`), `POST /campaigns/{id}/cancel` (RELEASE with reason LEAD_CANCEL), `POST /campaigns/{id}/relaunch` (after FAILED: project CAMPAIGN_FAILED -> CAMPAIGN_SETUP, new campaign number + 1 via `campaign_ops.setup_campaign`, default deadline now + 48 h). **Demo only (DEMO_MODE, else 404):** `POST /demo/campaigns/{id}/expire` (deadline = now) and `POST /demo/clock/tick`. | Same as BLK-01. |
+
+What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py` (30 tests), the `OrderGateway` role in `paypal_io.py` and the client's order methods (tested), `plan_builder`, `plan_lifecycle.review_plan`, `money_executor`, `campaign_ops`. Everything downstream of these two modules (webhooks T-21, execution T-43, UI) can be built and tested without them by creating pledge rows directly.
 
 ---
 
