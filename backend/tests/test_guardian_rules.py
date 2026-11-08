@@ -9,38 +9,7 @@ from app.services import guardian_rules as g
 from app.services import ledger
 from app.services import plan_builder as pb
 from app.services.guardian_tamper import ATTACKER, MUTATIONS, TamperError, apply_mutation
-from tests.factories import GOAL, NOW, World
-
-
-class FakeReader:
-    """Stands in for PayPal's own records. Mirrors our DB unless told otherwise."""
-
-    def __init__(self, db, balance=10**9, down=False, overrides=None):
-        self.db, self.balance, self.down, self.overrides = db, balance, down, overrides or {}
-
-    def _guard(self):
-        if self.down:
-            raise g.PayPalUnavailable("connection refused")
-
-    def get_authorization(self, authorization_id):
-        self._guard()
-        if authorization_id in self.overrides:
-            return self.overrides[authorization_id]
-        p = self.db.scalars(select(Pledge).where(Pledge.paypal_authorization_id == authorization_id)).first()
-        if p is None:
-            return None
-        return g.PayPalObject("CREATED" if p.status == "AUTHORIZED" else "CAPTURED", p.amount_cents)
-
-    def get_capture(self, capture_id):
-        self._guard()
-        if capture_id in self.overrides:
-            return self.overrides[capture_id]
-        p = self.db.scalars(select(Pledge).where(Pledge.paypal_capture_id == capture_id)).first()
-        return g.PayPalObject("COMPLETED", p.captured_cents) if p else None
-
-    def platform_balance_cents(self):
-        self._guard()
-        return self.balance
+from tests.factories import GOAL, NOW, FakeReader, World
 
 
 @pytest.fixture()

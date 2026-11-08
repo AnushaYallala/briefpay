@@ -126,4 +126,4 @@ def test_jobs_endpoint(client, db):
     assert r.status_code == 200
     assert r.json() == {"state": "DONE", "result": {"ok": True}, "error": None, "attempts": 0}
     r = client.get("/api/jobs/9999")
-    assert r.status_code == 404 and r.json()["detail"]["error"]["code"] == "JOB_NOT_FOUND"
+    assert r.status_code == 404 and r.json()["error"]["code"] == "JOB_NOT_FOUND"

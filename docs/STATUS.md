@@ -9,10 +9,10 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-08 by Claude: T-41 Guardian rules done |
+| Last updated | 2026-11-08 by Claude: T-45 MoneyExecutor + plan lifecycle + plans API done |
 | Overall phase | **Day 0: backend skeleton, schema, money math, state machines, ledger built; no features yet** (plain-English summary: `docs/PROGRESS_SUMMARY.md`) |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
-| Next task to pick up | Track A: **T-45** (MoneyExecutor + plan lifecycle), then **T-42** (Guardian LLM + decision), or auth + **T-10/T-11** · Track B: **T-02** (human, sandbox keys), **T-08**, then **T-20** |
+| Next task to pick up | Track A: **T-42** (Guardian LLM review), **T-10/T-11** (projects + transcript), or **T-21** (webhooks; must call `confirm_step`) · Track B: **T-02** (human, sandbox keys), **T-08**, then **T-20** |
 | Blockers | None yet |
 | Deployed URLs | API: _not deployed_ · Web: _not deployed_ · Sample site: _not deployed_ |
 | Repo | https://github.com/AnushaYallala/briefpay (origin; T-01 still needs LICENSE visible in About + secret scanning) |
@@ -78,7 +78,7 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 |---|---|---|---|---|---|---|
 | T-40 | Settlement engine (pure): `split_pro_rata`, `plan_captures`, `plan_refunds`, `plan_freelancer_payout`, `plan_hash` + tests (incl. property tests) | §8.3 | Claude | DONE | t-40-settlement-state-ledger | 13 tests incl. hypothesis property tests; worked examples 1-3 from SPEC 8.3 verified. `plan_hash` excludes idempotency keys (D-021) |
 | T-26 | `PlanBuilder` (pure, reads DB): `CAPTURE_PLEDGES`, `RELEASE_HOLDS`, `FREELANCER_PAYOUT`, `REFUND_CAPTURED` specs + steps + idempotency keys + tests | §7.5.1, §8.3 | Claude | DONE | t-26-plan-builder | Four plan kinds + `save_proposed` + `rebuild` + release policies. 39 tests. Retry attempts in inputs (D-022). `REAUTH_PLEDGES` not built (SHOULD) |
-| T-45 | `MoneyExecutor` + plan lifecycle + approvals API (`plans`, `review`, `approve`) + executor tests (refuses unapproved/mismatched/foreign steps) | §8.4, §8.5, §10 | Claude | IN_PROGRESS | t-45-money-executor | Only module allowed to call PayPal writes |
+| T-45 | `MoneyExecutor` + plan lifecycle + approvals API (`plans`, `review`, `approve`) + executor tests (refuses unapproved/mismatched/foreign steps) | §8.4, §8.5, §10 | Claude | DONE | t-45-money-executor | `MoneyExecutor` + `plan_lifecycle` (review/approve/confirm) + `/auth/login`,`/auth/me` + plans API (list/create/get/review/approve/simulate-tamper) + EXECUTE_PLAN job + chokepoint scan test. 71 tests; mutation-checked. Fake writer only: real PayPal writer is T-20/T-43 (D-024) |
 | T-41 | Guardian rules G-01…G-13 + soft flags S-01…S-03 (pure; SDK mocked) + one pass/fail test per rule + tamper mutations | §7.5.2–7.5.3, §7.5.6 | Claude | DONE | t-41-guardian-rules | G-01..G-13 + S-01..S-03 + 5 tamper mutations, 63 tests incl. one pass/fail per rule; mutation-checked. PayPal reads go through an injected `PayPalReader` (real one arrives with T-20). Interpretations in D-023 |
 | T-42 | Guardian LLM review (escalate-only) + decision logic + release policies (auto vs human) | §7.5.4–7.5.5 |  | TODO |  | |
 | T-43 | Execution paths: capture/void steps, freelancer payout batch; webhooks + poll fallback; PAID / PAYOUT_FAILED | §8.5, §9.3–9.4 |  | TODO |  | |
@@ -159,6 +159,14 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-08 · Claude · T-45
+- Did: `services/money_executor.py` (`execute`, `ExecutionRefused`), `services/plan_lifecycle.py` (`review_plan`, `approve_plan`, `simulate_tamper`, `confirm_step`, `fail_step`, `refresh_plan_state`, `latest_review`), `services/paypal_io.py` (`PayPalWriter` protocol, `PayPalWriteError`, `Unconfigured*` placeholders, `configure()`), `services/job_handlers.py` (`EXECUTE_PLAN`), `auth.py` + `routers/auth.py` (JWT login, `/auth/me`, `require_member`), `routers/plans.py`, top-level SPEC 10 error shape in `main.py`. Guardian G-02/G-12 now accept `PAYOUT_FAILED` for retries.
+- State now: T-45 DONE (branch t-45-money-executor). Also delivers the backend part of login (`/auth/login`, `/auth/me`) needed by T-05.
+- Tests: `cd backend && .venv/Scripts/python -m pytest -q` -> 236 passed (71 new). Mutation-checked: 8 of 9 deliberate breakages of executor/lifecycle safety checks were caught by the executor suite and the 9th (HOLD without ack at approval) by the lifecycle suite.
+- Contract changes: none to SPEC; D-024 records the executor/confirmation/approval rules. API error responses are now top-level `{"error": {...}}` (was FastAPI's `{"detail": ...}`).
+- Next step: T-21 webhooks must verify the signature, dedupe, then call `plan_lifecycle.confirm_step` / `fail_step` and nothing else; T-43 wires the real writer (`paypal_io.configure(writer=...)`) and the payout/refund poll fallback; T-42 adds the Guardian LLM + persists `llm_review_json`.
+- Gotchas: (1) The executor commits the session it is given (needed so SENT survives a crash). (2) `PlanBuilder` for captures needs the campaign `OPEN`, which is why the executor rebuilds only on first start. (3) `confirm_step` is the only place pledge/ledger/project state changes after PayPal writes. (4) With no PayPal credentials the default writer fails every step as non-transient: the plan ends FAILED and nothing moves. (5) `REAUTH_AUTH` is refused by both builder and executor. (6) `/jobs/{id}` still has no auth check. (7) A PARTIAL capture leaves the campaign `CAPTURING` and the project `PLEDGING` by design; the lead repair path (refund the captured, or rebuild) is not built. (8) Do not hand a `PayPalWriter` to anything except `execute`; `tests/test_chokepoint.py` enforces this by scanning the source.
 
 ### 2026-11-08 · Claude · T-41
 - Did: `services/guardian_rules.py` (`evaluate(db, plan, spec=None, now, reader, params)` -> `Evaluation` with per-rule results, soft flags and `rule_decision`; `PayPalReader` protocol, `PayPalObject`, `PayPalUnavailable`, `GuardianParams`), `services/guardian_tamper.py` (`apply_mutation`, `MUTATIONS` table with expected failing rules). `tests/factories.py` now holds the shared `World` fixture builder.

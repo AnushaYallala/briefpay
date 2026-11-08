@@ -5,7 +5,9 @@ from sqlalchemy import select
 from app.models import (
     BRD, Campaign, Contract, Pledge, Project, ProjectMember, Submission, User, VerificationReport,
 )
+from app.services import guardian_rules as g
 from app.services import ledger
+from app.services.paypal_io import PayPalWriteError
 
 NOW = datetime(2026, 11, 10, 12, 0, tzinfo=timezone.utc)
 GOAL = 40000
@@ -72,3 +74,79 @@ class World:
         return rep
 
 
+
+
+class FakeReader:
+    """Stands in for PayPal's own records. Mirrors our DB unless told otherwise."""
+
+    def __init__(self, db, balance=10**9, down=False, overrides=None):
+        self.db, self.balance, self.down, self.overrides = db, balance, down, overrides or {}
+
+    def _guard(self):
+        if self.down:
+            raise g.PayPalUnavailable("connection refused")
+
+    def get_authorization(self, authorization_id):
+        self._guard()
+        if authorization_id in self.overrides:
+            return self.overrides[authorization_id]
+        p = self.db.scalars(select(Pledge).where(Pledge.paypal_authorization_id == authorization_id)).first()
+        if p is None:
+            return None
+        return g.PayPalObject("CREATED" if p.status == "AUTHORIZED" else "CAPTURED", p.amount_cents)
+
+    def get_capture(self, capture_id):
+        self._guard()
+        if capture_id in self.overrides:
+            return self.overrides[capture_id]
+        p = self.db.scalars(select(Pledge).where(Pledge.paypal_capture_id == capture_id)).first()
+        return g.PayPalObject("COMPLETED", p.captured_cents) if p else None
+
+    def platform_balance_cents(self):
+        self._guard()
+        return self.balance
+
+
+class FakeWriter:
+    """Records every PayPal write. `errors[op]` is a queue of exceptions to raise on successive calls."""
+
+    def __init__(self):
+        self.calls: list[dict] = []
+        self.errors: dict[str, list[Exception]] = {}
+        self.crash_on_call: int | None = None
+
+    def _do(self, op, request_id, **kw):
+        self.calls.append({"op": op, "request_id": request_id, **kw})
+        if self.crash_on_call is not None and len(self.calls) == self.crash_on_call:
+            raise RuntimeError("process died mid-run")
+        queue = self.errors.get(op, [])
+        if queue:
+            raise queue.pop(0)
+        return {"id": f"{op.upper()}-{request_id}", "status": "PENDING"}
+
+    def capture_authorization(self, authorization_id, amount_cents, currency, final_capture, request_id):
+        return self._do("capture", request_id, authorization_id=authorization_id, amount_cents=amount_cents,
+                        currency=currency, final_capture=final_capture)
+
+    def void_authorization(self, authorization_id, request_id):
+        return self._do("void", request_id, authorization_id=authorization_id)
+
+    def refund_capture(self, capture_id, amount_cents, currency, request_id):
+        return self._do("refund", request_id, capture_id=capture_id, amount_cents=amount_cents)
+
+    def create_payout_batch(self, sender_batch_id, items, currency, email_subject, request_id):
+        return self._do("payout", request_id, sender_batch_id=sender_batch_id, items=items, currency=currency)
+
+    def ops(self):
+        return [c["op"] for c in self.calls]
+
+    def keys(self):
+        return [c["request_id"] for c in self.calls]
+
+
+def transient(msg="timeout"):
+    return PayPalWriteError(msg, transient=True)
+
+
+def rejected(msg="INSTRUMENT_DECLINED"):
+    return PayPalWriteError(msg, transient=False)

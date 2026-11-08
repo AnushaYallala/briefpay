@@ -4,6 +4,27 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 6 · The MoneyExecutor, plan lifecycle and plans API (T-45) · Sun Nov 8
+
+**What now exists**
+- **The only door to PayPal money moves:** the MoneyExecutor. Before it does anything it re-checks that the plan was approved for exactly its current fingerprint, that the Guardian did not block it, that humans approved the plans that need a human, and that nothing in the database changed since approval. Any doubt, and it stops with nothing sent.
+- **Crash-safe:** each step is recorded as "sent" before PayPal is called. If the server dies mid-run, the restart carries on and re-sends with the same reference numbers, so PayPal cannot charge or pay twice. Temporary errors are retried at most twice; a declined payment fails just that step and the plan ends "partial" instead of pretending the project is funded.
+- **Review, approve, confirm:** the Guardian reviews a plan and stores its verdict; capture and release plans the Guardian allows are approved automatically; payouts need a lead or sponsor; refunds and any "hold" on a capture or release need the lead, with a typed note. Approval is tied to the plan's fingerprint and the latest real review (a demo "tampered" review can never approve anything). Only after PayPal confirms does the ledger change: captures fill the pool, payouts empty it, refunds return it, and the project moves on (funded, failed, paid, cancelled).
+- **Login and the plans API:** sign in with an email and name, get a token, then list, create, review, approve and (demo mode) simulate-tamper plans over HTTP. Errors now use the spec's format.
+- **The chokepoint is enforced by a test:** it reads the source and fails if any file other than the executor calls a PayPal write or obtains a writer. I planted a rogue file to confirm the test catches it.
+- 236 automated tests pass (71 new). I also broke nine safety checks on purpose; the tests caught every one.
+
+**What it does NOT do yet**
+It runs against a fake PayPal. The real PayPal connection (T-20) and the webhooks that confirm payments (T-21) don't exist, so nothing real has moved. Without PayPal credentials, executing a plan fails safely and no money moves.
+
+**Progress:** 7 of ~45 tasks done (T-04, T-40, T-07, T-06, T-26, T-41, T-45).
+
+**Needed from you:** the PayPal sandbox keys are now the main thing holding up real testing. Please do T-02 when you can: sandbox accounts (all US), an app with Payouts and Transaction search enabled, and the Client ID and Secret in your local `.env`. Still optional for now: a Gemini key, and your teammate's demo repo.
+
+**Next increment:** options: (a) T-42, the Guardian's AI risk review that can only make a decision stricter; (b) projects and transcript upload (T-10/T-11), the start of the user-facing flow; (c) webhooks (T-21). I'll do T-42 next unless you want to start on the user-facing flow.
+
+---
+
 ## Increment 5 · Guardian rules (T-41) · Sun Nov 8
 
 **What now exists**

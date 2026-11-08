@@ -191,7 +191,8 @@ STATE_RULES = {
                         "campaign must be OPEN and project PLEDGING"),
     "RELEASE_HOLDS": (lambda c: c.campaign and c.campaign.state in ("OPEN", "FAILING") and c.project.state == "PLEDGING",
                       "campaign must be OPEN/FAILING and project PLEDGING"),
-    "FREELANCER_PAYOUT": (lambda c: c.project.state == "PAYOUT_READY", "project must be PAYOUT_READY"),
+    "FREELANCER_PAYOUT": (lambda c: c.project.state in ("PAYOUT_READY", "PAYOUT_FAILED"),
+                          "project must be PAYOUT_READY (or PAYOUT_FAILED for a retry)"),
     "REFUND_CAPTURED": (lambda c: c.project.state in ("IN_PROGRESS", "VERIFYING", "PAYOUT_READY", "REFUNDING"),
                         "project must be IN_PROGRESS, VERIFYING, PAYOUT_READY or REFUNDING"),
     "REAUTH_PLEDGES": (lambda c: c.campaign and c.campaign.state == "OPEN", "campaign must be OPEN"),
@@ -467,7 +468,7 @@ def g12(c: Ctx) -> RuleResult:
             f.append("receiver is not the PayPal email locked in the contract")
         if s.amount_cents != k.amount_cents:
             f.append(f"amount {s.amount_cents} differs from the contract amount {k.amount_cents}")
-    if c.project.state != "PAYOUT_READY":
+    if c.project.state not in ("PAYOUT_READY", "PAYOUT_FAILED"):
         f.append(f"project is {c.project.state}, not PAYOUT_READY")
     if c.db.scalar(select(func.count()).select_from(PayoutBatch).join(MoneyPlan, MoneyPlan.id == PayoutBatch.plan_id)
                    .where(MoneyPlan.contract_id == k.id, MoneyPlan.id != c.plan.id,

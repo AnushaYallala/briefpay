@@ -1,11 +1,13 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.config import get_settings
 from app.db import SessionLocal
-from app.routers import health, jobs
+from app.routers import auth, health, jobs, plans
+from app.services import job_handlers  # noqa: F401  (registers job handlers)
 from app.services.jobs import JobRunner
 
 settings = get_settings()
@@ -28,5 +30,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.include_router(health.router, prefix="/api")
-app.include_router(jobs.router, prefix="/api")
+
+
+@app.exception_handler(HTTPException)
+async def http_error(_request, exc: HTTPException) -> JSONResponse:
+    """SPEC 10 error shape: {"error": {"code", "message", "details"}} at the top level."""
+    if isinstance(exc.detail, dict) and "error" in exc.detail:
+        return JSONResponse(exc.detail, status_code=exc.status_code)
+    return JSONResponse({"error": {"code": f"HTTP_{exc.status_code}", "message": str(exc.detail), "details": {}}},
+                        status_code=exc.status_code)
+
+
+for r in (health.router, auth.router, jobs.router, plans.router):
+    app.include_router(r, prefix="/api")
