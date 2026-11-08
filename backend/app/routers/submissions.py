@@ -1,0 +1,53 @@
+"""Submission endpoints (SPEC 10): submit work (freelancer), read one, list a project's attempts (members)."""
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
+
+from app.auth import api_error, current_user, require_member
+from app.db import get_db
+from app.models import Contract, Project, Submission, User
+from app.services import submission_service as svc
+
+router = APIRouter()
+
+
+class SubmissionIn(BaseModel):
+    repo_url: str = Field(max_length=500)
+    commit_sha: str = Field(max_length=64)
+    deployed_url: str = Field(max_length=500)
+    notes: str | None = Field(default=None, max_length=5000)
+
+
+@router.post("/projects/{project_id}/submissions", status_code=202)
+def submit(project_id: int, body: SubmissionIn, user: User = Depends(current_user), db: Session = Depends(get_db)) -> dict:
+    project = db.get(Project, project_id)
+    if project is None:
+        raise api_error(404, "PROJECT_NOT_FOUND", "No such project")
+    member = require_member(db, project_id, user, ("FREELANCER",))
+    try:
+        sub, job = svc.create_submission(db, project, member, repo_url=body.repo_url, commit_sha=body.commit_sha,
+                                         deployed_url=body.deployed_url, notes=body.notes)
+    except svc.SubmissionError as e:
+        db.rollback()
+        raise api_error(e.status, e.code, e.message) from e
+    db.commit()
+    return {"submission_id": sub.id, "attempt_no": sub.attempt_no, "job_id": job.id}
+
+
+@router.get("/submissions/{submission_id}")
+def get_submission(submission_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)) -> dict:
+    sub = db.get(Submission, submission_id)
+    if sub is None:
+        raise api_error(404, "SUBMISSION_NOT_FOUND", "No such submission")
+    require_member(db, db.get(Contract, sub.contract_id).project_id, user)
+    return svc.submission_view(db, sub)
+
+
+@router.get("/projects/{project_id}/submissions")
+def list_submissions(project_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)) -> dict:
+    if db.get(Project, project_id) is None:
+        raise api_error(404, "PROJECT_NOT_FOUND", "No such project")
+    require_member(db, project_id, user)
+    return {"submissions": [{"id": s.id, "attempt_no": s.attempt_no, "state": s.state, "commit_sha": s.commit_sha,
+                             "deployed_url": s.deployed_url, "created_at": s.created_at.isoformat()}
+                            for s in svc.project_submissions(db, project_id)]}

@@ -84,10 +84,14 @@ class AutoChecker:
         self.site = site
         self.github = github or SafeFetcher(allowed_hosts={"api.github.com"}, transport=site.transport, resolver=site.resolver)
         self.token = github_token
+        self._pages: dict = {}   # one run, one fetch per page: many criteria can point at the same page
 
     # ---- website ----
     def _page(self, deployed_url: str, path: str):
-        return self.site.get(join_site(deployed_url, path))
+        url = join_site(deployed_url, path)
+        if url not in self._pages:
+            self._pages[url] = self.site.get(url)    # a failure raises and is not cached: the next check may try again
+        return self._pages[url]
 
     def url_reachable(self, deployed_url: str, path: str = "/", requirement_code: str | None = None) -> CheckResult:
         inp = {"deployed_url": deployed_url, "path": path}

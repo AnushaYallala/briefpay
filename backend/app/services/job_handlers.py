@@ -35,6 +35,13 @@ def strategist_run(db: Session, payload: dict) -> dict:
     return {"report_id": r.id, "probability": r.forecast_json["probability"]}
 
 
+@jobs.register("AUTO_CHECKS")
+def auto_checks(db: Session, payload: dict) -> dict:
+    """Run the automatic checks for a submission and save them. Safe to retry."""
+    from app.services import submission_service
+    return submission_service.run_auto_checks(db, payload["submission_id"])
+
+
 @jobs.register("PROCESS_WEBHOOK")
 def process_webhook(db: Session, payload: dict) -> dict:
     """Apply a verified PayPal event. Safe to repeat; `NotReady` makes the runner retry with backoff."""

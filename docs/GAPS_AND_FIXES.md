@@ -6,7 +6,7 @@ A running list of everything that is **missing, risky, unverified, or was found 
 - **Fixes** are problems that were found and already resolved, kept so the reasoning is not lost.
 - IDs are permanent. When a gap is closed, move it to Fixes (keep the ID) and say how.
 
-_Last updated: 2026-11-09, end of T-32._
+_Last updated: 2026-11-09, end of T-31 first half._
 
 ---
 
@@ -91,7 +91,11 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | GAP-52 | Low | Address pinning applies to normal hosts; the dev-only localhost exception connects by name. | Fine for dev; keep `allow_local` off in production. |
 | GAP-53 | Medium | Anonymous GitHub API calls are limited to 60 an hour per IP; a shared host (Render) can hit that and every GitHub check returns ERROR. | Set `GITHUB_TOKEN`; T-34 should show ERROR as 'could not check, try again'. |
 | GAP-54 | Medium | Pages built in the browser (client-side rendered) show only their server HTML, so PAGE_CONTAINS can FAIL for text a visitor sees. Sites behind bot protection may answer 403 and FAIL URL_REACHABLE. | The teammate's demo site (T-60) should be static HTML; the LLM judge still sees the freelancer's screenshots. |
-| GAP-55 | Low | The result of a check is not yet stored: `auto_checks` rows are written by T-31. | T-31. |
+| GAP-55 | Low (**closed in T-31**) | The result of a check was not yet stored. | `auto_checks` rows are now saved by the AUTO_CHECKS job. |
+| GAP-56 | Medium | A submission waits in QUESTIONING with no way forward until T-33/T-34 exist; the project stays VERIFYING. | T-33, T-34. |
+| GAP-57 | Medium | `APP_ENV` defaults to `dev`, which lets a submitted `http://localhost` URL be fetched by the server. Harmless on a laptop, wrong on Render. | Deployment (T-61) must set `APP_ENV=prod`; consider failing startup if prod and `JWT_SECRET` is the default. |
+| GAP-58 | Low | A job that keeps failing (e.g. GitHub down for long) leaves the submission in AUTO_CHECKING after the runner gives up; the freelancer cannot resubmit. | Decide in T-34: a lead 'recheck' action, or mark such a submission FAILED_TO_CHECK. |
+| GAP-59 | Low | `GET /projects/{id}/submissions` is not in SPEC 10; added for the attempt history the verification report screen needs. | Add to SPEC when the contract is next edited. |
 
 ---
 
@@ -129,6 +133,7 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | FIX-28 | T-50 | The email mask in ledger meta swallowed the comma after an address (`a@b.com,` became `[hidden]`), found by a test. Also a test funded the project twice. | Tightened the pattern to word characters; test no longer double-funds. |
 | FIX-29 | T-32 | Repeat of FIX-22: a `\b` inside a Python heredoc became a backspace character in a new chokepoint test, so it matched nothing and would have passed forever. | Found because the test failed on clean code (it listed no users); line rewritten, all new files scanned for control characters, and every new guard checked against a planted violation. |
 | FIX-30 | T-32 | The existing rule 'only paypal_client imports an HTTP library' blocked the new fetcher. | Not loosened silently: `safe_fetch.py` is named as the one other importer and has its own guards (GET only, no PayPal, used only by autochecks). |
+| FIX-31 | T-31 | A mutation check showed the 'localhost only in dev' rule for the production fetcher was untested (the test ran only in dev mode), and one planned mutation was a no-op. | Test now runs for dev, prod and staging; the no-op mutant replaced with a real one. |
 
 ---
 

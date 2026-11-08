@@ -4,6 +4,26 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 21 · The freelancer hands in the work (first half of T-31) · Mon Nov 9
+
+**What now exists**
+- **Submitting work.** Once a project is funded and in progress, the freelancer named in the contract can submit: the GitHub repository, the exact commit, the live website address and optional notes. Nobody else can. Only one submission is checked at a time, and there are at most three attempts; a fourth is refused and left to the lead. Bad input (a non-GitHub link, a made-up commit id, a non-https site, a password inside the link) is refused with a clear message and changes nothing.
+- **Automatic checking starts by itself.** Submitting moves the project to "Verifying" (recorded in the ledger) and queues a background job. The job runs the checks from the last increment: repository public, commit exists, every page on the site map loads, and each requirement's own check from the signed BRD (a page contains given words, a file exists, mobile layout). Every result is saved with the requirement it belongs to, so the verification screen can show them next to each requirement. Each page is fetched once, however many requirements use it.
+- **Honest about trouble.** A page that is missing or a repo that is private is recorded as a failure; a site that is down or GitHub refusing us (rate limit) is recorded as "couldn't check". Neither stops the process; both feed the later judging step. If the server restarts mid-run, the job redoes the checks cleanly with no duplicates.
+- **Reading it back.** Any project member can open a submission to see its state and every check, or list all attempts.
+- 1,055 automated tests pass (47 new), including a full run through the real background-job machinery. I broke 32 things on purpose; 31 were caught and the last changes nothing (its rule is checked twice).
+
+**What it does NOT do yet**
+After the checks a submission waits: nothing writes the evidence questions yet (T-33). Uploading screenshots and code as evidence, and the image storage behind it, is the second half of this task. Judging and the verdict come after that.
+
+**Progress:** 21 of ~45 tasks done or in review, plus T-31 half done.
+
+**Needed from you:** the same: BLK-01/02/03 decisions, PayPal sandbox keys, Gemini key. When deployed, set `APP_ENV=prod` so the server never fetches `localhost` addresses.
+
+**Next increment:** image storage and the evidence upload (second half of T-31).
+
+---
+
 ## Increment 20 · Checking the freelancer's work ourselves (T-32) · Mon Nov 9
 
 **What now exists**
