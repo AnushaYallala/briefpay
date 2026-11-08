@@ -2,8 +2,9 @@
 from sqlalchemy.orm import Session
 
 from app.agents.ba_agent import get_ba_agents
+from app.agents.brd_generator import get_brd_generator
 from app.models import Project
-from app.services import ba_rounds, jobs, money_executor, paypal_io
+from app.services import ba_rounds, brd_service, jobs, money_executor, paypal_io
 
 
 @jobs.register("EXECUTE_PLAN")
@@ -19,3 +20,9 @@ def ba_run(db: Session, payload: dict) -> dict:
     project = db.get(Project, payload["project_id"])
     agent, qagent = get_ba_agents()
     return ba_rounds.run_round(db, project, agent, qagent)
+
+
+@jobs.register("BRD_GENERATE")
+def brd_generate(db: Session, payload: dict) -> dict:
+    """Draft, assemble, render and store the BRD. Safe to retry: a project that already has one pending reports it."""
+    return brd_service.generate_once(db, db.get(Project, payload["project_id"]), get_brd_generator())

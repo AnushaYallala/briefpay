@@ -1,0 +1,127 @@
+# {{ c.title | inline }}
+
+*Business Requirements Document · version {{ version }} · analysis score {{ score }}/100*
+
+## 1. Executive summary
+
+{{ c.executive_summary | block }}
+
+## 2. Business goals and success measures
+
+**Goals**
+
+{% for g in c.business_goals %}
+- {{ g | inline }}
+{% endfor %}
+
+{% if c.success_measures %}
+**How we will know it worked**
+
+{% for m in c.success_measures %}
+- {{ m | inline }}
+{% endfor %}
+
+{% endif %}
+## 3. Stakeholders
+
+{% for s in c.stakeholders %}
+**{{ s.member_id | person }}**{% if s.business_name %} · {{ s.business_name | inline }}{% endif %}
+
+{% for n in s.needs %}
+- {{ n | inline }}
+{% endfor %}
+
+{% endfor %}
+## 4. Audience
+
+{{ c.audience | block }}
+
+## 5. Site structure
+
+| Page | Purpose |
+|---|---|
+{% for p in c.sitemap %}
+| `{{ p.path }}` | {{ p.purpose | cell }} |
+{% endfor %}
+
+## 6. Requirements
+
+{% for r in c.requirements %}
+### {{ r.code }} · {{ r.title | inline }}
+
+**Priority:** {{ r.priority }} · **Weight:** {{ r.weight }}/5 · **Requested by:** {{ r.requested_by | people }}
+
+{{ r.description | block }}
+
+{% if r.acceptance_criteria %}
+**Acceptance criteria**
+
+{% for ac in r.acceptance_criteria %}
+- **{{ ac.id }}** Given {{ ac.given | inline }}, when {{ ac.when | inline }}, then {{ ac.then | inline }}.
+  - Evidence: {{ ac.evidence | join(", ") }}
+{% if ac.auto_check_hint %}
+  - Automatic check: {{ ac.auto_check_hint | hint }}
+{% endif %}
+{% endfor %}
+{% else %}
+*No acceptance criteria (not required at this priority).*
+{% endif %}
+
+{% if r.source_refs %}
+*Source: {{ r.source_refs | join(", ") }}*
+
+{% endif %}
+{% endfor %}
+{% if c.non_functional %}
+## 7. Non-functional requirements
+
+{% for n in c.non_functional %}
+- {{ n | inline }}
+{% endfor %}
+
+{% endif %}
+{% if c.content_responsibilities %}
+## 8. Who provides the content
+
+| Item | Provided by | Due |
+|---|---|---|
+{% for cr in c.content_responsibilities %}
+| {{ cr.item | cell }} | {{ cr.owner_member_id | person_or_dash }} | {{ (cr.due or "to be agreed") | cell }} |
+{% endfor %}
+
+{% endif %}
+## 9. Constraints
+
+- **Budget:** {{ c.constraints.budget_cents | money(c.constraints.currency) }}
+- **Delivery time:** {% if c.constraints.delivery_days %}{{ c.constraints.delivery_days }} days{% else %}to be agreed{% endif %}
+
+{% if c.constraints.hosting %}
+- **Hosting:** {{ c.constraints.hosting | inline }}
+{% endif %}
+{% if c.constraints.domain %}
+- **Domain:** {{ c.constraints.domain | inline }}
+{% endif %}
+
+## 10. Out of scope
+
+{% for o in c.out_of_scope %}
+- {{ o | inline }}
+{% else %}
+*Nothing has been listed as out of scope.*
+{% endfor %}
+
+## 11. Open items
+
+{% for o in c.open_items %}
+- {{ o | inline }}
+{% else %}
+*None. The analysis found nothing left to settle.*
+{% endfor %}
+
+{% if c.glossary %}
+## 12. Glossary
+
+{% for g in c.glossary %}
+- **{{ g.term | inline }}**: {{ g.definition | inline }}
+{% endfor %}
+{% endif %}

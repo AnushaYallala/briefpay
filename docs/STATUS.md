@@ -9,10 +9,10 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-08 by Claude: T-13 BA question loop + endpoints done |
+| Last updated | 2026-11-08 by Claude: T-14 BRD generator done; gaps file started |
 | Overall phase | **Day 0: backend skeleton, schema, money math, state machines, ledger built; no features yet** (plain-English summary: `docs/PROGRESS_SUMMARY.md`) |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
-| Next task to pick up | Track A: **T-14** (BRD generator), then **T-15** (BRD approvals) · Track B: **T-02** (human, sandbox keys), **T-08**, then **T-20** |
+| Next task to pick up | Track A: **T-15** (BRD approvals, hash-bound, unanimous; reject loops back), then **T-30** (contract) · see also `docs/GAPS_AND_FIXES.md` · Track B: **T-02** (human, sandbox keys), **T-08**, then **T-20** |
 | Blockers | None yet |
 | Deployed URLs | API: _not deployed_ · Web: _not deployed_ · Sample site: _not deployed_ |
 | Repo | https://github.com/AnushaYallala/briefpay (origin; T-01 still needs LICENSE visible in About + secret scanning) |
@@ -46,7 +46,7 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 | T-11 | Transcript upload (text/file), line numbering | §7.1 | Claude | DONE | t-10-projects-transcripts | JSON or file upload (.txt/.vtt/.md), VTT cleaning, line numbering, `GET /projects/{id}/transcript` (added to SPEC 10). 25 tests; mutation-checked (D-026) |
 | T-12 | BA scoring: prompt, `BAScoreOutput`, code-side total, gates, cap 89, source_refs downgrade + unit tests | §7.1 | Claude | DONE | t-12-ba-scoring | Schemas, pure scoring + gates + cap, prompt `ba-score-v1`, `BAAgent`, `ba_service.score_round`. 67 tests; mutation-checked; demo scene scores 58/79/93. No endpoint yet (T-13). No real Gemini call yet (A-4) (D-027) |
 | T-13 | BA questions: prompt, `BAQuestionsOutput`, answer/skip endpoints, rounds, MAX_ROUNDS + finalize | §7.1 | Claude | DONE | t-13-ba-questions | Question agent + code-side filtering, rounds, answer/skip/finalize, run/view endpoints, `BA_RUN` job, rate limit. 83 tests; mutation-checked (11/11). Whole 58->79->93 scene passes over HTTP. No real Gemini call yet (D-028) |
-| T-14 | BRD generator: prompt, `BRDContent`, REQ codes, Jinja Markdown, sha256 | §7.2 | Claude | IN_PROGRESS | t-14-brd-generator | |
+| T-14 | BRD generator: prompt, `BRDContent`, REQ codes, Jinja Markdown, sha256 | §7.2 | Claude | DONE | t-14-brd-generator | Schemas, prompt `brd-gen-v1`, `BRDGenerator`, code-side assembly, Jinja renderer with escaping, sha256, `BRD_GENERATE` job, generate/read/download endpoints. 75 tests; mutation-checked (15/15 after one added test). Approvals are T-15. No real Gemini call yet (D-029) |
 | T-15 | BRD approvals (hash-bound, unanimous), reject → new BA round + version bump | §7.2 |  | TODO |  | |
 | T-16 | UI: BA Studio | §11 #4 |  | TODO |  | |
 | T-17 | UI: BRD page (AG Grid requirements, approve/reject, download) | §11 #5 |  | TODO |  | |
@@ -159,6 +159,14 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-08 · Claude · T-14
+- Did: `schemas/brd.py` (BRDDraft/BRDContent + typed pieces), `agents/prompts/brd_gen.md` + `agents/brd_generator.py` (`BRDGenerator`, `get_brd_generator`/`set_brd_generator`, prompt `brd-gen-v1`), `templates/brd.md.j2` + `services/brd_render.py` (escaping filters, `render_markdown`, `content_hash`), `services/brd_service.py` (`assemble`, `open_items_from_score`, `generate_brd`, `request_generation`, `generate_once`, `latest_brd`, `member_names`), `routers/brd.py` (`POST /projects/{id}/brd/generate` 202, `GET /projects/{id}/brd[?version=]`, `GET /projects/{id}/brd/{version}.md`), `BRD_GENERATE` job. Also: `docs/GAPS_AND_FIXES.md` created, `AGENTS.md` commands filled in, `.github/workflows/ci.yml` added, `requirements.txt` pins corrected (pydantic 2.14.3) and `jinja2` added.
+- State now: T-14 DONE (branch t-14-brd-generator).
+- Tests: `cd backend && .venv/Scripts/python -m pytest -q` -> 503 passed (66 new). Verified a fresh virtualenv install of `requirements.txt` passes the whole suite. Mutation-checked: 15 deliberate breakages, all caught (one needed an extra test pinning the hash algorithm).
+- Contract changes: D-029. SPEC 10 already listed these endpoints.
+- Next step: T-15: `POST /projects/{id}/brd/{version}/decision {decision, brd_sha256, comment?}` for sponsors (the lead is a sponsor): decision counts only if `brd_sha256` equals the BRD's current hash; unanimous APPROVE across LEAD+SPONSOR members -> BRD `APPROVED`, `locked_at`, ledger `BRD_LOCKED`, project BRD_REVIEW -> CONTRACTING; any REJECT with a comment -> comment becomes a new BA question addressed to ALL, project BRD_REVIEW -> REQUIREMENTS, BA session back to ACTIVE with `round + 1`, BRD stays for history (to be SUPERSEDED when v+1 is generated). `GET /projects/{id}/brd` already returns `approvals` and `awaiting` (only decisions made on the current hash count).
+- Gotchas: (1) The shared `World` test fixture pre-creates an APPROVED BRD and a contract; BRD tests delete them. (2) A BRD for a FINALIZED analysis carries its red gates in `open_items`. (3) `BRD_INVALID` is raised after a successful AI call, so each job retry calls the model again (see GAP-24). (4) The render is deterministic but names come from the database, so the Markdown can change while the content hash does not (renaming a user); the hash is of the JSON content only. (5) UI must not render the Markdown as raw HTML.
 
 ### 2026-11-08 · Claude · T-13
 - Did: `services/ba_rounds.py` (`run_round`, `generate_questions`, `filter_questions`, `answer_question`, `skip_question`, `request_run`, `finalize`, fallback questions), `agents/ba_agent.py` additions (`BAQuestionsAgent`, `QuestionInputs`, `get_ba_agents`/`set_ba_agents`, prompt `ba-questions-v1`), `agents/prompts/ba_questions.md`, `routers/ba.py` (`POST /projects/{id}/ba/run` 202, `GET /projects/{id}/ba`, `POST /ba/questions/{qid}/answers|skip`, `POST /projects/{id}/ba/finalize`), `BA_RUN` job handler, stricter `BAQuestion` schema (30 words, 2 to 4 options).

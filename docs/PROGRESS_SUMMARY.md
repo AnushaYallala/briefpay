@@ -4,6 +4,32 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 11 · The BRD generator (T-14) · Sun Nov 8
+
+**What now exists**
+- **From finished analysis to a real document.** When the BA analysis is ready (90+ with every gate green) or the lead has finalized it, the lead clicks "Generate BRD". The AI drafts the document; code then assembles, checks, formats and fingerprints it. The result is a numbered Business Requirements Document: executive summary, goals, who needs what, audience, the page list, then the requirements as REQ-001, REQ-002 and so on. Each has a priority, a weight, who asked for it and testable acceptance criteria in plain "Given / When / Then" form, plus the evidence the freelancer should show, and, where the platform can check it mechanically, an automatic check ("the page /contact contains 'Send enquiry'").
+- **Code, not the AI, guarantees the important things:** nothing from the analysis gets dropped (every requirement found earlier must be carried over); every MUST has at least one testable criterion; the numbering is sequential with MUSTs first; the budget and delivery time come from the project record, not from the AI; people are referenced only by real sponsor ids; references to transcript lines must point at lines that exist; things explicitly ruled out always stay ruled out; and anything still unsettled (a red gate, or a thinly covered topic after finalizing) is listed under "Open items" so sponsors approve with open eyes.
+- **A fingerprint.** The document gets a SHA-256 hash computed from its canonical content, so the sponsors' approvals and the freelancer's contract can be tied to exactly this text. Anyone can recompute it.
+- **Safe to publish.** The document text is formatted by a template, not written by the AI, and everything derived from user input is escaped, so a hostile name or description can't inject headings, links or HTML. I found and fixed a real hole here during testing: lines starting with `##` could slip through and become headings.
+- **Reading it:** anyone can read the BRD and download it as a Markdown file, with no login (it contains no emails). It shows which sponsors have yet to approve. Generating a new version supersedes an unapproved older one but never an approved one.
+- **After generation** the project moves to "BRD review".
+- 503 automated tests pass (66 new). I broke fifteen rules on purpose; one slipped through at first, I added a test, and now all fifteen are caught.
+
+**What it does NOT do yet**
+Sponsors can't approve or reject yet (T-15), and no real Gemini call has been made, so the actual quality of the drafted BRDs is unseen. There is no screen.
+
+**Also done this increment (as you asked, in a separate file):** `docs/GAPS_AND_FIXES.md` lists every gap and every fix found so far (21 open gaps, 11 fixes). Along the way I fixed two problems nobody had noticed: the dependency list pinned a library version that did not match the installed one (a teammate or the CI pipeline would have failed to install), and the README-for-assistants had its commands section unfilled. I also added the automatic test pipeline (GitHub Actions) the spec asks for.
+
+**Decision to know about:** D-029 (what the AI drafts versus what code owns).
+
+**Progress:** 13 of ~45 tasks done.
+
+**Needed from you:** the Gemini key and model name are still the main unlock. Also see the High items in the gaps file: PayPal sandbox setup (GAP-01).
+
+**Next increment:** T-15, BRD approvals: each sponsor approves the exact fingerprint they saw; all must approve to lock it; any rejection with a comment sends it back to the BA conversation as a new question and produces version 2.
+
+---
+
 ## Increment 10 · The BA question loop and endpoints (T-13) · Sun Nov 8
 
 **What now exists**
