@@ -58,7 +58,7 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 | T-21 | Webhook endpoint: signature verify, dedupe, job enqueue, monotonic processors for authorization/capture/refund/payout events (§9.5 table) | §9.5 |  | TODO |  | Save real event samples to `backend/tests/fixtures/webhooks/` |
 | T-22 | Pledge Gate + pledge service: `pledges/order`, `pledges/authorize`, webhook effects, progress, goal-reached trigger | §8.2, §9.2 |  | TODO |  | |
 | T-23 | UI: public campaign page (progress "held, not charged", countdown, PayPal button `intent=authorize`, pledge board AG Grid) | §11 #8 |  | TODO |  | A-11 |
-| T-24 | Campaign setup API + launch (needs signed contract); deadline rule (`≤ opens_at + 72h − 2h`) | §8.2, §6.1 |  | TODO |  | |
+| T-24 | Campaign setup API + launch (needs signed contract); deadline rule (`≤ opens_at + 72h − 2h`) | §8.2, §6.1 | Claude | IN_PROGRESS | t-24-campaign-setup | |
 | T-25 | Campaign outcome engine + clock job (every 60 s): goal reached / deadline → enqueue plan builds; `demo/campaigns/{id}/expire`; honor-period warnings; relaunch | §8.2, §6.1 |  | TODO |  | `decide_campaign_outcome` is a pure function with tests |
 | T-27 | UI: campaign setup + lead panel (close and capture, cancel, relaunch, simulate deadline) | §11 #7, #8 |  | TODO |  | |
 
