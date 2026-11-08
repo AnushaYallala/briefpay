@@ -9,10 +9,10 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-08 by Claude: T-45 MoneyExecutor + plan lifecycle + plans API done |
+| Last updated | 2026-11-08 by Claude: T-42 Guardian LLM review done |
 | Overall phase | **Day 0: backend skeleton, schema, money math, state machines, ledger built; no features yet** (plain-English summary: `docs/PROGRESS_SUMMARY.md`) |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
-| Next task to pick up | Track A: **T-42** (Guardian LLM review), **T-10/T-11** (projects + transcript), or **T-21** (webhooks; must call `confirm_step`) · Track B: **T-02** (human, sandbox keys), **T-08**, then **T-20** |
+| Next task to pick up | Track A: **T-10/T-11** (projects + transcript), **T-21** (webhooks; must call `confirm_step`), or **T-25** (campaign clock/outcome) · Track B: **T-02** (human, sandbox keys), **T-08**, then **T-20** |
 | Blockers | None yet |
 | Deployed URLs | API: _not deployed_ · Web: _not deployed_ · Sample site: _not deployed_ |
 | Repo | https://github.com/AnushaYallala/briefpay (origin; T-01 still needs LICENSE visible in About + secret scanning) |
@@ -80,7 +80,7 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 | T-26 | `PlanBuilder` (pure, reads DB): `CAPTURE_PLEDGES`, `RELEASE_HOLDS`, `FREELANCER_PAYOUT`, `REFUND_CAPTURED` specs + steps + idempotency keys + tests | §7.5.1, §8.3 | Claude | DONE | t-26-plan-builder | Four plan kinds + `save_proposed` + `rebuild` + release policies. 39 tests. Retry attempts in inputs (D-022). `REAUTH_PLEDGES` not built (SHOULD) |
 | T-45 | `MoneyExecutor` + plan lifecycle + approvals API (`plans`, `review`, `approve`) + executor tests (refuses unapproved/mismatched/foreign steps) | §8.4, §8.5, §10 | Claude | DONE | t-45-money-executor | `MoneyExecutor` + `plan_lifecycle` (review/approve/confirm) + `/auth/login`,`/auth/me` + plans API (list/create/get/review/approve/simulate-tamper) + EXECUTE_PLAN job + chokepoint scan test. 71 tests; mutation-checked. Fake writer only: real PayPal writer is T-20/T-43 (D-024) |
 | T-41 | Guardian rules G-01…G-13 + soft flags S-01…S-03 (pure; SDK mocked) + one pass/fail test per rule + tamper mutations | §7.5.2–7.5.3, §7.5.6 | Claude | DONE | t-41-guardian-rules | G-01..G-13 + S-01..S-03 + 5 tamper mutations, 63 tests incl. one pass/fail per rule; mutation-checked. PayPal reads go through an injected `PayPalReader` (real one arrives with T-20). Interpretations in D-023 |
-| T-42 | Guardian LLM review (escalate-only) + decision logic + release policies (auto vs human) | §7.5.4–7.5.5 | Claude | IN_PROGRESS | t-42-guardian-llm | |
+| T-42 | Guardian LLM review (escalate-only) + decision logic + release policies (auto vs human) | §7.5.4–7.5.5 | Claude | DONE | t-42-guardian-llm | `GuardianLLM` agent + `guardian_facts` + `guardian_decision.combine` wired into `review_plan` and the review endpoint. 33 tests; mutation-checked. Never called on BLOCK; failure => HOLD (D-025). No real Gemini call made yet (A-4) |
 | T-43 | Execution paths: capture/void steps, freelancer payout batch; webhooks + poll fallback; PAID / PAYOUT_FAILED | §8.5, §9.3–9.4 |  | TODO |  | |
 | T-44 | `REFUND_CAPTURED` execution + cancel flow (builder in T-26) | §8.1 M7 |  | TODO |  | UI is cut-order #5 |
 | T-46 | Strategist (deterministic): forecast, deadline suggestion, nudge target ranking + tests; API + forecast card | §7.4 |  | TODO |  | MVP |
@@ -159,6 +159,14 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-08 · Claude · T-42
+- Did: `agents/guardian_llm.py` (`GuardianLLM`, `GuardianLLMOutput`, `Finding`, `get_guardian_llm`, `set_guardian_llm`, prompt `guardian-llm-v1`), `agents/prompts/guardian_llm.md`, `services/guardian_facts.py` (`build_facts`), `services/guardian_decision.py` (`combine`, escalate-only), `review_plan(..., llm=)` in `plan_lifecycle.py`, review endpoint injects `get_guardian_llm`; plan detail now includes `earliest_honor_until` for capture plans; `LLMAdapter.generate_json(run_ids=[...])` reports the `agent_runs` id.
+- State now: T-42 DONE (branch t-42-guardian-llm). The Guardian is complete: 13 rules + 3 flags + escalate-only AI + release policies.
+- Tests: `cd backend && .venv/Scripts/python -m pytest -q` -> 269 passed (33 new in `tests/test_guardian_llm.py`). Mutation-checked: six deliberate breakages (AI high ignored, AI failure treated as pass, AI softens a BLOCK, AI called on BLOCK, names leaking into trusted facts, untrusted fence removed) were all caught.
+- Contract changes: D-025 (typed `Finding`, decision floor, facts boundary).
+- Next step: T-25 clock/outcome engine and T-27 campaign UI will call `review_plan(..., llm=get_guardian_llm())` for system capture/release plans; a real Gemini call (A-4) is still outstanding and may need the `GuardianLLMOutput` schema flattened if Gemini rejects it.
+- Gotchas: (1) With `AI_PROVIDER=replay_or_real` and no key or fixture, every review is a HOLD (`GUARDIAN_LLM_UNAVAILABLE`); record fixtures with a key before the demo (T-52) or capture/release plans will wait for a human. (2) The facts must stay deterministic or replay fixtures will miss; do not add timestamps like "now". (3) Any change to `guardian_llm.md` needs `PROMPT_VERSION` bumped. (4) `get_guardian_llm()` is cached only when the adapter built successfully. (5) The AI call writes its own `agent_runs` row in a separate session/commit.
 
 ### 2026-11-08 · Claude · T-45
 - Did: `services/money_executor.py` (`execute`, `ExecutionRefused`), `services/plan_lifecycle.py` (`review_plan`, `approve_plan`, `simulate_tamper`, `confirm_step`, `fail_step`, `refresh_plan_state`, `latest_review`), `services/paypal_io.py` (`PayPalWriter` protocol, `PayPalWriteError`, `Unconfigured*` placeholders, `configure()`), `services/job_handlers.py` (`EXECUTE_PLAN`), `auth.py` + `routers/auth.py` (JWT login, `/auth/me`, `require_member`), `routers/plans.py`, top-level SPEC 10 error shape in `main.py`. Guardian G-02/G-12 now accept `PAYOUT_FAILED` for retries.

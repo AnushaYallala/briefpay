@@ -6,7 +6,8 @@ from app.config import get_settings
 from app.main import app
 from app.models import ProjectMember, User
 from app.services import paypal_io
-from tests.factories import GOAL, FakeReader, World
+from app.agents.guardian_llm import get_guardian_llm
+from tests.factories import GOAL, FakeReader, World, scripted_llm
 
 
 @pytest.fixture()
@@ -17,8 +18,11 @@ def w(db):
 @pytest.fixture(autouse=True)
 def fake_paypal(db):
     app.dependency_overrides[paypal_io.get_reader] = lambda: FakeReader(db)
+    llm, _ = scripted_llm(db)                                   # always answers "low risk"
+    app.dependency_overrides[get_guardian_llm] = lambda: llm
     yield
     app.dependency_overrides.pop(paypal_io.get_reader, None)
+    app.dependency_overrides.pop(get_guardian_llm, None)
 
 
 def hdr(user: User) -> dict:

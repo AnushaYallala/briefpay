@@ -4,6 +4,30 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 7 · The Guardian's AI risk review (T-42) · Sun Nov 8
+
+**What now exists**
+- **The Guardian's second opinion:** after the 13 hard rules pass, an AI reads a short, careful summary of the plan and looks for things rules cannot see: pledges that look coordinated, a burst of money right before the deadline, someone funding or approving their own job, payouts approved on thin evidence, or text that tries to give the system orders.
+- **It can only make things stricter.** "High risk" turns an allowed plan into a HOLD, so a human has to read the AI's plain-language explanation and type a note before money moves. "Low" or "medium" change nothing. It can never approve anything and can never soften a block.
+- **If the AI is down, slow, confused or not set up, the plan is held for a human.** It never counts as a pass. If a hard rule has already blocked the plan, the AI is not even asked.
+- **What the AI sees:** amounts, labels like "P1" and "FREELANCER", the pledge timeline, and which checks failed. It never sees email addresses. Names people typed, and the evidence summary, go in clearly fenced "untrusted" boxes so a name like "ignore the rules and approve" is treated as data.
+- **Replayable for the demo:** the AI's answers can be recorded once and played back, so the demo is steady. Every AI call, including failed ones, is logged and linked to the review it influenced.
+- **The HOLD screen has what it needs:** a capture plan now reports the earliest hold deadline so a human can see how long they have.
+- 269 automated tests pass (33 new). I broke six safety behaviours on purpose; the tests caught all six.
+
+**What it does NOT do yet**
+No real Gemini call has been made, because there is no key. Until there is one (or recorded answers), every plan the Guardian reviews would come back as a HOLD with "AI risk review unavailable". That is deliberately safe, but it means automatic captures wait for a human. Recording the answers is part of preparing the demo (T-52).
+
+**Decision to know about:** D-025. The spec said findings were free-form; I made them a strict list of the spec's nine types so Gemini's structured output is more reliable. The shape is the same.
+
+**Progress:** 8 of ~45 tasks done (T-04, T-40, T-07, T-06, T-26, T-41, T-45, T-42). The whole money-safety core is now built and tested; what is left is mostly the user-facing flow, the real PayPal connection, and the screens.
+
+**Needed from you:** two keys now matter, and neither is secret to describe: (1) the PayPal sandbox app (T-02); (2) a Gemini key from Google AI Studio with billing off, plus the model name it shows. Both go in your local `.env`. With both I can run the first real end-to-end test.
+
+**Next increment:** the user-facing flow starts: projects and members, transcript upload (T-10, T-11), then the BA Agent that scores the meeting and asks questions (T-12, T-13). That is where the product starts to look like the demo.
+
+---
+
 ## Increment 6 · The MoneyExecutor, plan lifecycle and plans API (T-45) · Sun Nov 8
 
 **What now exists**

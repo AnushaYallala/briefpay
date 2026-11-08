@@ -5,9 +5,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.auth import api_error, current_user, require_member
+from app.agents.guardian_llm import GuardianLLM, get_guardian_llm
 from app.config import get_settings
 from app.db import get_db
-from app.models import GuardianReview, MoneyPlan, MoneyPlanStep, PlanApproval, User
+from app.models import GuardianReview, MoneyPlan, MoneyPlanStep, PlanApproval, Pledge, User
 from app.services import guardian_rules as g
 from app.services import paypal_io, plan_builder as pb, plan_lifecycle as lc
 from app.services.guardian_tamper import MUTATIONS, TamperError
@@ -25,6 +26,7 @@ def params() -> g.GuardianParams:
 def review_dict(r: GuardianReview) -> dict:
     return {"id": r.id, "plan_hash": r.plan_hash, "decision": r.decision, "simulated": r.simulated,
             "rules": r.rule_results_json, "soft_flags": r.soft_flags_json, "llm": r.llm_review_json,
+            "agent_run_id": r.agent_run_id,
             "created_at": r.created_at.isoformat()}
 
 
@@ -37,6 +39,10 @@ def plan_dict(db: Session, p: MoneyPlan, detail: bool = False) -> dict:
     if detail:
         steps = db.scalars(select(MoneyPlanStep).where(MoneyPlanStep.plan_id == p.id).order_by(MoneyPlanStep.seq))
         out["inputs"] = p.plan_json.get("inputs", {})
+        if p.kind == "CAPTURE_PLEDGES":  # a HOLD runs against the 3-day honor clock (SPEC 7.5.4): show the earliest deadline
+            honors = [pl.honor_until for pl in db.scalars(select(Pledge).where(Pledge.id.in_(
+                [x["pledge_id"] for x in out["inputs"].get("pledges", [])]))) if pl.honor_until]
+            out["earliest_honor_until"] = min(honors).isoformat() if honors else None
         out["steps"] = [{"seq": s.seq, "phase": s.phase, "op": s.op, "target_type": s.target_type,
                          "target_id": s.target_id, "amount_cents": s.amount_cents, "bucket": s.bucket,
                          "receiver_email": s.receiver_email, "state": s.state, "paypal_ref": s.paypal_ref,
@@ -99,9 +105,10 @@ def get_plan(plan_id: int, user: User = Depends(current_user), db: Session = Dep
 
 @router.post("/plans/{plan_id}/review")
 def review(plan_id: int, user: User = Depends(current_user), db: Session = Depends(get_db),
-           reader: g.PayPalReader = Depends(paypal_io.get_reader)) -> dict:
+           reader: g.PayPalReader = Depends(paypal_io.get_reader),
+           llm: GuardianLLM = Depends(get_guardian_llm)) -> dict:
     plan = load_plan(db, plan_id, user, ("LEAD", "SPONSOR"))
-    lifecycle_call(lc.review_plan, db, plan, reader=reader, params=params())
+    lifecycle_call(lc.review_plan, db, plan, reader=reader, params=params(), llm=llm)
     db.commit()
     return plan_dict(db, plan, detail=True)
 

@@ -14,8 +14,12 @@ from app.models import (
     Campaign, Contract, GuardianReview, MoneyPlan, MoneyPlanStep, PayoutBatch, PayoutItem, PlanApproval, Pledge,
     Project, ProjectMember, Refund,
 )
+from app.agents.guardian_llm import GuardianLLM
+from app.agents.llm_adapter import AgentError
 from app.schemas.plans import MoneyPlanSpec
 from app.services import guardian_rules as g
+from app.services.guardian_decision import combine
+from app.services.guardian_facts import build_facts
 from app.services import jobs, ledger
 from app.services.guardian_tamper import apply_mutation
 from app.services.settlement import canonical_json
@@ -39,24 +43,38 @@ def _review_hash(rules: list[dict], flags: list[dict], decision: str, llm: dict 
 # ---------------- review ----------------
 
 def review_plan(db: Session, plan: MoneyPlan, *, reader: g.PayPalReader, params: g.GuardianParams | None = None,
-                now: datetime | None = None) -> GuardianReview:
-    """Run the Guardian rules. BLOCK is terminal; ALLOW on an AUTO_ON_ALLOW plan is approved by the system."""
+                now: datetime | None = None, llm: GuardianLLM | None = None) -> GuardianReview:
+    """Run the Guardian: hard rules first, then (if `llm` is given) the escalate-only AI risk review.
+
+    BLOCK is terminal and the LLM is not consulted. An LLM failure is a HOLD, never a pass. ALLOW on an
+    AUTO_ON_ALLOW plan is approved by the system.
+    """
     if plan.state not in ("PROPOSED", "REVIEWED"):
         raise LifecycleError("PLAN_STATE", f"plan is {plan.state}; only PROPOSED/REVIEWED plans can be reviewed")
     now = now or _now()
     ev = g.evaluate(db, plan, now=now, reader=reader, params=params)
     rules, flags = [r.as_dict() for r in ev.results], ev.soft_flags
+
+    out, err, run_id = None, None, None
+    if llm is not None and ev.decision != "BLOCK":
+        try:
+            out, run_id = llm.review(build_facts(db, plan, MoneyPlanSpec.model_validate(plan.plan_json), ev), plan.project_id)
+        except AgentError as e:
+            err, run_id = str(e), getattr(e, "run_id", None)
+    decision, llm_record = combine(ev.decision, out, err, llm_expected=llm is not None)
+
     review = GuardianReview(plan_id=plan.id, plan_hash=plan.plan_hash, rule_results_json=rules, soft_flags_json=flags,
-                            llm_review_json=None, decision=ev.decision, simulated=False,
-                            sha256=_review_hash(rules, flags, ev.decision, None))
+                            llm_review_json=llm_record, decision=decision, simulated=False, agent_run_id=run_id,
+                            sha256=_review_hash(rules, flags, decision, llm_record))
     db.add(review)
     db.flush()
-    plan.state = "BLOCKED" if ev.decision == "BLOCK" else "REVIEWED"
+    plan.state = "BLOCKED" if decision == "BLOCK" else "REVIEWED"
     ledger.append(db, plan.project_id, "GUARDIAN_DECISION", actor="agent:guardian", ref_type="plan", ref_id=plan.id,
-                  meta={"decision": ev.decision, "failed_rules": ev.failed_ids, "flags": [f["id"] for f in flags],
+                  meta={"decision": decision, "failed_rules": ev.failed_ids, "flags": [f["id"] for f in flags],
+                        "llm": (llm_record or {}).get("status"), "llm_risk": (llm_record or {}).get("risk_level"),
                         "plan_hash": plan.plan_hash, "simulated": False})
     db.flush()
-    if ev.decision == "ALLOW" and plan.release_policy == "AUTO_ON_ALLOW":
+    if decision == "ALLOW" and plan.release_policy == "AUTO_ON_ALLOW":
         approve_plan(db, plan, approver="system:AUTO_ON_ALLOW", plan_hash=plan.plan_hash, guardian_review_id=review.id)
     return review
 

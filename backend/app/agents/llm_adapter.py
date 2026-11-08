@@ -186,6 +186,7 @@ class LLMAdapter:
     def generate_json(
         self, *, system: str, parts: list[Part], schema: type[BaseModel], agent: str,
         project_id: int | None, prompt_version: str, temperature: float = 0.2,
+        run_ids: list[int] | None = None,
     ) -> BaseModel:
         in_hash = input_hash(agent, prompt_version, system, parts)
         started = time.perf_counter()
@@ -213,35 +214,42 @@ class LLMAdapter:
                 except ValidationError as second:
                     raise AgentSchemaInvalid(f"output failed validation twice: {second}") from second
         except AgentSchemaInvalid as e:
-            self._log(who, agent, project_id, prompt_version, in_hash, started, "SCHEMA_INVALID", None, str(e), in_tok, out_tok)
+            self._note(run_ids, self._log(who, agent, project_id, prompt_version, in_hash, started, "SCHEMA_INVALID", None, str(e), in_tok, out_tok))
             raise
         except AgentError as e:
-            self._log(who, agent, project_id, prompt_version, in_hash, started, "ERROR", None, str(e), in_tok, out_tok)
+            self._note(run_ids, self._log(who, agent, project_id, prompt_version, in_hash, started, "ERROR", None, str(e), in_tok, out_tok))
             raise
         except Exception as e:
-            self._log(who, agent, project_id, prompt_version, in_hash, started, "ERROR", None, f"{type(e).__name__}: {e}", in_tok, out_tok)
+            self._note(run_ids, self._log(who, agent, project_id, prompt_version, in_hash, started, "ERROR", None, f"{type(e).__name__}: {e}", in_tok, out_tok))
             raise AgentError(str(e)) from e
 
         output = result.model_dump(mode="json")
         save = getattr(self.backend, "save_fixture", None)
         if not replayed and save is not None:
             save(agent, in_hash, output, prompt_version)
-        self._log(who, agent, project_id, prompt_version, in_hash, started,
-                  "REPLAYED" if replayed else "OK", output, None, in_tok, out_tok)
+        self._note(run_ids, self._log(who, agent, project_id, prompt_version, in_hash, started,
+                  "REPLAYED" if replayed else "OK", output, None, in_tok, out_tok))
         return result
+
+    @staticmethod
+    def _note(run_ids, run_id: int) -> None:
+        if run_ids is not None:
+            run_ids.append(run_id)
 
     def _log(self, who, agent, project_id, prompt_version, in_hash, started, status, output, error, in_tok, out_tok):
         """Own session + commit so the audit row survives a caller's rollback."""
         db = self.session_factory()
         try:
-            db.add(AgentRun(
+            row = AgentRun(
                 project_id=project_id, agent=agent, provider=who[0], model=who[1],
                 prompt_version=prompt_version, input_hash=in_hash,
                 latency_ms=int((time.perf_counter() - started) * 1000),
                 input_tokens=in_tok, output_tokens=out_tok, status=status,
                 output_json=output, error=error,
-            ))
+            )
+            db.add(row)
             db.commit()
+            return row.id
         finally:
             db.close()
 

@@ -5,6 +5,10 @@ from sqlalchemy import select
 from app.models import (
     BRD, Campaign, Contract, Pledge, Project, ProjectMember, Submission, User, VerificationReport,
 )
+from sqlalchemy.orm import sessionmaker
+
+from app.agents.guardian_llm import GuardianLLM
+from app.agents.llm_adapter import LLMAdapter, RawResult
 from app.services import guardian_rules as g
 from app.services import ledger
 from app.services.paypal_io import PayPalWriteError
@@ -150,3 +154,30 @@ def transient(msg="timeout"):
 
 def rejected(msg="INSTRUMENT_DECLINED"):
     return PayPalWriteError(msg, transient=False)
+
+
+
+LOW = {"risk_level": "low", "findings": [], "explanation_for_sponsors": "Nothing unusual."}
+HIGH = {"risk_level": "high", "explanation_for_sponsors": "Several pledges look coordinated.",
+        "findings": [{"type": "SHILL_PLEDGING_SUSPECTED", "detail": "P1 and P2 landed together", "severity": "high"}]}
+
+
+class ScriptedBackend:
+    """A model backend that returns queued outputs (or raises queued exceptions) and records what it was asked."""
+
+    provider, model = "scripted", "scripted-1"
+
+    def __init__(self, *outputs):
+        self.outputs, self.calls = list(outputs), []
+
+    def generate(self, **kw):
+        self.calls.append(kw)
+        o = self.outputs.pop(0) if self.outputs else LOW
+        if isinstance(o, Exception):
+            raise o
+        return RawResult(data=o, provider="scripted", model="scripted-1")
+
+
+def scripted_llm(db, *outputs):
+    backend = ScriptedBackend(*outputs)
+    return GuardianLLM(LLMAdapter(backend, sessionmaker(bind=db.get_bind(), expire_on_commit=False))), backend
