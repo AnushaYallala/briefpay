@@ -293,5 +293,5 @@ def configure_from_settings(settings) -> PayPalClient | None:
     if not (settings.paypal_client_id and settings.paypal_client_secret):
         return None
     client = PayPalClient(settings.paypal_client_id, settings.paypal_client_secret, environment=settings.paypal_env)
-    paypal_io.configure(reader=client, writer=client, orders=client)
+    paypal_io.configure(reader=client, writer=client, orders=client, verifier=client, payout_reader=client)
     return client

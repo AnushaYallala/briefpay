@@ -80,12 +80,57 @@ def get_orders() -> OrderGateway:
     return _orders
 
 
-def configure(reader: PayPalReader | None = None, writer: PayPalWriter | None = None, orders: OrderGateway | None = None) -> None:
+class WebhookVerifier(Protocol):
+    """Asks PayPal itself whether a webhook is genuine. True only on PayPal's own SUCCESS; raises PayPalUnavailable if it cannot answer."""
+
+    def verify_webhook_signature(self, headers: dict[str, str], raw_body: str, webhook_id: str) -> bool: ...
+
+
+class PayoutReader(Protocol):
+    """Read-only: the items of a payout batch. Batch webhooks carry no item details (SPEC 9.4)."""
+
+    def get_payout_batch(self, payout_batch_id: str) -> dict: ...
+
+
+class UnconfiguredVerifier:
+    def verify_webhook_signature(self, headers, raw_body, webhook_id) -> bool:
+        raise PayPalUnavailable("PayPal is not configured")
+
+
+class UnconfiguredPayoutReader:
+    def get_payout_batch(self, payout_batch_id):
+        raise PayPalUnavailable("PayPal is not configured")
+
+
+_verifier: WebhookVerifier = UnconfiguredVerifier()
+_payout_reader: PayoutReader = UnconfiguredPayoutReader()
+
+
+def get_verifier() -> WebhookVerifier:
+    return _verifier
+
+
+def get_payout_reader() -> PayoutReader:
+    return _payout_reader
+
+
+def configure(reader: PayPalReader | None = None, writer: PayPalWriter | None = None, orders: OrderGateway | None = None,
+              verifier: WebhookVerifier | None = None, payout_reader: PayoutReader | None = None) -> None:
     """Install real (or fake, in tests) clients. Called once at startup by the PayPal client module (T-20)."""
-    global _reader, _writer, _orders
+    global _reader, _writer, _orders, _verifier, _payout_reader
     if reader is not None:
         _reader = reader
     if writer is not None:
         _writer = writer
     if orders is not None:
         _orders = orders
+    if verifier is not None:
+        _verifier = verifier
+    if payout_reader is not None:
+        _payout_reader = payout_reader
+
+
+def reset_to_placeholders() -> None:
+    """Back to the fail-safe placeholders (used by tests, and by anything that must undo `configure`)."""
+    configure(reader=UnconfiguredReader(), writer=UnconfiguredWriter(), orders=UnconfiguredOrders(),
+              verifier=UnconfiguredVerifier(), payout_reader=UnconfiguredPayoutReader())

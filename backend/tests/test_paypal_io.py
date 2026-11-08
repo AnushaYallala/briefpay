@@ -7,7 +7,7 @@ from app.services.paypal_io import PayPalWriteError
 @pytest.fixture(autouse=True)
 def restore():
     yield
-    paypal_io.configure(reader=paypal_io.UnconfiguredReader(), writer=paypal_io.UnconfiguredWriter(), orders=paypal_io.UnconfiguredOrders())
+    paypal_io.reset_to_placeholders()
 
 
 class Recorder:

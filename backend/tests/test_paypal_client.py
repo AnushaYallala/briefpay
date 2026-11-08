@@ -442,7 +442,7 @@ def test_with_credentials_the_same_client_becomes_reader_and_writer():
         assert isinstance(c, pc.PayPalClient) and paypal_io.get_reader() is c and paypal_io.get_writer() is c
         assert paypal_io.get_orders() is c, "the client is also the buyer-side order gateway"
     finally:
-        paypal_io.configure(reader=paypal_io.UnconfiguredReader(), writer=paypal_io.UnconfiguredWriter(), orders=paypal_io.UnconfiguredOrders())
+        paypal_io.reset_to_placeholders()
 
 
 def test_a_live_environment_in_settings_is_refused_at_startup():
