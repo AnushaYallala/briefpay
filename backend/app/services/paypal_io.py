@@ -57,10 +57,35 @@ def get_writer() -> PayPalWriter:
     return _writer
 
 
-def configure(reader: PayPalReader | None = None, writer: PayPalWriter | None = None) -> None:
+class OrderGateway(Protocol):
+    """The buyer-side PayPal calls behind the Pledge Gate: create an AUTHORIZE order, authorize it once approved.
+    Only `pledge_service` calls these (enforced by tests/test_chokepoint.py). Separate from `PayPalWriter` on purpose:
+    creating a hold moves no money, capturing or paying out does."""
+
+    def create_authorize_order(self, amount_cents: int, currency: str, custom_id: str, description: str, request_id: str) -> dict: ...
+    def authorize_order(self, order_id: str, request_id: str) -> dict: ...
+
+
+class UnconfiguredOrders:
+    def _no(self, *_a, **_k):
+        raise PayPalWriteError("PayPal is not configured (set PAYPAL_CLIENT_ID/SECRET); no pledge can be taken", transient=False)
+
+    create_authorize_order = authorize_order = _no
+
+
+_orders: OrderGateway = UnconfiguredOrders()
+
+
+def get_orders() -> OrderGateway:
+    return _orders
+
+
+def configure(reader: PayPalReader | None = None, writer: PayPalWriter | None = None, orders: OrderGateway | None = None) -> None:
     """Install real (or fake, in tests) clients. Called once at startup by the PayPal client module (T-20)."""
-    global _reader, _writer
+    global _reader, _writer, _orders
     if reader is not None:
         _reader = reader
     if writer is not None:
         _writer = writer
+    if orders is not None:
+        _orders = orders
