@@ -77,7 +77,7 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 | ID | Task | Spec | Owner | State | Branch | Notes |
 |---|---|---|---|---|---|---|
 | T-40 | Settlement engine (pure): `split_pro_rata`, `plan_captures`, `plan_refunds`, `plan_freelancer_payout`, `plan_hash` + tests (incl. property tests) | §8.3 | Claude | DONE | t-40-settlement-state-ledger | 13 tests incl. hypothesis property tests; worked examples 1-3 from SPEC 8.3 verified. `plan_hash` excludes idempotency keys (D-021) |
-| T-26 | `PlanBuilder` (pure, reads DB): `CAPTURE_PLEDGES`, `RELEASE_HOLDS`, `FREELANCER_PAYOUT`, `REFUND_CAPTURED` specs + steps + idempotency keys + tests | §7.5.1, §8.3 |  | TODO |  | Depends on T-40 |
+| T-26 | `PlanBuilder` (pure, reads DB): `CAPTURE_PLEDGES`, `RELEASE_HOLDS`, `FREELANCER_PAYOUT`, `REFUND_CAPTURED` specs + steps + idempotency keys + tests | §7.5.1, §8.3 | Claude | IN_PROGRESS | t-26-plan-builder | Depends on T-40 |
 | T-45 | `MoneyExecutor` + plan lifecycle + approvals API (`plans`, `review`, `approve`) + executor tests (refuses unapproved/mismatched/foreign steps) | §8.4, §8.5, §10 |  | TODO |  | Only module allowed to call PayPal writes |
 | T-41 | Guardian rules G-01…G-13 + soft flags S-01…S-03 (pure; SDK mocked) + one pass/fail test per rule + tamper mutations | §7.5.2–7.5.3, §7.5.6 |  | TODO |  | G-06/G-08 use SDK reads |
 | T-42 | Guardian LLM review (escalate-only) + decision logic + release policies (auto vs human) | §7.5.4–7.5.5 |  | TODO |  | |
