@@ -36,7 +36,7 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 | T-04 | Backend skeleton: FastAPI, config, SQLAlchemy models for **all §6.2 tables**, Alembic initial migration, `/api/healthz` | §6, §10 | Claude | DONE | t-04-backend-foundation | 32 tables, migration 0001, 4 tests pass. SQLite default for local dev; set `DATABASE_URL` for Postgres |
 | T-05 | Frontend skeleton: Next.js static export, Tailwind, query-param routes, API client with Bearer token, login + `/auth/me`, persona switcher, wake-up screen | §5.2, §11, §14.4, §14.5 |  | TODO |  | `npm run build` must produce `out/` |
 | T-06 | LLM adapter (`GeminiModel`, `ReplayModel`), `agent_runs` logging, in-process DB job runner + `GET /jobs/{id}` | §7.0 |  | TODO |  | Verify Gemini model name (A-4). No HF adapter (D-019) |
-| T-07 | `ProjectService` + `CampaignService` state machines (+ illegal-transition tests); `LedgerService` (append-only, gapless seq, POOL bucket) | §6.1, §6.3 |  | TODO |  | |
+| T-07 | `ProjectService` + `CampaignService` state machines (+ illegal-transition tests); `LedgerService` (append-only, gapless seq, POOL bucket) | §6.1, §6.3 | Claude | IN_PROGRESS | t-40-settlement-state-ledger | |
 | T-08 | Configure the **APIMatic Context Plugin** (MCP) in every AI coding tool used; add exact setup steps to AGENTS.md §6; claim free APIMatic subscription | §9.7 |  | TODO |  | Before T-20 |
 
 ### Track A1: Requirements (BA Agent + BRD)
@@ -76,7 +76,7 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 ### Track B2: Money core, Guardian, payouts
 | ID | Task | Spec | Owner | State | Branch | Notes |
 |---|---|---|---|---|---|---|
-| T-40 | Settlement engine (pure): `split_pro_rata`, `plan_captures`, `plan_refunds`, `plan_freelancer_payout`, `plan_hash` + tests (incl. property tests) | §8.3 |  | TODO |  | Do this early; everything depends on it |
+| T-40 | Settlement engine (pure): `split_pro_rata`, `plan_captures`, `plan_refunds`, `plan_freelancer_payout`, `plan_hash` + tests (incl. property tests) | §8.3 | Claude | IN_PROGRESS | t-40-settlement-state-ledger | Do this early; everything depends on it |
 | T-26 | `PlanBuilder` (pure, reads DB): `CAPTURE_PLEDGES`, `RELEASE_HOLDS`, `FREELANCER_PAYOUT`, `REFUND_CAPTURED` specs + steps + idempotency keys + tests | §7.5.1, §8.3 |  | TODO |  | Depends on T-40 |
 | T-45 | `MoneyExecutor` + plan lifecycle + approvals API (`plans`, `review`, `approve`) + executor tests (refuses unapproved/mismatched/foreign steps) | §8.4, §8.5, §10 |  | TODO |  | Only module allowed to call PayPal writes |
 | T-41 | Guardian rules G-01…G-13 + soft flags S-01…S-03 (pure; SDK mocked) + one pass/fail test per rule + tamper mutations | §7.5.2–7.5.3, §7.5.6 |  | TODO |  | G-06/G-08 use SDK reads |
