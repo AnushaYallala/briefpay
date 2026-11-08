@@ -9,7 +9,7 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-08 by Claude: T-04 backend foundation done |
+| Last updated | 2026-11-08 13:20 IST by Gemini: T-60 sample site done |
 | Overall phase | **Day 0: backend skeleton + schema built; no features yet** (plain-English summary: `docs/PROGRESS_SUMMARY.md`) |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
 | Next task to pick up | Track A: **T-40**, then **T-07**, **T-06** · Track B: **T-02** (human, sandbox keys), **T-08**, then **T-20** |
@@ -94,7 +94,7 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 | T-50 | UI: ledger AG Grid Community (type chips, pinned totals, filters, CSV, meta modal, live refresh) | §11 #12 |  | TODO |  | No Enterprise features |
 | T-51 | UI: AI audit trail AG Grid | §11 #13 |  | TODO |  | |
 | T-52 | `seed.py`: Velugu Cove project through BRD + contract; **a project whose round 1 has failed** (holds voided, nothing charged); **a project at `PAYOUT_READY`**; record replay fixtures | §16 |  | TODO |  | Don't pre-authorize live pledges more than ~2 days before recording |
-| T-60 | Sample site v1 (missing form) + v2 (complete) in its own public repo; record both commit SHAs in §4 | §15 |  | TODO |  | |
+| T-60 | Sample site v1 (missing form) + v2 (complete) in its own public repo; record both commit SHAs in §4 | §15 | Gemini | DONE | t-60-sample-site | Public repo https://github.com/meghavardhan-git/velugu-cove-site (v1: 677da6f, v2: 1a75b03); mirrored in sample-site/ |
 | T-61a | Deploy hello-world API to Render (gets webhook URL early) | §14 |  | TODO |  | |
 | T-61 | Full Render deploy via `render.yaml` (free API + 2 static sites) + env vars + Aiven CA secret file | §14 |  | TODO |  | Everything on free plans (§5.5) |
 | T-62 | README (problem, Pledge-If explained, architecture diagram, setup, demo personas, tools used, eval results, production boundaries) | §18, §19.3 |  | TODO |  | |
@@ -134,8 +134,8 @@ _Add things you confirmed so the next AI doesn't re-verify. Include date and who
 | Sponsor B (Ravi / Ravi's Fish Kitchen) | _TBD_ |
 | Sponsor C (Meena / Cove Boat Tours) | _TBD_ |
 | Freelancer (Arjun) | _TBD_ |
-| Sample site v1 commit SHA | _TBD_ |
-| Sample site v2 commit SHA | _TBD_ |
+| Sample site v1 commit SHA | `677da6fb5b2f7e69c54eb9ee1ad5c4bb880d0c9f` |
+| Sample site v2 commit SHA | `1a75b0389d2208b8de14595a25f7fab5f51f9f5d` |
 | Gemini model in use | _TBD_ |
 | Gemini free RPM / RPD for that model | _TBD_ |
 | Cloudinary free monthly credits / max file size | _TBD_ |
@@ -159,6 +159,14 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-08 13:20 IST · Gemini · T-60
+- Did: Built Velugu Cove sample site (HTML/CSS/JS, mobile-first, custom properties, placeholder images, Google Fonts, all 3 businesses featured). Created public repo at `https://github.com/meghavardhan-git/velugu-cove-site`, committed and tagged v1 (`v1-missing-form`, SHA `677da6fb5b2f7e69c54eb9ee1ad5c4bb880d0c9f`), created `contact.html` with enquiry form + reference number generator, committed and tagged v2 (`v2-complete`, SHA `1a75b0389d2208b8de14595a25f7fab5f51f9f5d`). Mirrored files into `briefpay/sample-site/` for `render.yaml` deployment.
+- State now: T-60 DONE.
+- Tests: static site verified with HTML/CSS inspection. Backend tests untouched.
+- Contract changes: none.
+- Next step for whoever picks up: Push `velugu-cove-site` tags to GitHub remote (needs user credentials in interactive terminal); for BriefPay, continue with Track A: **T-40** (Settlement engine) or **T-06** (LLM adapter) / **T-07** (state machines + LedgerService), or Track B: **T-02** / **T-08** / **T-20**.
+- Gotchas: Git push from non-interactive subshell blocked on Git Credential Manager, so user can run `git push origin main --tags` inside `C:\Users\tammi\OneDrive\Desktop\velugu-cove-site`.
 
 ### 2026-11-08 · Claude · T-04
 - Did: moved docs to the spec layout (root `AGENTS.md`, `.env.example`, `docs/`); added `.gitignore`, MIT `LICENSE`; built `backend/` (FastAPI app, `config.py`, `db.py`, `/api/healthz`), SQLAlchemy models for all 32 §6.2 tables (`app/models/tables.py`), Alembic migration `0001`, pytest setup.
