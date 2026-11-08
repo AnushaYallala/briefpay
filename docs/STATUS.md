@@ -83,7 +83,7 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 | T-42 | Guardian LLM review (escalate-only) + decision logic + release policies (auto vs human) | §7.5.4–7.5.5 | Claude | DONE | t-42-guardian-llm | `GuardianLLM` agent + `guardian_facts` + `guardian_decision.combine` wired into `review_plan` and the review endpoint. 33 tests; mutation-checked. Never called on BLOCK; failure => HOLD (D-025). No real Gemini call made yet (A-4) |
 | T-43 | Execution paths: capture/void steps, freelancer payout batch; webhooks + poll fallback; PAID / PAYOUT_FAILED | §8.5, §9.3–9.4 |  | TODO |  | |
 | T-44 | `REFUND_CAPTURED` execution + cancel flow (builder in T-26) | §8.1 M7 |  | TODO |  | UI is cut-order #5 |
-| T-46 | Strategist (deterministic): forecast, deadline suggestion, nudge target ranking + tests; API + forecast card | §7.4 |  | TODO |  | MVP |
+| T-46 | Strategist (deterministic): forecast, deadline suggestion, nudge target ranking + tests; API + forecast card | §7.4 | Claude | IN_PROGRESS | t-46-strategist | MVP |
 | T-47 | Strategist LLM narrative + nudge drafts + numbers validator | §7.4 |  | TODO |  | SHOULD (cut order #1) |
 | T-48 | Ledger ↔ PayPal reconciliation job (SDK Transaction Search) + "PayPal match" column | §9.7 |  | TODO |  | SHOULD |
 | T-49 | UI: money plans viewer (steps grid, rule rows, risk card, decision, approve, simulate tamper) | §11 #11 |  | TODO |  | |
