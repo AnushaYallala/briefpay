@@ -4,6 +4,28 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 5 · Guardian rules (T-41) · Sun Nov 8
+
+**What now exists**
+- **The Guardian's checklist, in code:** 13 hard rules that look at a proposed money plan and say pass or fail, plus 3 softer warning flags. Examples: is this exactly the plan the system would build right now? Does every payment belong to this project? Does PayPal's own record agree with ours? Does the payout go to the email locked in the contract, for the contract amount, after a verified report? Do refunds go back to the original payers only?
+- **Decision logic:** any failed hard rule means **BLOCK**. Otherwise any warning flag (the freelancer funding their own job, one person providing 60% or more of the goal, a late surge of pledges, or PayPal being unreachable) means **HOLD** for a human. Otherwise **ALLOW**. PayPal being down never counts as a failure; it just forces a human look.
+- **"Simulate tampered plan":** the five demo attacks (swap the recipient, inflate the amount, add an extra recipient, capture twice, capture inside a release plan) are built and every one is caught. The attacks are re-fingerprinted like a careful attacker would, and the Guardian still blocks them on substance. A simulation writes nothing and never touches PayPal.
+- **Checked the checker:** I deliberately broke two rules to confirm the tests notice. They did.
+- 165 automated tests pass (63 new).
+
+**What it does NOT do yet**
+Nothing executes. The Guardian's AI risk review (it can only make things stricter) is next, as is the executor that actually moves money. PayPal lookups use a stand-in until the real PayPal connection exists (T-20).
+
+**Decision to know about:** the spec left a few checks open to interpretation (what counts as a "live" hold, who may request a refund, and so on). I fixed them conservatively and logged them as D-023.
+
+**Progress:** 6 of ~45 tasks done (T-04, T-40, T-07, T-06, T-26, T-41).
+
+**Needed from you:** nothing new. Pending as before: sandbox keys (T-20), a Gemini key (not blocking), your teammate's demo repo (T-60).
+
+**Next increment:** T-45, the MoneyExecutor: the only code allowed to call PayPal writes. It refuses anything unapproved or changed, runs the steps in order with safe retries, and is tested against a fake PayPal. After that, T-42 (the AI risk review and release policies).
+
+---
+
 ## Increment 4 · Plan builder (T-26) · Sun Nov 8
 
 **What now exists**

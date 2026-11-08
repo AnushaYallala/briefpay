@@ -9,10 +9,10 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-08 by Claude: T-26 PlanBuilder done |
+| Last updated | 2026-11-08 by Claude: T-41 Guardian rules done |
 | Overall phase | **Day 0: backend skeleton, schema, money math, state machines, ledger built; no features yet** (plain-English summary: `docs/PROGRESS_SUMMARY.md`) |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
-| Next task to pick up | Track A: **T-41** (Guardian rules; needs T-26 done), then **T-45** (MoneyExecutor), or auth + **T-10/T-11** · Track B: **T-02** (human, sandbox keys), **T-08**, then **T-20** |
+| Next task to pick up | Track A: **T-45** (MoneyExecutor + plan lifecycle), then **T-42** (Guardian LLM + decision), or auth + **T-10/T-11** · Track B: **T-02** (human, sandbox keys), **T-08**, then **T-20** |
 | Blockers | None yet |
 | Deployed URLs | API: _not deployed_ · Web: _not deployed_ · Sample site: _not deployed_ |
 | Repo | https://github.com/AnushaYallala/briefpay (origin; T-01 still needs LICENSE visible in About + secret scanning) |
@@ -79,7 +79,7 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 | T-40 | Settlement engine (pure): `split_pro_rata`, `plan_captures`, `plan_refunds`, `plan_freelancer_payout`, `plan_hash` + tests (incl. property tests) | §8.3 | Claude | DONE | t-40-settlement-state-ledger | 13 tests incl. hypothesis property tests; worked examples 1-3 from SPEC 8.3 verified. `plan_hash` excludes idempotency keys (D-021) |
 | T-26 | `PlanBuilder` (pure, reads DB): `CAPTURE_PLEDGES`, `RELEASE_HOLDS`, `FREELANCER_PAYOUT`, `REFUND_CAPTURED` specs + steps + idempotency keys + tests | §7.5.1, §8.3 | Claude | DONE | t-26-plan-builder | Four plan kinds + `save_proposed` + `rebuild` + release policies. 39 tests. Retry attempts in inputs (D-022). `REAUTH_PLEDGES` not built (SHOULD) |
 | T-45 | `MoneyExecutor` + plan lifecycle + approvals API (`plans`, `review`, `approve`) + executor tests (refuses unapproved/mismatched/foreign steps) | §8.4, §8.5, §10 |  | TODO |  | Only module allowed to call PayPal writes |
-| T-41 | Guardian rules G-01…G-13 + soft flags S-01…S-03 (pure; SDK mocked) + one pass/fail test per rule + tamper mutations | §7.5.2–7.5.3, §7.5.6 | Claude | IN_PROGRESS | t-41-guardian-rules | G-06/G-08 use SDK reads |
+| T-41 | Guardian rules G-01…G-13 + soft flags S-01…S-03 (pure; SDK mocked) + one pass/fail test per rule + tamper mutations | §7.5.2–7.5.3, §7.5.6 | Claude | DONE | t-41-guardian-rules | G-01..G-13 + S-01..S-03 + 5 tamper mutations, 63 tests incl. one pass/fail per rule; mutation-checked. PayPal reads go through an injected `PayPalReader` (real one arrives with T-20). Interpretations in D-023 |
 | T-42 | Guardian LLM review (escalate-only) + decision logic + release policies (auto vs human) | §7.5.4–7.5.5 |  | TODO |  | |
 | T-43 | Execution paths: capture/void steps, freelancer payout batch; webhooks + poll fallback; PAID / PAYOUT_FAILED | §8.5, §9.3–9.4 |  | TODO |  | |
 | T-44 | `REFUND_CAPTURED` execution + cancel flow (builder in T-26) | §8.1 M7 |  | TODO |  | UI is cut-order #5 |
@@ -159,6 +159,14 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-08 · Claude · T-41
+- Did: `services/guardian_rules.py` (`evaluate(db, plan, spec=None, now, reader, params)` -> `Evaluation` with per-rule results, soft flags and `rule_decision`; `PayPalReader` protocol, `PayPalObject`, `PayPalUnavailable`, `GuardianParams`), `services/guardian_tamper.py` (`apply_mutation`, `MUTATIONS` table with expected failing rules). `tests/factories.py` now holds the shared `World` fixture builder.
+- State now: T-41 DONE (branch t-41-guardian-rules).
+- Tests: `cd backend && .venv/Scripts/python -m pytest -q` -> 165 passed (63 new in `tests/test_guardian_rules.py`). Mutation-checked: disabling G-12's recipient check and G-03's receiver check makes the targeted tests fail.
+- Contract changes: none to SPEC; interpretations logged in D-023.
+- Next step: T-45 MoneyExecutor (must call `plan_builder.rebuild` and refuse a hash mismatch, and hardcode `final_capture=true`), then T-42 (Guardian LLM review + `decision` combining rules, flags and LLM; persist `guardian_reviews`; release policies).
+- Gotchas: (1) Rules re-run `PlanBuilder.rebuild` with the supplied `now`, so G-01 fails if a hold lapses or a pledge is voided after the preview; this is intended. (2) `rebuild` needs the campaign `OPEN` for captures, so the executor must verify BEFORE moving the campaign to `CAPTURING`. (3) Nothing persists a `guardian_reviews` row yet (T-42). (4) Simulated reviews (demo tamper) must be stored with `simulated=true` and use a no-network reader; the API for that is T-49/T-42. (5) The real PayPal reader (SDK `authorizations get`, `captures get`, Transaction Search balance) is part of T-20; map PayPal statuses to `PayPalObject.status` (`CREATED` for a live hold, `COMPLETED` for a capture). (6) S-01/S-02 only look at pledges with a `payer_email`, which comes from PayPal at authorize time.
 
 ### 2026-11-08 · Claude · T-26
 - Did: `services/plan_builder.py`: `build_capture_pledges`, `build_release_holds`, `build_freelancer_payout`, `build_refund_captured`, `build` (dispatch), `rebuild` (for Guardian G-01 and the executor), `release_policy_for`, `save_proposed` (idempotent), `live_valid_pledges`. Each returns `BuiltPlan(spec, plan_hash)` with step idempotency keys derived from the hash.
