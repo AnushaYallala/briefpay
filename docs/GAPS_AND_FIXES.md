@@ -6,7 +6,7 @@ A running list of everything that is **missing, risky, unverified, or was found 
 - **Fixes** are problems that were found and already resolved, kept so the reasoning is not lost.
 - IDs are permanent. When a gap is closed, move it to Fixes (keep the ID) and say how.
 
-_Last updated: 2026-11-08, after the T-22/T-25 blockers._
+_Last updated: 2026-11-08, end of T-46._
 
 ---
 
@@ -76,6 +76,10 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | GAP-38 | Medium | The SDK client is built with `max_retries=0`: reads and buyer-side order calls are never retried; only executor steps retry (same idempotency key). A flaky network can fail a pledge authorization that the buyer already approved. | T-22: re-check the order with `get_order`/the webhook before showing an error; consider SDK retries for idempotent reads. |
 | GAP-39 | Low | Unverified SDK behaviours: the exact body of a failed `void_payment` (it returns 204 on success), whether authorization expiry shows as `VOIDED` or a status the SDK enum lacks (it has no `EXPIRED`), and the sandbox approval link format used by the script (`checkoutnow?token=`). The Guardian treats any status other than CREATED as a mismatch, which is the safe direction. | Settled by the sandbox script run (A-8) and the first real webhook samples (T-21). |
 | GAP-40 | Low | Payouts, payout polling and webhook verification use raw `httpx` (the SDK has none of them), so their request shapes are checked only against PayPal's documentation, not generated code. | Settled by the sandbox script (payout) and the first webhook (T-21). |
+| GAP-41 | Low | The Strategist's constants (conversion rates .55/.30, the 0.5 momentum discount, logistic steepness 6) are uncalibrated heuristics from the spec; they are labelled as such. | Calibrate on the 20 synthetic campaigns in the eval set (T-63, SHOULD) and real runs. |
+| GAP-42 | Low | `expected_pledge_cents` is typed in by the lead on behalf of each invitee, not by the invitee; the forecast is only as good as those numbers. | Acceptable for the demo; a self-service 'I plan to give' field is a COULD. |
+| GAP-43 | Low | The one-time extension is remembered as a marker inside a report's JSON, not in a column; deleting report rows would reset the limit. | Add a `deadline_extended_at` column if it ever matters (needs a SPEC 6.2 change). |
+| GAP-44 | Medium | The Strategist (and anything that reads pledges) has only ever seen pledge rows created directly in tests, because the pledge service is blocked (BLK-01). Its behaviour on real pledges is unverified. | Resolved when BLK-01 is. |
 
 ---
 
@@ -106,6 +110,8 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | FIX-21 | T-20 | **The PayPal SDK leaves optional fields absent, not `None`.** A real response without a payer, a `purchase_units` payments block, an expiry time or a status would have raised `AttributeError` in my client. My first tests passed `payer=None` explicitly, which hid it; building fakes from the real model classes and leaving fields unset exposed it. | All optional reads go through `_opt`; a missing status is `"UNKNOWN"` (never trusted by the Guardian); tests cover genuinely unset fields. |
 | FIX-22 | T-20 | **A guard test was silently toothless:** the 'only the PayPal client imports an HTTP library' check used a regex whose `\\b` my shell-heredoc editing turned into an invisible backspace character, so it passed even with a rogue `import httpx` planted. | Found by planting a rogue file; the character is removed and the guard now fails on the rogue import. Rule: every new guard test is verified against a deliberately planted violation; do not edit files with Python-in-a-heredoc when text has backslashes. |
 | FIX-23 | T-20 | The PayPal tests took ~40 s because each test built a fresh `httpx.Client` (loading an SSL context), and a test fake that returned `None` for an unqueued call crashed a Guardian rule (correctly failing it) and hid the real assertion. | One shared client whose transport fails the test on any real HTTP call (now 5 s, and the tests can never reach the internet); the helper supplies the balance response. |
+| FIX-24 | T-46 | Four of my own new Strategist tests asserted wrong numbers (they assumed every invitee had opened the link, and that 39,000 of 40,000 pledged is 'healthy'; the heuristic correctly rates it 46%). | Statuses are now set explicitly in the test helper; expectations were recomputed by hand and cross-checked in a script. The code was right each time. |
+| FIX-25 | T-46 | Mutation testing showed no test distinguished measuring the 3-day honor limit from the campaign's *opening* versus from *now*, nor exercised the service's own guard when a queued job runs after the campaign ended. | Added a test with a campaign that opened 30 hours ago and one for the late-running job. |
 
 ---
 

@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 
 from app.agents.ba_agent import get_ba_agents
 from app.agents.brd_generator import get_brd_generator
-from app.models import Project
-from app.services import ba_rounds, brd_service, jobs, money_executor, paypal_io
+from app.models import Campaign, Project
+from app.services import ba_rounds, brd_service, jobs, money_executor, paypal_io, strategist_service
 
 
 @jobs.register("EXECUTE_PLAN")
@@ -26,3 +26,10 @@ def ba_run(db: Session, payload: dict) -> dict:
 def brd_generate(db: Session, payload: dict) -> dict:
     """Draft, assemble, render and store the BRD. Safe to retry: a project that already has one pending reports it."""
     return brd_service.generate_once(db, db.get(Project, payload["project_id"]), get_brd_generator())
+
+
+@jobs.register("STRATEGIST_RUN")
+def strategist_run(db: Session, payload: dict) -> dict:
+    """Compute and store the forecast, deadline advice and nudge ranking (deterministic; the optional LLM wording is T-47)."""
+    r = strategist_service.run_report(db, db.get(Campaign, payload["campaign_id"]))
+    return {"report_id": r.id, "probability": r.forecast_json["probability"]}

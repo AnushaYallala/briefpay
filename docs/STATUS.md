@@ -9,10 +9,10 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-08 by Claude: T-22 and T-25 BLOCKED (partial); see docs/GAPS_AND_FIXES.md section 0 |
+| Last updated | 2026-11-08 by Claude: T-46 Strategist forecast done (T-22/T-25 still BLOCKED partial) |
 | Overall phase | **Day 0: backend skeleton, schema, money math, state machines, ledger built; no features yet** (plain-English summary: `docs/PROGRESS_SUMMARY.md`) |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
-| Next task to pick up | Not blocked: **T-46** (Strategist deterministic forecast), **T-21** (webhooks), **T-31/T-32** (submissions, auto checks), **T-50/T-51** (ledger + audit-trail API) · **Human:** write BLK-01/BLK-02 files or advise · run `backend/scripts/sandbox_check.py` once keys exist |
+| Next task to pick up | Not blocked: **T-21** (webhooks), **T-31/T-32** (submissions, auto checks), **T-50/T-51** (ledger + audit-trail API), **T-47** (Strategist AI wording) · **Human:** write BLK-01/BLK-02 files or advise · run `backend/scripts/sandbox_check.py` once keys exist |
 | Blockers | **BLK-01** (T-22 pledge service/endpoints) and **BLK-02** (T-25 clock and lead actions): the assistant's attempts to write those two files were stopped by a safety check; see `docs/GAPS_AND_FIXES.md` section 0 for the full design |
 | Deployed URLs | API: _not deployed_ · Web: _not deployed_ · Sample site: _not deployed_ |
 | Repo | https://github.com/AnushaYallala/briefpay (origin; T-01 still needs LICENSE visible in About + secret scanning) |
@@ -83,7 +83,7 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 | T-42 | Guardian LLM review (escalate-only) + decision logic + release policies (auto vs human) | §7.5.4–7.5.5 | Claude | DONE | t-42-guardian-llm | `GuardianLLM` agent + `guardian_facts` + `guardian_decision.combine` wired into `review_plan` and the review endpoint. 33 tests; mutation-checked. Never called on BLOCK; failure => HOLD (D-025). No real Gemini call made yet (A-4) |
 | T-43 | Execution paths: capture/void steps, freelancer payout batch; webhooks + poll fallback; PAID / PAYOUT_FAILED | §8.5, §9.3–9.4 |  | TODO |  | |
 | T-44 | `REFUND_CAPTURED` execution + cancel flow (builder in T-26) | §8.1 M7 |  | TODO |  | UI is cut-order #5 |
-| T-46 | Strategist (deterministic): forecast, deadline suggestion, nudge target ranking + tests; API + forecast card | §7.4 | Claude | IN_PROGRESS | t-46-strategist | MVP |
+| T-46 | Strategist (deterministic): forecast, deadline suggestion, nudge target ranking + tests; API + forecast card | §7.4 | Claude | DONE | t-46-strategist | Pure forecast/advice/nudge math + report service + run/read/apply endpoints + STRATEGIST_RUN job. 52 tests; mutation-checked 24/24 (two added tests). LLM wording is T-47 (D-035) |
 | T-47 | Strategist LLM narrative + nudge drafts + numbers validator | §7.4 |  | TODO |  | SHOULD (cut order #1) |
 | T-48 | Ledger ↔ PayPal reconciliation job (SDK Transaction Search) + "PayPal match" column | §9.7 |  | TODO |  | SHOULD |
 | T-49 | UI: money plans viewer (steps grid, rule rows, risk card, decision, approve, simulate tamper) | §11 #11 |  | TODO |  | |
@@ -159,6 +159,14 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-08 · Claude · T-46
+- Did: `services/strategist_math.py` (pure: `forecast`, `suggest_deadline_for_setup`, `suggest_extension`, `nudge_targets`, constants), `services/strategist_service.py` (`gather`, `compute`, `run_report`, `apply_deadline`, `latest_report`, `extension_applied`), `routers/strategist.py` (`POST /campaigns/{id}/strategist/run` 202, `GET /campaigns/{id}/strategist`, `POST /campaigns/{id}/strategist/apply`), `STRATEGIST_RUN` job handler.
+- State now: T-46 DONE (branch t-46-strategist). T-22/T-25 remain BLOCKED (partial): see `docs/GAPS_AND_FIXES.md` section 0.
+- Tests: `cd backend && .venv/Scripts/python -m pytest -q` -> 823 passed (52 new: 30 math, 22 API). Mutation-checked: 24 breakages; 2 survived at first (extension window measured from the wrong moment; advice on ended campaigns), two tests added, all caught.
+- Contract changes: D-035 (no SPEC changes).
+- Next step: T-47 (optional) fills `narrative_json` and `nudges_json` with an LLM that may only use numbers from the report (numbers validator, template fallback `"{name}, we're {gap} short with {hours} h left. The link: {url}"`, one draft per invitee per day); or T-21 webhooks.
+- Gotchas: (1) Only LEAD and SPONSOR members are invitees; their `expected_pledge_cents` is entered by the lead (D-026). (2) Test numbers depend on invite status: the lead is VIEWED (.55), people who have not opened the link are INVITED (.30). (3) The one-time extension marker lives in `suggestions_json`; deleting report rows would reset it. (4) The forecast uses held pledges, so until the pledge service (BLK-01) exists it only ever sees rows created directly.
 
 ### 2026-11-08 · Claude · T-22 / T-25 blocked, pure parts finished
 - Did: finished and tested the pure parts: `pledge_gate.py` (56 tests), `campaign_outcome.py` (30 tests), `paypal_io.OrderGateway` role (4 tests; the client is also the order gateway). Mutation-checked 21 breakages, all caught. Recorded BLK-01/BLK-02 with the full design in `docs/GAPS_AND_FIXES.md` section 0 and D-034.

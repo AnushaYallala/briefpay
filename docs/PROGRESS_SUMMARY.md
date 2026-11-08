@@ -4,6 +4,30 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 17 · The Campaign Strategist's forecast (T-46) · Sun Nov 8
+
+**What now exists**
+- **A success forecast for the lead.** For a campaign being set up or running, the Strategist computes the chance the goal will be reached, using only plain arithmetic: what is already held, what each owner who hasn't pledged yet *said* they would give weighted by how likely they are to follow through (55% if they've opened the link, 30% if not, 0% if they declined), and how fast supporters have been pledging in the last 6 hours. It is clearly labelled "estimate (heuristic)": with no history it is an informed guess, not a promise. It goes to 100% once the goal is held and to 0% once time runs out short of the goal.
+- **Deadline advice.** At setup: 48 hours by default, but if the opening forecast is weak (under 50%), it advises the longest campaign PayPal's 3-day hold guarantee allows (70 hours). While running: if the goal looks at risk (under 60%) with under a day left, it offers one extension to the longest allowed deadline, counted from when the campaign opened, never shortening it and never more than once.
+- **Who to nudge.** The owners who haven't pledged and haven't declined, ranked by how likely and how much, each with a plain reason ("hasn't opened the link, said $150"). The freelancer is never on the list.
+- **The lead can apply the advice.** The lead clicks apply (or sends a specific deadline) and the deadline changes, within the same rules. The extension can only be used once.
+- **Private to the lead**, because it reveals what each sponsor said they would pledge.
+- **A worked example from the demo:** before anyone pledges, with Lakshmi having opened the link (hoping $150) and Ravi ($150) and Meena ($100) not yet, the expected total is $157.50 of $400, a 2.6% chance, so the advice is the 70-hour campaign. I checked this by hand.
+- 823 automated tests pass (52 new). I broke twenty-four rules on purpose; two slipped through, I added tests, and now all are caught. Two of my tests were also wrong at first (they assumed everyone had opened the link); the code was right.
+
+**What it does NOT do yet**
+The optional AI wording of the explanation and the ready-to-send nudge messages (T-47). It also cannot see real pledges until the pledge service (blocked, see below) exists; tests create pledge rows directly.
+
+**Still blocked:** the pledge service (T-22) and the campaign clock (T-25), as recorded in the gaps file section 0. Everything else continues.
+
+**Progress:** 18 of ~45 tasks done or in review; 2 blocked (partial).
+
+**Needed from you:** unchanged: sandbox keys + running the PayPal check script, the Gemini key, and a decision on BLK-01/BLK-02.
+
+**Next increment:** webhooks (T-21): the endpoint PayPal calls to say a hold was placed, a capture completed, a payout succeeded, and so on: verified with PayPal, de-duplicated, safe against out-of-order delivery.
+
+---
+
 ## Increment 16 · Blockers recorded; the safe parts of pledging and the clock finished
 
 **What happened.** While building pledging (T-22) and the campaign clock (T-25), an automated safety check stopped two of the files I was writing: the one that takes a pledge and creates the PayPal order, and the one that starts the capture or release plan. I was told not to produce that content again, even reworded, so I did not retry. I don't know what triggered it. Both files are code that starts money-related steps; the neighbouring pure-logic files went through without trouble. I wrote the blockers down (BLK-01 and BLK-02 in the gaps file, new "Blockers" section at the top) with the complete design, so a person can write those two files, or tell me how to proceed.
