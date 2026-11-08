@@ -4,6 +4,32 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 15 · The real PayPal client (T-20) · Sun Nov 8
+
+**What now exists**
+- **The PayPal connection, built on PayPal's own official kit.** I installed the PayPal developer kit (the APIMatic-generated SDK the hackathon wants us to use) and read its real method and field names straight from the installed package rather than trusting memory. On top of it sits one module that is the only place in the whole codebase allowed to talk to PayPal. It can: look up a hold or a capture (for the Guardian), read the platform balance, capture, void, refund, send a payout, check a payout's status, check that a webhook really came from PayPal, and create and authorize a pledge order. Payouts and webhook checking use plain web calls because the kit doesn't cover them (as the spec expects).
+- **Safe by construction.** It refuses anything but the PayPal sandbox. Without keys nothing is configured and every money action fails safely. Its printed form never shows the secret. Amounts are converted between cents and PayPal's text form with exact integer arithmetic, and only plain "123.45" style amounts are accepted.
+- **Errors understood once.** Timeouts, "too many requests" and server errors are marked temporary, so the executor retries them under the same reference number. Declines and bad requests are final and carry PayPal's own error code and support number. If PayPal can't answer a lookup, the Guardian is told "unverified" and the plan is held for a human rather than blocked or allowed.
+- **A bug that only real-model testing could find.** The PayPal kit leaves fields completely absent (not blank) when PayPal doesn't send them, so a normal response with no payer or no expiry time would have crashed my client. My first tests, which used blank values, hid this. Testing against the kit's real model classes exposed it and it's fixed, with a missing status now read as "UNKNOWN", which the Guardian never trusts.
+- **Proven to fit together.** The real client, driven by the real executor and checked by the real Guardian, was tested with only the PayPal kit itself faked: same reference numbers, "final capture" set, retries reusing the same reference, declines recorded with PayPal's reason.
+- **A sandbox proof script.** `backend/scripts/sandbox_check.py` will settle the assumptions the design rests on, the moment there are keys: that Payouts works, that capturing less than the hold with "final capture" releases the rest, that a captured hold can't be voided, that voids and refunds work. It pauses twice and prints a link for a human to approve a sandbox payment. I tested its whole flow against fakes, including what a failure looks like.
+- 681 automated tests pass (89 new). I broke twenty-two rules on purpose; all caught. I also made the PayPal tests 8 times faster and made them impossible to accidentally hit the real internet.
+
+**What it does NOT do yet**
+Nothing has touched real PayPal: that needs your sandbox keys. The three open assumptions (Payouts enabled, final-capture releases the remainder, void behaviour) are still unproven until you run the script.
+
+**A near miss worth knowing about:** one of the safety tests I added (that nothing but the PayPal module may use web-calling libraries) was silently toothless because my editing script turned a "\b" into an invisible backspace character. I caught it by planting a fake offending file to see whether the test would object; it didn't, so I fixed it, and now it does. It's recorded in the gaps file.
+
+**Decision to know about:** D-033 (the full mapping, error rules and the three roles).
+
+**Progress:** 17 of ~45 tasks done or in review.
+
+**Needed from you:** please run the sandbox script when keys exist: (1) set up the PayPal sandbox (US personal buyer accounts, a business account, the app with Payouts and Transaction search enabled); (2) put the Client ID and Secret in `backend/.env`; (3) run `cd backend` then `.venv/Scripts/python scripts/sandbox_check.py --payout-to <Arjun's sandbox email>`; (4) approve the two links it prints; (5) paste the summary back to me. Any FAIL is exactly what I need to know before building more on top.
+
+**Next increment:** T-22, pledging: the Pledge Gate rules (campaign open, amount within the minimum and what's still needed, right currency), creating the order, authorizing it once the supporter approves, recording the hold, and the public pledge board.
+
+---
+
 ## Increment 14 · Campaign setup and launch (T-24) · Sun Nov 8
 
 **What now exists**

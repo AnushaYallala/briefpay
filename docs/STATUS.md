@@ -9,10 +9,10 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-08 by Claude: T-24 campaign setup + launch done |
+| Last updated | 2026-11-08 by Claude: T-20 PayPal client built (REVIEW: needs sandbox keys to verify) |
 | Overall phase | **Day 0: backend skeleton, schema, money math, state machines, ledger built; no features yet** (plain-English summary: `docs/PROGRESS_SUMMARY.md`) |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
-| Next task to pick up | Track B: **T-20** (real PayPalClient on the SDK; sandbox script needs keys), then **T-22** (pledge gate/service), **T-21** (webhooks), **T-25** (outcome engine + clock) · see also `docs/GAPS_AND_FIXES.md` · Track B: **T-02** (human, sandbox keys), **T-08**, then **T-20** |
+| Next task to pick up | Track B: **T-22** (pledge gate + service, using `PayPalClient.create_authorize_order/authorize_order`), then **T-21** (webhooks: `verify_webhook_signature` exists), **T-25** (outcome engine + clock) · **Human:** run `backend/scripts/sandbox_check.py` once keys exist · see also `docs/GAPS_AND_FIXES.md` · Track B: **T-02** (human, sandbox keys), **T-08**, then **T-20** |
 | Blockers | None yet |
 | Deployed URLs | API: _not deployed_ · Web: _not deployed_ · Sample site: _not deployed_ |
 | Repo | https://github.com/AnushaYallala/briefpay (origin; T-01 still needs LICENSE visible in About + secret scanning) |
@@ -54,7 +54,7 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 ### Track B1: Pledge-If (campaigns, holds, webhooks)
 | ID | Task | Spec | Owner | State | Branch | Notes |
 |---|---|---|---|---|---|---|
-| T-20 | `PayPalClient`: SDK for Orders (create `AUTHORIZE`, authorize), Payments (authorization get/capture/void/reauthorize, capture get, refund), Transaction Search; `httpx` for Payouts + webhook verify. **Plus a sandbox script:** authorize→capture (partial, `final_capture`), authorize→void, payout | §9.2–9.4, §9.7 | Claude | IN_PROGRESS | t-20-paypal-client | Resolves A-1, A-2, A-8, A-9. Use the Context Plugin for method names |
+| T-20 | `PayPalClient`: SDK for Orders (create `AUTHORIZE`, authorize), Payments (authorization get/capture/void/reauthorize, capture get, refund), Transaction Search; `httpx` for Payouts + webhook verify. **Plus a sandbox script:** authorize→capture (partial, `final_capture`), authorize→void, payout | §9.2–9.4, §9.7 | Claude | REVIEW | t-20-paypal-client | Client built on SDK 2.4.0 (reader, writer, order gateway, payouts, webhook verify, balances) + `scripts/sandbox_check.py`. 89 tests incl. real-model fakes; mutation-checked 22/22. **Needs a human:** run the script with sandbox keys to resolve A-1, A-2, A-8, A-9 (D-033) |
 | T-21 | Webhook endpoint: signature verify, dedupe, job enqueue, monotonic processors for authorization/capture/refund/payout events (§9.5 table) | §9.5 |  | TODO |  | Save real event samples to `backend/tests/fixtures/webhooks/` |
 | T-22 | Pledge Gate + pledge service: `pledges/order`, `pledges/authorize`, webhook effects, progress, goal-reached trigger | §8.2, §9.2 |  | TODO |  | |
 | T-23 | UI: public campaign page (progress "held, not charged", countdown, PayPal button `intent=authorize`, pledge board AG Grid) | §11 #8 |  | TODO |  | A-11 |
@@ -159,6 +159,15 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-08 · Claude · T-20
+- Did: installed `paypal-server-sdk==2.4.0` and read its real controllers/models; `services/paypal_client.py` (`PayPalClient`: reader `get_authorization/get_capture/platform_balance_cents`; writer `capture_authorization/void_authorization/refund_capture/create_payout_batch`; `get_payout_batch`; `verify_webhook_signature`; order gateway `create_authorize_order/authorize_order/get_order`; `configure_from_settings` called from the app lifespan); `scripts/sandbox_check.py` (interactive sandbox proof); chokepoint tests extended (order calls only from `pledge_service.py`, only the client imports an HTTP library); `requirements.txt` pins the SDK.
+- State now: T-20 REVIEW (code and fake-backed tests done; the real sandbox run needs keys). Resolves nothing in section 3 yet.
+- Tests: `cd backend && .venv/Scripts/python -m pytest -q` -> 681 passed (89 new: 59 client, 15 integration with executor + Guardian, 13 script, 2 chokepoint). Mutation-checked: 22 breakages, all caught.
+- Contract changes: D-033 (no SPEC changes).
+- **Human step (when sandbox keys exist):** put `PAYPAL_CLIENT_ID`/`PAYPAL_CLIENT_SECRET` in `backend/.env`, then `cd backend && .venv/Scripts/python scripts/sandbox_check.py --payout-to <Arjun's sandbox email>`. It pauses twice and prints a link: open it, log in as a US sandbox *personal* buyer, approve, press Enter. Paste its summary into section 3 and report any FAIL (especially A-8: does a final partial capture release the remainder?).
+- Next step: T-22: `services/pledge_service.py` (the only caller of `create_authorize_order`/`authorize_order`): Pledge Gate checks (campaign OPEN and before deadline, `min_pledge <= amount <= remaining_need`, currency), `POST /campaigns/{id}/pledges/order` and `/pledges/authorize`, pledge rows `CREATED -> AUTHORIZED` from PayPal's response (amount must equal the order amount; store authorization id, payer email/id, `authorized_at`, `honor_until = +3 d`, `valid_until = +29 d`), `GET /campaigns/{id}/pledges` (no emails publicly), goal-reached trigger. The webhook (T-21) is the source of truth; the authorize response only updates the UI optimistically.
+- Gotchas: (1) The SDK leaves unset optional fields as missing attributes; use `_opt`. (2) Authorization statuses in the SDK enum are CREATED, CAPTURED, PARTIALLY_CAPTURED, VOIDED, DENIED, PENDING (no EXPIRED): anything other than CREATED is a mismatch in G-06. (3) `void_payment` returns 204 with no body; the client reports `{"status": "VOIDED"}`. (4) Fakes must be built from real SDK models; never from dicts. (5) A shell heredoc with Python can eat backslashes (`\b` became a backspace and silently disarmed a guard test); edit files with the Edit/Write tools.
 
 ### 2026-11-08 · Claude · T-24
 - Did: `services/campaign_rules.py` (pure: `goal_for`, `deadline_window`, `validate_deadline`, `validate_terms`, `CampaignParams`), `services/campaign_ops.py` (`setup_campaign`, `launch`, `blocker_details`, `blockers`, `pledge_totals`, `campaign_view`), `routers/campaigns.py` (`POST /projects/{id}/campaigns`, `GET /campaigns/{id}` public, `POST /campaigns/{id}/launch`).

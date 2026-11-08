@@ -6,7 +6,7 @@ A running list of everything that is **missing, risky, unverified, or was found 
 - **Fixes** are problems that were found and already resolved, kept so the reasoning is not lost.
 - IDs are permanent. When a gap is closed, move it to Fixes (keep the ID) and say how.
 
-_Last updated: 2026-11-08, end of T-24._
+_Last updated: 2026-11-08, end of T-20._
 
 ---
 
@@ -15,7 +15,7 @@ _Last updated: 2026-11-08, end of T-24._
 ### Blocked on something only a human can provide
 | ID | Sev | Gap | Needed / planned |
 |---|---|---|---|
-| GAP-01 | High | **No real PayPal connection exists.** Everything money-related (executor, Guardian PayPal checks, plan lifecycle) is tested only against fakes. Sandbox behaviour of `final_capture`, void, payouts and webhook payloads is unverified (assumptions A-1, A-2, A-3, A-8, A-9). | Human: T-02 (US sandbox accounts, app with Payouts and Transaction search, Client ID and Secret in `.env`). Then T-20 (real client + sandbox script), T-21 (webhooks), T-43. |
+| GAP-01 | High | **The real PayPal client exists (T-20) but has never talked to PayPal.** Everything money-related is tested only against fakes built from the SDK's real models. Sandbox behaviour of `final_capture`, void, payouts and webhook payloads is unverified (assumptions A-1, A-2, A-3, A-8, A-9). | Human: T-02 (US sandbox accounts, app with Payouts and Transaction search, Client ID and Secret in `.env`), then run `backend/scripts/sandbox_check.py` and report any FAIL. Then T-21 (webhooks), T-43. |
 | GAP-02 | High | **No real Gemini call has ever been made.** Structured-output acceptance of our nested schemas (lists of objects, enums, float coverage) is unverified (A-4). Question and BRD quality is unjudged. | Human: Google AI Studio key (billing OFF) and the Flash model name in `.env`. First live run may require flattening a schema. |
 | GAP-03 | Medium | **Replay fixtures do not exist yet.** Without a key or recorded answers, every Guardian review comes back HOLD (`GUARDIAN_LLM_UNAVAILABLE`) and the BA/BRD jobs retry and fail. Safe, but the demo cannot run without them. | T-52 (record fixtures with a key; do it before the demo). |
 | GAP-04 | Medium | GitHub repo setup incomplete (T-01): licence visible in About, secret scanning enabled. | Human, in the GitHub UI. |
@@ -60,6 +60,9 @@ _Last updated: 2026-11-08, end of T-24._
 | GAP-35 | Low | The campaign API does not suggest a deadline (the Strategist's default 48 h / extend-if-needed advice is T-46). The lead just picks within the window. | T-46. |
 | GAP-36 | Low | A campaign cannot be edited or cancelled in SETUP other than by setting it up again; there is no 'delete draft'. | Acceptable; cancel/relaunch comes with T-25. |
 | GAP-37 | Low | Deadlines are validated against the server clock; if the API's clock is wrong (free hosting restarts), the window is wrong. | Render clocks are NTP-synced; note for the README. |
+| GAP-38 | Medium | The SDK client is built with `max_retries=0`: reads and buyer-side order calls are never retried; only executor steps retry (same idempotency key). A flaky network can fail a pledge authorization that the buyer already approved. | T-22: re-check the order with `get_order`/the webhook before showing an error; consider SDK retries for idempotent reads. |
+| GAP-39 | Low | Unverified SDK behaviours: the exact body of a failed `void_payment` (it returns 204 on success), whether authorization expiry shows as `VOIDED` or a status the SDK enum lacks (it has no `EXPIRED`), and the sandbox approval link format used by the script (`checkoutnow?token=`). The Guardian treats any status other than CREATED as a mismatch, which is the safe direction. | Settled by the sandbox script run (A-8) and the first real webhook samples (T-21). |
+| GAP-40 | Low | Payouts, payout polling and webhook verification use raw `httpx` (the SDK has none of them), so their request shapes are checked only against PayPal's documentation, not generated code. | Settled by the sandbox script (payout) and the first webhook (T-21). |
 
 ---
 
@@ -87,6 +90,9 @@ _Last updated: 2026-11-08, end of T-24._
 | FIX-18 | T-30 | Two contract tests used `or True` / `in (A, B)` assertions that could not fail. | Replaced with exact expected values (the code's behaviour is deterministic). |
 | FIX-19 | T-24 | At launch a bad deadline returned HTTP 409 while the same mistake at setup returned 422, and the error code was derived by searching the message text for 'at least' / 'at most', which is fragile. | Blockers now carry their own code and status (`blocker_details`); both steps answer 422 `DEADLINE_TOO_SOON/LATE`. Found by the tests. |
 | FIX-20 | T-24 | Two of my own new tests were wrong or meaningless (a time-zone case with bad arithmetic and a 'property' that asserted fixed numbers while ignoring one of its inputs). | The zone case now tests the exact 70 h edge in IST; the property now draws every valid deadline and every pledge time before it. |
+| FIX-21 | T-20 | **The PayPal SDK leaves optional fields absent, not `None`.** A real response without a payer, a `purchase_units` payments block, an expiry time or a status would have raised `AttributeError` in my client. My first tests passed `payer=None` explicitly, which hid it; building fakes from the real model classes and leaving fields unset exposed it. | All optional reads go through `_opt`; a missing status is `"UNKNOWN"` (never trusted by the Guardian); tests cover genuinely unset fields. |
+| FIX-22 | T-20 | **A guard test was silently toothless:** the 'only the PayPal client imports an HTTP library' check used a regex whose `\\b` my shell-heredoc editing turned into an invisible backspace character, so it passed even with a rogue `import httpx` planted. | Found by planting a rogue file; the character is removed and the guard now fails on the rogue import. Rule: every new guard test is verified against a deliberately planted violation; do not edit files with Python-in-a-heredoc when text has backslashes. |
+| FIX-23 | T-20 | The PayPal tests took ~40 s because each test built a fresh `httpx.Client` (loading an SSL context), and a test fake that returned `None` for an unqueued call crashed a Guardian rule (correctly failing it) and hid the real assertion. | One shared client whose transport fails the test on any real HTTP call (now 5 s, and the tests can never reach the internet); the helper supplies the balance response. |
 
 ---
 

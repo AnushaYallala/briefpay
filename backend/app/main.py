@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 from app.config import get_settings
 from app.db import SessionLocal
 from app.routers import auth, ba, brd, campaigns, contract, health, jobs, plans, projects
-from app.services import job_handlers  # noqa: F401  (registers job handlers)
+from app.services import job_handlers, paypal_client  # noqa: F401  (job_handlers registers the job handlers)
 from app.services.jobs import JobRunner
 
 settings = get_settings()
@@ -15,6 +15,8 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # With PAYPAL_CLIENT_ID/SECRET set the real client replaces the fail-safe placeholders; without them money never moves.
+    paypal_client.configure_from_settings(settings)
     runner = JobRunner(SessionLocal)
     runner.start()
     try:

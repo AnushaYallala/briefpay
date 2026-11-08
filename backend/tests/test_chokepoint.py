@@ -61,3 +61,27 @@ def test_agents_cannot_import_money_modules():
             for banned in ("money_executor", "plan_builder", "paypal_io", "settlement", "ledger", "plan_lifecycle"):
                 assert not re.search(rf"import .*\b{banned}\b|from app\.services import .*\b{banned}\b", text), \
                     f"{path.relative_to(APP)} imports {banned}"
+
+
+ORDER_METHODS = ("create_authorize_order", "authorize_order")
+ORDER_CALLERS = {"pledge_service.py"}      # the Pledge Gate (T-22); the client defines them
+
+
+def test_buyer_side_order_calls_stay_behind_the_pledge_gate():
+    """Creating and authorizing pledge orders is the only buyer-side PayPal write; only the Pledge Gate may call it."""
+    offenders = []
+    for path, text in sources():
+        if path.name in ALLOWED_DEFINERS | ORDER_CALLERS:
+            continue
+        for m in ORDER_METHODS:
+            if re.search(rf"\b{m}\b", text):
+                offenders.append(f"{path.relative_to(APP)} mentions {m}")
+    assert not offenders, "\n".join(offenders)
+
+
+def test_nothing_but_the_paypal_client_imports_an_http_library():
+    """Payouts and webhook verification use httpx, but only inside paypal_client.py; no other module may open a connection."""
+    for path, text in sources():
+        if path.name in SDK_IMPORTERS:
+            continue
+        assert not re.search(r"^\s*(import|from)\s+(httpx|requests|urllib3|aiohttp)", text, re.M), f"{path.relative_to(APP)} imports an HTTP library"
