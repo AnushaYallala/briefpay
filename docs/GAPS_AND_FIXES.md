@@ -6,7 +6,7 @@ A running list of everything that is **missing, risky, unverified, or was found 
 - **Fixes** are problems that were found and already resolved, kept so the reasoning is not lost.
 - IDs are permanent. When a gap is closed, move it to Fixes (keep the ID) and say how.
 
-_Last updated: 2026-11-08, end of T-46._
+_Last updated: 2026-11-09, end of T-21._
 
 ---
 
@@ -81,6 +81,11 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | GAP-42 | Low | `expected_pledge_cents` is typed in by the lead on behalf of each invitee, not by the invitee; the forecast is only as good as those numbers. | Acceptable for the demo; a self-service 'I plan to give' field is a COULD. |
 | GAP-43 | Low | The one-time extension is remembered as a marker inside a report's JSON, not in a column; deleting report rows would reset the limit. | Add a `deadline_extended_at` column if it ever matters (needs a SPEC 6.2 change). |
 | GAP-44 | Medium | The Strategist (and anything that reads pledges) has only ever seen pledge rows created directly in tests, because the pledge service is blocked (BLK-01). Its behaviour on real pledges is unverified. | Resolved when BLK-01 is. |
+| GAP-45 | Medium | Webhook field paths (`supplementary_data.related_ids.authorization_id` on captures, the refund's `up` link, payout item `payout_item.sender_item_id`, batch `batch_header.payout_batch_id`) come from PayPal's documented shapes, not real sandbox events (A-3). | Save the first real events to `backend/tests/fixtures/webhooks/` and replay them in tests. |
+| GAP-46 | Medium | `RECONCILIATION_MISMATCH` (PayPal captured a different amount than approved) and `ALERT` (a capture was reversed) are recorded only in the job's result: no ledger memo, no banner. | T-50: surface them in `GET /projects/{id}/money` and the UI. |
+| GAP-47 | Low | As the spec asks, events with a bad signature are stored (verified = false). Anyone can post junk to the public endpoint and grow that table. | Cap or prune unverified rows, or rate-limit by IP. |
+| GAP-48 | Medium | No poll fallback yet: if a webhook never arrives (sleeping free server, PayPal outage), a SENT step waits forever. | T-43: poll captures, refunds and payout batches while steps are SENT. |
+| GAP-49 | Low | A payout RETURNED after it succeeded puts the money back in the pool but the project stays PAID. | Decide a resolution path (re-pay after fixing the email, or refund). |
 
 ---
 
@@ -113,6 +118,8 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | FIX-23 | T-20 | The PayPal tests took ~40 s because each test built a fresh `httpx.Client` (loading an SSL context), and a test fake that returned `None` for an unqueued call crashed a Guardian rule (correctly failing it) and hid the real assertion. | One shared client whose transport fails the test on any real HTTP call (now 5 s, and the tests can never reach the internet); the helper supplies the balance response. |
 | FIX-24 | T-46 | Four of my own new Strategist tests asserted wrong numbers (they assumed every invitee had opened the link, and that 39,000 of 40,000 pledged is 'healthy'; the heuristic correctly rates it 46%). | Statuses are now set explicitly in the test helper; expectations were recomputed by hand and cross-checked in a script. The code was right each time. |
 | FIX-25 | T-46 | Mutation testing showed no test distinguished measuring the 3-day honor limit from the campaign's *opening* versus from *now*, nor exercised the service's own guard when a queued job runs after the campaign ended. | Added a test with a campaign that opened 30 hours ago and one for the late-running job. |
+| FIX-26 | T-21 | **Double-payment risk in my own first draft:** a payout item reported `UNCLAIMED` (money already taken by PayPal, waiting for the recipient to claim it) was treated as a failure, which would have let a retry pay the freelancer a second time. | `UNCLAIMED` is a waiting state; only RETURNED/REFUNDED count as the money coming back; a test proves a second payout cannot start. Found by re-reading before testing. |
+| FIX-27 | T-21 | An end-to-end test executed a plan by hand while the approval had already queued the real executor job, which then re-ran with the unconfigured writer and failed the plan. Also a leftover always-passing line in the UNCLAIMED test. | The test now drives the real path (the queued job, a fake PayPal installed); the always-passing line was replaced with a real check. |
 
 ---
 

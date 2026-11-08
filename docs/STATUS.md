@@ -9,11 +9,11 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-08 by Claude: T-46 Strategist forecast done (T-22/T-25 still BLOCKED partial) |
+| Last updated | 2026-11-09 by Claude: T-21 webhooks in REVIEW (pledge events wait on BLK-03) |
 | Overall phase | **Day 0: backend skeleton, schema, money math, state machines, ledger built; no features yet** (plain-English summary: `docs/PROGRESS_SUMMARY.md`) |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
-| Next task to pick up | Not blocked: **T-21** (webhooks), **T-31/T-32** (submissions, auto checks), **T-50/T-51** (ledger + audit-trail API), **T-47** (Strategist AI wording) · **Human:** write BLK-01/BLK-02 files or advise · run `backend/scripts/sandbox_check.py` once keys exist |
-| Blockers | **BLK-01** (T-22 pledge service/endpoints) and **BLK-02** (T-25 clock and lead actions): the assistant's attempts to write those two files were stopped by a safety check; see `docs/GAPS_AND_FIXES.md` section 0 for the full design |
+| Next task to pick up | Not blocked: **T-50/T-51** (ledger, money and audit-trail API), **T-31/T-32** (submissions, auto checks), **T-47** (Strategist AI wording) · **Human:** write BLK-01/BLK-02 files or advise · run `backend/scripts/sandbox_check.py` once keys exist |
+| Blockers | **BLK-01** (T-22 pledge service/endpoints), **BLK-02** (T-25 clock and lead actions), **BLK-03** (pledge-state helper used by two webhook events): the assistant's attempts to write those files were stopped by a safety check; see `docs/GAPS_AND_FIXES.md` section 0 for the full designs |
 | Deployed URLs | API: _not deployed_ · Web: _not deployed_ · Sample site: _not deployed_ |
 | Repo | https://github.com/AnushaYallala/briefpay (origin; T-01 still needs LICENSE visible in About + secret scanning) |
 | Demo video | _not recorded_ |
@@ -55,7 +55,7 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 | ID | Task | Spec | Owner | State | Branch | Notes |
 |---|---|---|---|---|---|---|
 | T-20 | `PayPalClient`: SDK for Orders (create `AUTHORIZE`, authorize), Payments (authorization get/capture/void/reauthorize, capture get, refund), Transaction Search; `httpx` for Payouts + webhook verify. **Plus a sandbox script:** authorize→capture (partial, `final_capture`), authorize→void, payout | §9.2–9.4, §9.7 | Claude | REVIEW | t-20-paypal-client | Client built on SDK 2.4.0 (reader, writer, order gateway, payouts, webhook verify, balances) + `scripts/sandbox_check.py`. 89 tests incl. real-model fakes; mutation-checked 22/22. **Needs a human:** run the script with sandbox keys to resolve A-1, A-2, A-8, A-9 (D-033) |
-| T-21 | Webhook endpoint: signature verify, dedupe, job enqueue, monotonic processors for authorization/capture/refund/payout events (§9.5 table) | §9.5 | Claude | IN_PROGRESS | t-21-webhooks | Save real event samples to `backend/tests/fixtures/webhooks/` |
+| T-21 | Webhook endpoint: signature verify, dedupe, job enqueue, monotonic processors for authorization/capture/refund/payout events (§9.5 table) | §9.5 | Claude | REVIEW | t-21-webhooks | Receiver (verify, store once, queue, 400/413/503 rules) + processing for captures, planned voids, refunds, payout items and batches + PROCESS_WEBHOOK job. 48 tests; mutation-checked 17/17. **Partial:** hold-placed and unplanned-void events are NOT_HANDLED until BLK-03. Real payload shapes unverified (A-3) (D-036) |
 | T-22 | Pledge Gate + pledge service: `pledges/order`, `pledges/authorize`, webhook effects, progress, goal-reached trigger | §8.2, §9.2 | Claude | BLOCKED | t-22-pledges | **BLOCKED (partial).** Done and tested: `pledge_gate.py` (56 tests), `OrderGateway` role + client wiring (4 tests). Missing: `pledge_service.py`, `routers/pledges.py` (BLK-01, design in GAPS section 0). Mutation-checked (D-034) |
 | T-23 | UI: public campaign page (progress "held, not charged", countdown, PayPal button `intent=authorize`, pledge board AG Grid) | §11 #8 |  | TODO |  | A-11 |
 | T-24 | Campaign setup API + launch (needs signed contract); deadline rule (`≤ opens_at + 72h − 2h`) | §8.2, §6.1 | Claude | DONE | t-24-campaign-setup | Setup (goal from contract + fees), launch (window re-checked), public view with lead controls and plain-words blockers. 48 tests; mutation-checked 19/19 after one added test (D-032). UI is screen #7/#8, not built |
@@ -159,6 +159,14 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-09 · Claude · T-21 (REVIEW; two event types wait on BLK-03)
+- Did: `routers/webhooks.py` (receiver), `services/webhook_processing.py` (`process`, `NotReady`, matching and per-event handlers), `PROCESS_WEBHOOK` job handler, `paypal_io` roles `WebhookVerifier` and `PayoutReader` + `reset_to_placeholders()`; the client fills both roles.
+- Blocked: `services/pledge_state.py` (BLK-03): the write was stopped by a safety check; not retried. `PAYMENT.AUTHORIZATION.CREATED` and an unplanned `PAYMENT.AUTHORIZATION.VOIDED` are stored and acknowledged as `NOT_HANDLED`.
+- Tests: `cd backend && .venv/Scripts/python -m pytest -q` -> 871 passed (48 new in `tests/test_webhooks.py`, incl. an end-to-end run: approval -> EXECUTE_PLAN job -> captures sent -> three webhooks -> PROCESS_WEBHOOK jobs -> campaign CAPTURED, project IN_PROGRESS). Mutation-checked: 17 breakages, all caught.
+- Contract changes: D-036 (no SPEC changes).
+- Next step: T-50/T-51 backends (`GET /projects/{id}/ledger`, `/money`, `/agent-runs`, `/admin/reconcile`), then T-31/T-32. When real sandbox events arrive, save them to `backend/tests/fixtures/webhooks/` and check the field paths (A-3).
+- Gotchas: (1) An approved AUTO plan already has an `EXECUTE_PLAN` job queued: tests that execute a plan by hand must not also run the job runner with the default (unconfigured) writer, or the resumed run fails the steps. (2) UNCLAIMED payouts are deliberately 'waiting'. (3) `RECONCILIATION_MISMATCH` and `ALERT` outcomes live only in the job result for now (GAP-46). (4) The receiver stores unverified events (as the spec asks), which an attacker could use to fill the table (GAP-47).
 
 ### 2026-11-08 · Claude · T-46
 - Did: `services/strategist_math.py` (pure: `forecast`, `suggest_deadline_for_setup`, `suggest_extension`, `nudge_targets`, constants), `services/strategist_service.py` (`gather`, `compute`, `run_report`, `apply_deadline`, `latest_report`, `extension_applied`), `routers/strategist.py` (`POST /campaigns/{id}/strategist/run` 202, `GET /campaigns/{id}/strategist`, `POST /campaigns/{id}/strategist/apply`), `STRATEGIST_RUN` job handler.

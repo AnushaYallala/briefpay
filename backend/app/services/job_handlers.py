@@ -33,3 +33,21 @@ def strategist_run(db: Session, payload: dict) -> dict:
     """Compute and store the forecast, deadline advice and nudge ranking (deterministic; the optional LLM wording is T-47)."""
     r = strategist_service.run_report(db, db.get(Campaign, payload["campaign_id"]))
     return {"report_id": r.id, "probability": r.forecast_json["probability"]}
+
+
+@jobs.register("PROCESS_WEBHOOK")
+def process_webhook(db: Session, payload: dict) -> dict:
+    """Apply a verified PayPal event. Safe to repeat; `NotReady` makes the runner retry with backoff."""
+    from datetime import datetime, timezone
+
+    from app.models import WebhookEvent
+    from app.services import webhook_processing
+
+    row = db.get(WebhookEvent, payload["webhook_event_id"])
+    if row is None or not row.verified:
+        return {"effect": "SKIPPED", "why": "unknown or unverified event"}
+    if row.processed_at is not None:
+        return {"effect": "ALREADY_PROCESSED"}
+    result = webhook_processing.process(db, row.payload_json, payout_reader=paypal_io.get_payout_reader())
+    row.processed_at, row.error = datetime.now(timezone.utc), None
+    return result

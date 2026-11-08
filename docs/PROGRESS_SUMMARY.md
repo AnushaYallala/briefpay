@@ -4,6 +4,27 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 18 · Webhooks: PayPal telling us what happened (T-21) · Mon Nov 9
+
+**What now exists**
+- **A door PayPal can knock on.** When PayPal finishes something (a capture, a void, a refund, a payout), it sends a message to our server. The server first asks PayPal itself whether the message is genuine; fakes are recorded and refused. Each message is accepted once only (PayPal sometimes sends the same one twice, even at the same instant). If PayPal can't be reached to check, the server says "try again later" and keeps nothing, so PayPal re-sends. The real work happens a moment later in the background, so PayPal never waits.
+- **Turning messages into facts.** A completed capture confirms that step of the plan, which fills the project's pot and, once all are in, marks the campaign funded and the project in progress. A declined capture fails that step (the plan ends "partial", never pretending to be funded). A void we asked for confirms the release. A refund confirms that refund. A payout success marks the freelancer paid and empties the pot; a payout failure leaves the money in the pot and marks the payout failed.
+- **Robust to the real world.** Messages that arrive before our own record is saved are retried a little later; messages about things we never sent are ignored; repeats change nothing; and a capture for a different amount than the approved plan is flagged, not booked. Processing a message never sends anything to PayPal.
+- **A double-payment risk I caught in my own code.** A payout PayPal marks "UNCLAIMED" (the freelancer hasn't claimed it yet) has already left our account. My first draft treated it as a failure, which would have allowed a second payout. It is now treated as "waiting", with a test that proves a second payout can't start.
+- **One full run through the real path:** plan approved, the background job sends three captures, three PayPal messages arrive, the background jobs process them, and the project ends funded and in progress.
+- 871 automated tests pass (48 new). I broke seventeen rules on purpose; all were caught.
+
+**What it does NOT do yet**
+Two message types (a pledge's hold being placed, and a hold ending unexpectedly) are accepted but not acted on, because the small helper they need was blocked (BLK-03, added to the gaps file next to BLK-01 and BLK-02). The exact field names in PayPal's real messages are taken from PayPal's documentation and need checking against real sandbox messages.
+
+**Progress:** 19 of ~45 tasks done or in review; 2 blocked (partial); plus BLK-03 inside T-21.
+
+**Needed from you:** the same: a decision on BLK-01/02/03, the PayPal sandbox (and its webhook ID in `.env` as `PAYPAL_WEBHOOK_ID`), and the Gemini key.
+
+**Next increment:** the ledger, money and AI-audit endpoints (T-50/T-51 back end): the data behind the public ledger grid and the AI audit trail, plus a reconciliation report that checks the money rules hold.
+
+---
+
 ## Increment 17 · The Campaign Strategist's forecast (T-46) · Sun Nov 8
 
 **What now exists**
