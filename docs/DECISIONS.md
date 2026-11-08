@@ -110,3 +110,8 @@ Consequences: APIMatic use now rests on authorizations/captures/refunds, Transac
 Context: A bonus paid to pledgers on failure is a pure loss for the organizer, so nobody would fund it. The user asked to remove it.
 Decision: No bond, no bonus, no BOND bucket. Failure or lead cancel → void all holds and nobody is charged (settlement kind `RELEASE_HOLDS`, was `FAIL_SETTLEMENT`). Launch needs only a signed contract. Deadline ≤ `opens_at + PLEDGE_MAX_HOURS − HONOR_SAFETY_MARGIN`. Guardian: 13 hard rules, 3 soft flags. `BONUS_*` env vars, `bonds` table and bond endpoints are removed.
 Consequences: This is a standard all-or-nothing assurance contract, not a dominant one: no financial incentive to pledge early, only the no-risk guarantee. Pitch language must not say "dominant assurance" or "you can't lose and may gain".
+
+## D-021 · plan_hash excludes step idempotency keys · 2026-11-08 · Accepted
+Context: SPEC 7.5.1 derives each step's `idempotency_key` from `plan_hash[:16]`, but also defines `plan_hash` over the whole `MoneyPlanSpec` including those keys. That is circular.
+Decision: `plan_hash` is computed over the canonical spec with every step's `idempotency_key` removed. Keys are then derived as `f"{plan_hash[:16]}-{seq}"` and stored on the steps. Implemented in `services/settlement.py`.
+Consequences: Any change to kind, inputs, recipient, amount, op or step order still changes the hash (tested). Keys cannot be chosen independently of the plan, so they stay deterministic across retries.
