@@ -4,6 +4,29 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 9 · BA Agent scoring (T-12) · Sun Nov 8
+
+**What now exists**
+- **The AI reads the meeting and judges it; code does the maths.** For each of ten areas (goals, audience, sponsors' needs, pages, features, testable acceptance criteria, content ownership, look and feel, quality needs, constraints) the AI says how fully the meeting covers it: none, hinted, partly, mostly or fully. It also lists the requirements it found, who asked for each, any disagreements, and what was ruled out. It never picks the final number.
+- **The score is computed by code** from those judgements and the fixed weights, with exact arithmetic, so the same judgements always give the same score and anyone can re-check it. The demo scene works out as designed: 58 at the start, 79 after the first answers, 93 at the end.
+- **No evidence, no full credit.** If the AI claims an area is covered but cannot point to real transcript lines (or a real answer), code lowers that area by one level. Made-up line numbers do not count.
+- **Five hard gates, checked by code, not trusted from the AI:** budget and deadline known; every MUST requirement has a testable criterion; no unresolved disagreement between sponsors; something is marked out of scope; every sponsor's needs are captured. If any gate is red the score cannot go above 89, so the "90 and ready" mark is impossible until they are all green. I tested that a perfect analysis with a single red gate stops at 89.
+- **Safe by default:** the AI sees line-numbered transcript text and member numbers, never emails; user text sits inside fenced "untrusted" blocks; if the AI fails or answers badly, nothing changes and the user can simply retry.
+- 403 automated tests pass (67 new). I broke eight scoring rules on purpose; seven were caught and the eighth turned out not to change any result.
+
+**What it does NOT do yet**
+It is the engine, not yet reachable from the app: no "Run BA Agent" button or endpoint, no questions, no answers. That is next. No real Gemini call has been made yet.
+
+**Decision to know about:** D-027 records the exact gate definitions and how scores are stored (for example, the budget gate also passes if the lead entered a budget when creating the project).
+
+**Progress:** 11 of ~45 tasks done.
+
+**Needed from you:** the Gemini key (billing off) and model name remain the next real unlock: the BA Agent is the first thing whose quality depends on the real model.
+
+**Next increment:** T-13, the question loop: from the score gaps, the AI asks up to five plain-language questions addressed to the right owners, they answer in the app, the system re-scores, and it repeats until 90 or five rounds; plus the endpoints that expose all of this.
+
+---
+
 ## Increment 8 · Projects, team invitations and the meeting transcript (T-10, T-11) · Sun Nov 8
 
 **What now exists** (the first thing a real user can do)

@@ -181,3 +181,9 @@ class ScriptedBackend:
 def scripted_llm(db, *outputs):
     backend = ScriptedBackend(*outputs)
     return GuardianLLM(LLMAdapter(backend, sessionmaker(bind=db.get_bind(), expire_on_commit=False))), backend
+
+
+def scripted_adapter(db, *outputs):
+    """An LLMAdapter over ScriptedBackend, logging to the test database."""
+    backend = ScriptedBackend(*outputs)
+    return LLMAdapter(backend, sessionmaker(bind=db.get_bind(), expire_on_commit=False)), backend

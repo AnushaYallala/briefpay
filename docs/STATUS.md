@@ -9,10 +9,10 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-08 by Claude: T-10 projects/members + T-11 transcripts done |
+| Last updated | 2026-11-08 by Claude: T-12 BA scoring done |
 | Overall phase | **Day 0: backend skeleton, schema, money math, state machines, ledger built; no features yet** (plain-English summary: `docs/PROGRESS_SUMMARY.md`) |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
-| Next task to pick up | Track A: **T-12** (BA scoring), **T-13** (BA questions), or **T-21** (webhooks; must call `confirm_step`) · Track B: **T-02** (human, sandbox keys), **T-08**, then **T-20** |
+| Next task to pick up | Track A: **T-13** (BA questions + endpoints), then **T-14** (BRD generator) · Track B: **T-02** (human, sandbox keys), **T-08**, then **T-20** |
 | Blockers | None yet |
 | Deployed URLs | API: _not deployed_ · Web: _not deployed_ · Sample site: _not deployed_ |
 | Repo | https://github.com/AnushaYallala/briefpay (origin; T-01 still needs LICENSE visible in About + secret scanning) |
@@ -44,7 +44,7 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 |---|---|---|---|---|---|---|
 | T-10 | Projects + members (sponsors, supporters, freelancer) API | §10 | Claude | DONE | t-10-projects-transcripts | Create/list/get project, idempotent member invites, public vs member views, viewed-tracking. 31 tests (D-026) |
 | T-11 | Transcript upload (text/file), line numbering | §7.1 | Claude | DONE | t-10-projects-transcripts | JSON or file upload (.txt/.vtt/.md), VTT cleaning, line numbering, `GET /projects/{id}/transcript` (added to SPEC 10). 25 tests; mutation-checked (D-026) |
-| T-12 | BA scoring: prompt, `BAScoreOutput`, code-side total, gates, cap 89, source_refs downgrade + unit tests | §7.1 | Claude | IN_PROGRESS | t-12-ba-scoring | |
+| T-12 | BA scoring: prompt, `BAScoreOutput`, code-side total, gates, cap 89, source_refs downgrade + unit tests | §7.1 | Claude | DONE | t-12-ba-scoring | Schemas, pure scoring + gates + cap, prompt `ba-score-v1`, `BAAgent`, `ba_service.score_round`. 67 tests; mutation-checked; demo scene scores 58/79/93. No endpoint yet (T-13). No real Gemini call yet (A-4) (D-027) |
 | T-13 | BA questions: prompt, `BAQuestionsOutput`, answer/skip endpoints, rounds, MAX_ROUNDS + finalize | §7.1 |  | TODO |  | |
 | T-14 | BRD generator: prompt, `BRDContent`, REQ codes, Jinja Markdown, sha256 | §7.2 |  | TODO |  | |
 | T-15 | BRD approvals (hash-bound, unanimous), reject → new BA round + version bump | §7.2 |  | TODO |  | |
@@ -159,6 +159,14 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-08 · Claude · T-12
+- Did: `schemas/ba.py` (BAScoreOutput etc. incl. BAQuestion/BAQuestionsOutput for T-13), `services/ba_scoring.py` (pure: weights, exact integer total, valid-ref downgrade, GT-1..GT-5, cap 89, `gaps`), `agents/prompts/ba_score.md` + `agents/ba_agent.py` (`BAAgent.judge`, `BAInputs`, prompt `ba-score-v1`), `services/ba_service.py` (`get_or_create_session`, `build_inputs`, `score_round`, `qa_pairs`, `latest_score`). Test helpers: `tests/ba_factory.py`, `scripted_adapter` in `tests/factories.py`.
+- State now: T-12 DONE (branch t-12-ba-scoring).
+- Tests: `cd backend && .venv/Scripts/python -m pytest -q` -> 403 passed (67 new). Mutation-checked: 7 of 8 breakages caught; the survivor (unknown member ids in GT-5) is an equivalent mutant, the behaviour it touches (stripping unknown ids from stored requirements) is tested separately.
+- Contract changes: D-027 (float coverage with validator, typed positions, gate definitions, storage layout).
+- Next step: T-13: question generation using `ScoreResult.gaps` (rank = weight x (1 - coverage), conflicts first), `BAQuestionsOutput` (already defined), endpoints `POST /projects/{id}/ba/run` (202 job: score + questions), `GET /projects/{id}/ba`, `POST /ba/questions/{qid}/answers`, `/skip`, `POST /projects/{id}/ba/finalize`, round advance + MAX_ROUNDS; rate limit 8 runs/project/hour. `session.round` is incremented by T-13 when a round's questions are all answered or skipped.
+- Gotchas: (1) `score_round` needs project state REQUIREMENTS and a transcript. (2) Re-scoring reuses `session.round`; T-13 must bump it before the next score or two scores share a round. (3) A different input (e.g. new answers or the previous extraction) means a different replay hash, so fixtures are per round. (4) The model never sees emails or the freelancer; only LEAD/SPONSOR members appear as people. (5) No real Gemini call yet: the nested schema (lists of objects, enums) may need flattening on first live use (A-4). (6) GT-1 also passes from the project record, so a lead who entered a budget and delivery days satisfies it even if the meeting never said so.
 
 ### 2026-11-08 · Claude · T-10, T-11
 - Did: `routers/projects.py` (create/list/get project, `PUT /members`, `POST /transcripts` JSON or multipart, `GET /transcript`), `services/project_ops.py` (create, `upsert_invitees`, `touch_member`, `campaign_summary`, `add_transcript`), `services/transcripts.py` (pure `normalize`, VTT cleaning, `numbered`), `optional_user` in `auth.py`, `python-multipart` pinned. `docs/SPEC.md` section 10 gained the `GET /projects/{id}/transcript` row.
