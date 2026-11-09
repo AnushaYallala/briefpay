@@ -1,6 +1,7 @@
 """Ledger, money box, AI audit trail and the reconciliation report (SPEC 10). All read-only.
 
   GET /projects/{id}/ledger      anyone; non-members get the public view (no emails)
+  GET /projects/{id}/ledger/paypal-match  members: each PayPal-backed row compared with PayPal's own record
   GET /projects/{id}/money       members
   GET /projects/{id}/agent-runs  members
   GET /admin/reconcile           demo mode only (no admin role exists yet)
@@ -13,7 +14,7 @@ from app.auth import api_error, current_user, optional_user, require_member
 from app.config import get_settings
 from app.db import get_db
 from app.models import Job, Project, ProjectMember, User
-from app.services import jobs, ledger_views, paypal_io, reconcile
+from app.services import jobs, ledger_match, ledger_views, paypal_io, reconcile
 
 router = APIRouter()
 
@@ -31,6 +32,15 @@ def get_ledger(project_id: int, user: User | None = Depends(optional_user), db: 
     member = user is not None and db.scalars(select(ProjectMember.id).where(
         ProjectMember.project_id == project_id, ProjectMember.user_id == user.id)).first() is not None
     return ledger_views.ledger_rows(db, project_id, public=not member)
+
+
+@router.get("/projects/{project_id}/ledger/paypal-match")
+def get_paypal_match(project_id: int, user: User = Depends(current_user), db: Session = Depends(get_db),
+                     reader=Depends(paypal_io.get_reader), payout_reader=Depends(paypal_io.get_payout_reader)) -> dict:
+    """The 'PayPal match' column: asks PayPal about the project's captures, refunds and payout (read-only, at most 30 lookups)."""
+    _project(db, project_id)
+    require_member(db, project_id, user)
+    return ledger_match.match(db, project_id, reader, payout_reader)
 
 
 @router.get("/projects/{project_id}/money")

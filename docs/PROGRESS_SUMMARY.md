@@ -4,6 +4,25 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 30 · Does the ledger agree with PayPal? (T-48) · Mon Nov 9
+
+**What now exists**
+- **A "check with PayPal" for the ledger.** For each money row (a charge, a refund, the freelancer's payout), the system can now ask PayPal about that exact payment and compare. Each row comes back as one of: **match** (PayPal confirms the same amount), **pending** (not final yet), **mismatch** (PayPal shows another amount, or says it was declined, failed or returned), **not found** (our ledger says it happened but PayPal has no such payment), or **unavailable** (PayPal could not be reached, so nothing is concluded).
+- **Safe by design.** It only reads. It never changes the ledger, never raises alarms by itself, and asks PayPal about at most the 30 newest money rows per click. A payout batch is looked up once however many rows belong to it. The normal ledger view still never calls PayPal; the screen will merge the two.
+- **Works before PayPal is connected:** every row simply says "unavailable".
+- All automated tests pass (41 new). I broke 26 things on purpose; the first pass found three weak spots (the 30-row limit, the one-lookup-per-batch rule, and a refund row with no recorded id), I added tests, and now all are caught.
+
+**What it does NOT do yet**
+It uses PayPal's instant lookups rather than the Transaction Search report (which can lag and is unproven), and it has only seen pretend PayPal answers. The column in the grid is UI work.
+
+**Progress:** 30 of ~45 tasks done or in review. Increment 30 of the 40 you asked for.
+
+**Needed from you:** BLK-01/02/03, PayPal sandbox keys, Gemini key.
+
+**Next increment:** what happens after a third failed verification: the lead's choices to extend, cancel and refund, or (with every sponsor's agreement) override.
+
+---
+
 ## Increment 29 · Ready to deploy, and refusing to start unsafe (T-61) · Mon Nov 9
 
 **What now exists**

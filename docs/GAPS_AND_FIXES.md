@@ -6,7 +6,7 @@ A running list of everything that is **missing, risky, unverified, or was found 
 - **Fixes** are problems that were found and already resolved, kept so the reasoning is not lost.
 - IDs are permanent. When a gap is closed, move it to Fixes (keep the ID) and say how.
 
-_Last updated: 2026-11-09, end of T-61._
+_Last updated: 2026-11-09, end of T-48._
 
 ---
 
@@ -86,7 +86,7 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | GAP-47 | Low | As the spec asks, events with a bad signature are stored (verified = false). Anyone can post junk to the public endpoint and grow that table. | Cap or prune unverified rows, or rate-limit by IP. |
 | GAP-48 | Medium (**closed in T-43**: the poll fallback exists) | There was no poll fallback: if a webhook never arrives (sleeping free server, PayPal outage), a SENT step waits forever. | T-43: poll captures, refunds and payout batches while steps are SENT. |
 | GAP-49 | Low | A payout RETURNED after it succeeded puts the money back in the pool but the project stays PAID. | Decide a resolution path (re-pay after fixing the email, or refund). |
-| GAP-50 | Low | Ledger rows have `paypal_match: null`; the per-row check against PayPal (SPEC 11.1 #12, SHOULD) is not built. | Needs a PayPal read per row (or a batch Transaction Search); do after sandbox keys exist. |
+| GAP-50 | Low (**closed in T-48**: `GET /ledger/paypal-match`, merged by the UI) | Ledger rows had `paypal_match: null`; the per-row check against PayPal (SPEC 11.1 #12, SHOULD) is not built. | Needs a PayPal read per row (or a batch Transaction Search); do after sandbox keys exist. |
 | GAP-51 | Low | `/admin/reconcile` is open to any signed-in user in demo mode; there is no admin role. | Add an admin flag or env allowlist before any non-demo deployment. |
 | GAP-52 | Low | Address pinning applies to normal hosts; the dev-only localhost exception connects by name. | Fine for dev; keep `allow_local` off in production. |
 | GAP-53 | Medium | Anonymous GitHub API calls are limited to 60 an hour per IP; a shared host (Render) can hit that and every GitHub check returns ERROR. | Set `GITHUB_TOKEN`; T-34 should show ERROR as 'could not check, try again'. |
@@ -120,6 +120,8 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | GAP-81 | Medium | The README must be refreshed before submission: test count, status banner, live URLs, AI evaluation table, video link, APIMatic capture, front-end section. | Checklist in STATUS T-62; do it in T-64/T-65. |
 | GAP-82 | Low | `render.yaml` has never been run through Render; field names and the `generateValue` option are from memory of the docs. | Check against Render's current Blueprint docs on the first deploy. |
 | GAP-83 | Low | `DEMO_MODE=true` is the Blueprint default, so persona switching and the reconcile report are open on the public demo. | Intended for the hackathon; flip to false for any lasting deployment. |
+| GAP-84 | Low | The match uses instant lookups, not Transaction Search, so it cannot independently confirm money that never passed through our own calls (e.g. a transfer made by hand in the PayPal account). | Add Transaction Search later as a second source if it proves reliable (A-2). |
+| GAP-85 | Low | The match is not stored, so a mismatch leaves no alert unless someone presses the button. | Optional: a periodic job that writes one alert memo per new mismatch. |
 
 ---
 
@@ -171,6 +173,7 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | FIX-42 | T-62 | The STATUS snapshot rows 'Next task to pick up' and 'Overall phase' had a stale tail and an out-of-date 'Day 0' text after several doc edits (my replacement only changed the front of the line). | Rewritten whole; doc scripts should replace complete rows, not prefixes. |
 | FIX-43 | T-61 | Four settings added in earlier increments were missing from `.env.example` and SPEC 14.3, against the AGENTS.md rule. | Added; a test now fails if any setting is missing from either list. |
 | FIX-44 | T-61 | `render.yaml` was changed on disk to `PAYPAL_ENV: live` mid-increment (not by the assistant). Caught by the new Blueprint test and the start-up check; flagged to the human, who asked for sandbox. | Restored; both guards stay. |
+| FIX-45 | T-48 | Mutation check found three untested rules in the match: the 30-lookup limit, one lookup per payout batch (the test had a single row) and skipping a refund row with no recorded id. | Tests added. |
 
 ---
 

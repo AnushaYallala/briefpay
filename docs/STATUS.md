@@ -9,10 +9,10 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-09 by Claude: T-61 deployment files and production start-up checks |
+| Last updated | 2026-11-09 by Claude: T-48 PayPal match for the ledger |
 | Overall phase | **Back end feature-complete except the three blocked pieces (BLK-01/02/03); no frontend yet.** Done: BA, BRD, contract, campaign setup, plans + Guardian + executor, webhooks, poll fallback, submissions, evidence, verification, ledger/audit APIs, demo seed. Plain-English summary: `docs/PROGRESS_SUMMARY.md` |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
-| Next task to pick up | Not blocked: **T-48** (reconciliation match), the lead's decision after FAILED (GAP-70), **T-47** (Strategist wording), then the frontend (T-05 and the UI tasks) · **Human:** decide BLK-01/02/03 · PayPal sandbox keys, Gemini key, Cloudinary · run `backend/scripts/sandbox_check.py` once keys exist |
+| Next task to pick up | Not blocked: the lead's decision after FAILED (GAP-70), **T-47** (Strategist wording), then the frontend (T-05 and the UI tasks) · **Human:** decide BLK-01/02/03 · PayPal sandbox keys, Gemini key, Cloudinary · run `backend/scripts/sandbox_check.py` once keys exist |
 | Blockers | **BLK-01** (T-22 pledge service/endpoints), **BLK-02** (T-25 clock and lead actions), **BLK-03** (pledge-state helper used by two webhook events): the assistant's attempts to write those files were stopped by a safety check; see `docs/GAPS_AND_FIXES.md` section 0 for the full designs |
 | Deployed URLs | API: _not deployed_ · Web: _not deployed_ · Sample site: _not deployed_ |
 | Repo | https://github.com/AnushaYallala/briefpay (origin; T-01 still needs LICENSE visible in About + secret scanning) |
@@ -85,7 +85,7 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 | T-44 | `REFUND_CAPTURED` execution + cancel flow (builder in T-26) | §8.1 M7 |  | REVIEW |  | `REFUND_CAPTURED` is built (T-26), reviewed, approved and executed through the plans API; refunds are confirmed by webhook or poll and the project ends CANCELLED. No separate cancel endpoint: uses `POST /projects/{id}/plans`. UI later |
 | T-46 | Strategist (deterministic): forecast, deadline suggestion, nudge target ranking + tests; API + forecast card | §7.4 | Claude | DONE | t-46-strategist | Pure forecast/advice/nudge math + report service + run/read/apply endpoints + STRATEGIST_RUN job. 52 tests; mutation-checked 24/24 (two added tests). LLM wording is T-47 (D-035) |
 | T-47 | Strategist LLM narrative + nudge drafts + numbers validator | §7.4 |  | TODO |  | SHOULD (cut order #1) |
-| T-48 | Ledger ↔ PayPal reconciliation job (SDK Transaction Search) + "PayPal match" column | §9.7 |  | TODO |  | SHOULD |
+| T-48 | Ledger ↔ PayPal reconciliation job (SDK Transaction Search) + "PayPal match" column | §9.7 |  | REVIEW |  | `ledger_match.py` + `GET /projects/{id}/ledger/paypal-match` (D-047): MATCH / PENDING / MISMATCH / NOT_FOUND / UNAVAILABLE per PayPal-backed row, instant lookups instead of Transaction Search, read-only, max 30 lookups. 41 tests, mutation-checked. Unproven against real PayPal answers (A-3) |
 | T-49 | UI: money plans viewer (steps grid, rule rows, risk card, decision, approve, simulate tamper) | §11 #11 |  | TODO |  | |
 
 ### Track C: Ledger, polish, ship
@@ -159,6 +159,13 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-09 · Claude · T-48 PayPal match (REVIEW)
+- Did: `services/ledger_match.py`, `GET /projects/{id}/ledger/paypal-match`, ledger rows keep `paypal_match: null` (the UI merges by `seq`). Committed straight to `main`.
+- Tests: `cd backend && .venv/Scripts/python -m pytest -q` -> all pass (41 new in `tests/test_ledger_match.py`). Mutation-checked: 26 breakages, 3 test gaps found and closed, all caught.
+- Contract changes: D-047 (new endpoint; SPEC text unchanged).
+- Next step: the lead's decision after a FAILED verdict (GAP-70: extend, cancel and refund, or all-sponsor override), then T-47 (Strategist wording), then the front end.
+- Gotchas: (1) The ledger refuses to go negative, so tests that append a payout row first need a capture row. (2) `FakeReader(db, overrides={id: None})` means 'PayPal does not know this id'.
 
 ### 2026-11-09 · Claude · T-61 deployment files (REVIEW)
 - Did: `backend/app/startup_checks.py` (called first in the lifespan), `render.yaml`, `docs/DEPLOY.md`, the four missing settings added to `.env.example` and SPEC 14.3 (`POLL_INTERVAL_SECONDS`, `LOCAL_IMAGES_DIR`, `IMAGE_MAX_BYTES`, `IMAGE_URL_TTL_SECONDS`). Committed straight to `main`.
