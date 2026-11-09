@@ -4,6 +4,28 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 32 · The Strategist finds its words, and every number is checked (T-47) · Mon Nov 9
+
+**What now exists**
+- **A readable forecast.** Besides the numbers, the lead now gets a headline ("$250 still needed, 40 hours left"), a short plain explanation that clearly says the chance is a rough estimate, a few risk points, and a ready-to-copy message for each person who has not pledged yet (for example Ravi, who said $100). Messages are friendly, mention that a pledge is only a hold, and end with the campaign link.
+- **The AI is never trusted with a number.** The system works out every figure itself (amount still needed, hours left, how many pledges, the chance). The AI only phrases them. Then plain code reads every number in whatever the AI wrote and compares it to the real figures: one invented amount ("only $75 to go!", "you're at 90%") and that text is thrown away and replaced by a standard sentence built from the real figures, with a warning recorded. Even a sentence that mixes a correct number with a wrong one is rejected. Links the AI writes are removed; the real link is added by code.
+- **It still works with no AI.** If the AI is off, out of quota or answers badly, the lead gets complete standard wording and standard messages for everyone, marked as such.
+- **No spamming.** Nobody gets a new draft more than once a day: running the Strategist again within 24 hours shows the same draft for the same person.
+- **Safe with strangers' text.** Names and the project title go to the AI only inside "this is data" wrappers; a planted fake closing tag is defused. Nothing is ever sent for the lead: they copy the message themselves.
+- **A safety net for tests:** no test can accidentally start a real AI connection that writes into your own database (this was caught when the first test run tried exactly that).
+- All automated tests pass (51 new). I broke about 40 things on purpose; six slipped through the first time, four were weak tests and two were needless code, and now everything is caught or simplified.
+
+**What it does NOT do yet**
+It has never talked to the real Gemini model (needs your key), so the wording quality is unknown. Numbers spelled out in words ("one hundred") are not caught. It cannot detect a tactless tone; the instructions forbid pressure, but code cannot check it.
+
+**Progress:** 31 of ~45 tasks done or in review. Increment 32 of the 40 you asked for.
+
+**Needed from you:** BLK-01/02/03, PayPal sandbox keys, Gemini key.
+
+**Next increment:** the front end begins: a Next.js skeleton (T-05) so that the screens have a home.
+
+---
+
 ## Increment 31 · What happens when the work fails for good · Mon Nov 9
 
 **What now exists**

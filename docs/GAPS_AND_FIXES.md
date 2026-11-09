@@ -6,7 +6,7 @@ A running list of everything that is **missing, risky, unverified, or was found 
 - **Fixes** are problems that were found and already resolved, kept so the reasoning is not lost.
 - IDs are permanent. When a gap is closed, move it to Fixes (keep the ID) and say how.
 
-_Last updated: 2026-11-09, end of the FAILED-path work._
+_Last updated: 2026-11-09, end of T-47._
 
 ---
 
@@ -124,6 +124,9 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | GAP-85 | Low | The match is not stored, so a mismatch leaves no alert unless someone presses the button. | Optional: a periodic job that writes one alert memo per new mismatch. |
 | GAP-87 | Low | Decisions are read back by scanning the project's APPROVAL memos in Python. | Fine at this scale; add a table if ledgers grow large. |
 | GAP-88 | Low | A refund started from a FAILED verdict still needs the usual review and human approval; the project stays VERIFYING until that plan is approved. | By design. |
+| GAP-89 | Low | The number check reads digits only: a spelled-out figure ('one hundred dollars') in the model's text is not caught. | Acceptable for the demo; could add a small word-to-number pass later. |
+| GAP-90 | Low | Tone cannot be checked by code (pressure, guilt); only the prompt forbids it. | The lead reads each draft and copies it by hand; nothing is sent automatically. |
+| GAP-91 | Low | Nudge drafts are not checked for naming people outside the invitee list (code only checks the member ids). | The model is told not to; the lead reviews every draft. |
 
 ---
 
@@ -177,6 +180,8 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | FIX-44 | T-61 | `render.yaml` was changed on disk to `PAYPAL_ENV: live` mid-increment (not by the assistant). Caught by the new Blueprint test and the start-up check; flagged to the human, who asked for sandbox. | Restored; both guards stay. |
 | FIX-45 | T-48 | Mutation check found three untested rules in the match: the 30-lookup limit, one lookup per payout batch (the test had a single row) and skipping a refund row with no recorded id. | Tests added. |
 | FIX-46 | FAILED path | Mutation check found three untested rules: the extension memo's new total, that votes on an earlier failed submission must not count, and that the options come from the submission's own project (the test project happened to have id 1). | Tests added, including one with two projects. |
+| FIX-47 | T-47 | The first test run after adding the wording made the default Strategist build a real model adapter that logged to the developer's own SQLite file (no `agent_runs` table there), failing the job. | Autouse fixture in `conftest.py` installs a no-AI Strategist for every test; the job's real path is exercised with an explicit scripted adapter. |
+| FIX-48 | T-47 | Mutation check found: the 24-hour draft window boundary, a sentence mixing a real and an invented number, drafts from a LATER report being reused, and the job result's wording field were untested; plus a redundant slice and a redundant dict comprehension. | Tests added; the two redundant lines removed. |
 
 ---
 

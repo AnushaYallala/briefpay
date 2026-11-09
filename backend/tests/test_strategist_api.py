@@ -63,7 +63,10 @@ def test_a_report_has_the_forecast_the_deadline_advice_and_ranked_nudges(t, clie
     assert f["expected_invitees_cents"] == 15750 and f["probability"] == 0.0256
     assert sug["kind"] == "SETUP" and sug["campaign_state"] == "SETUP"
     assert [x["name"] for x in sug["nudge_targets"]] == ["Lakshmi", "Ravi", "Meena"] and sug["nudge_targets"][0]["score"] == 8250
-    assert rep["narrative"] is None and rep["nudges"] is None, "the optional AI wording (T-47) is not generated here"
+    # no AI is configured in tests, so the wording is the code's template (T-47): honest, numbered from the facts, flagged
+    assert rep["narrative"]["source"] == "TEMPLATE" and rep["narrative"]["flags"] == ["AI_UNAVAILABLE"]
+    assert rep["narrative"]["headline"] == "About a 3% chance of reaching the goal (estimate (heuristic))"
+    assert [n["name"] for n in rep["nudges"]] == ["Lakshmi", "Ravi", "Meena"] and all(n["source"] == "TEMPLATE" and "/campaign?id=" in n["message"] for n in rep["nudges"])
 
 
 def test_a_weak_start_is_advised_to_run_longer_and_a_strong_one_to_keep_the_default(t, client, db):

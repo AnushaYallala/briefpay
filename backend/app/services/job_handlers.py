@@ -30,9 +30,15 @@ def brd_generate(db: Session, payload: dict) -> dict:
 
 @jobs.register("STRATEGIST_RUN")
 def strategist_run(db: Session, payload: dict) -> dict:
-    """Compute and store the forecast, deadline advice and nudge ranking (deterministic; the optional LLM wording is T-47)."""
-    r = strategist_service.run_report(db, db.get(Campaign, payload["campaign_id"]))
-    return {"report_id": r.id, "probability": r.forecast_json["probability"]}
+    """Compute and store the forecast, deadline advice and nudge ranking (deterministic), then the wording: the model's, with every
+    number checked against the facts, or the template wording if the model is unavailable (T-47)."""
+    from app.agents.strategist import get_strategist
+    from app.services import strategist_words
+    c = db.get(Campaign, payload["campaign_id"])
+    r = strategist_service.run_report(db, c)
+    words = strategist_words.add_narrative(db, r, c, db.get(Project, c.project_id), get_strategist(),
+                                           {"forecast": r.forecast_json, "suggestions": r.suggestions_json})
+    return {"report_id": r.id, "probability": r.forecast_json["probability"], "wording": words["source"], "flags": words["flags"]}
 
 
 @jobs.register("AUTO_CHECKS")

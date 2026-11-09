@@ -25,3 +25,12 @@ def client(db):
     app.dependency_overrides[get_db] = lambda: db
     yield TestClient(app)
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(autouse=True)
+def strategist_without_ai():
+    """No test may build a real model adapter (it would log to the developer's own database). Tests that want the AI install one."""
+    from app.agents.strategist import StrategistAgent, set_strategist
+    set_strategist(StrategistAgent(None))
+    yield
+    set_strategist(None)
