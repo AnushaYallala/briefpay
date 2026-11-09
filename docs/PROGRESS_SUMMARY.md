@@ -4,6 +4,28 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 36 · The AI audit trail as a table (T-51) · Tue Nov 10
+
+**What now exists**
+- **The AI audit trail page.** People on a project can open "Open the AI audit trail" from the project page. It lists every time an AI helper was asked something on that project, newest first: which helper ("Brief writer", "Verifier: judge", "Strategist"...), which model, which version of its instructions, how long it took, how many tokens it used, and how it ended (answered, replayed from a recording, malformed answer, or failed). Failed and malformed calls have a red row so they cannot hide.
+- **Proof, not trust.** Each row has a short fingerprint of what the helper was given (the whole thing on hover), and "Details" shows exactly what came back, as plain text, so the AI can never run anything on the page. This is the screen that shows the AI only suggests and fixed rules decide.
+- **Find things fast.** Chips pick one helper; a search box finds calls by plain words ("Failed", "Brief writer") or by the raw codes; columns sort and filter; a summary line says how many calls, how many failed, the average time and total tokens for what is shown.
+- **Stays fresh** every 20 seconds while the tab is open, keeps old rows if an update fails, and says so.
+- **Private.** Only members see it: someone not signed in is asked to sign in and nothing is requested; someone on another project sees the server's reason.
+- **Small improvement to the ledger:** its search now also finds rows by the plain-words type ("Pledge collected"), not just the code.
+- 234 front-end tests and 1,562 back-end tests pass. About 65 deliberate breakages: 25 slipped through the first time (most were missing tests: sort order, colours, hover texts, the refresh timer being stopped, the table staying on screen during a refresh, switching person); all are now caught.
+
+**What it does NOT do yet**
+It shows the newest 500 calls only (the server's limit); there is no way to download it; it is not yet tried in a real browser (the tests simulate one).
+
+**Progress:** 34 of ~45 tasks done or in review. Increment 36 of the 45 you asked for.
+
+**Needed from you:** BLK-01/02/03, PayPal sandbox keys, Gemini key.
+
+**Next increment:** the money plans viewer (T-49): what the system plans to do with the money, the safety checks on each step, and a safe "tamper" demo.
+
+---
+
 ## Increment 35 · The public ledger as a table (T-50) · Mon Nov 9
 
 **What now exists**

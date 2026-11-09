@@ -21,7 +21,7 @@ export function LedgerGrid({ rows, balanceCents, matches, quickFilter, onOpenMet
     { field: "seq", headerName: "#", width: 80, pinned: "left", valueFormatter: (p) => (isTotals(p.data) ? "" : String(p.value)), sort: "asc" },
     { field: "created_at", headerName: "Time", width: 150, valueFormatter: (p) => (p.value ? formatDateTime(p.value) : "") },
     { field: "bucket", headerName: "Bucket", width: 100, valueFormatter: (p) => (p.value === "POOL" ? "Pool" : p.value === "NONE" ? "Memo" : "") },
-    { field: "type", headerName: "Type", width: 190, valueFormatter: (p) => (p.value === "TOTALS" ? "Totals" : typeLabel(p.value)) },
+    { field: "type", headerName: "Type", width: 190, valueFormatter: (p) => (p.value === "TOTALS" ? "Totals" : typeLabel(p.value)), getQuickFilterText: (p) => `${typeLabel(p.value)} ${p.value}` },
     { field: "counterparty", headerName: "Counterparty", width: 190, valueFormatter: (p) => p.value ?? "" },
     {
       field: "amount_cents", headerName: "Amount", width: 130, type: "rightAligned",

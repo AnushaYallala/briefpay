@@ -222,3 +222,31 @@ def test_the_status_chips_the_ledger_prints_are_the_ones_the_grid_knows():
 
 def test_the_ledger_refresh_rate_is_gentle():
     assert re.search(r"REFRESH_MS = 15000;", read("lib/ledger.ts"))
+
+
+def test_the_audit_trail_type_matches_the_real_response_and_the_words_cover_every_agent(client, db, seeded):  # noqa: F811
+    from app.agents import ba_agent, brd_generator, guardian_llm, strategist, verifier
+    from app.models.tables import AgentRun
+    types = read("lib/types.ts")
+    pid = seeded["payout_ready_project_id"]
+    db.add(AgentRun(project_id=pid, agent="BA_SCORE", provider="gemini", model="m", prompt_version="v1", input_hash="h" * 64, latency_ms=12,
+                    input_tokens=1, output_tokens=2, status="OK", output_json={"a": 1}, error=None))
+    db.commit()
+    got = client.get(f"/api/projects/{pid}/agent-runs", headers=auth_header(client)).json()
+    assert set(got) == fields_of(types, "AgentRunsResponse")
+    assert got["rows"] and all(set(r) == fields_of(types, "AgentRun") for r in got["rows"])
+    names = {ba_agent.SCORE_AGENT, ba_agent.QUESTIONS_AGENT, brd_generator.AGENT, verifier.QUESTIONS_AGENT, verifier.JUDGE_AGENT, guardian_llm.AGENT, strategist.AGENT}
+    labelled = set(re.findall(r'^  ([A-Z_]+): "', block(read("lib/audit.ts"), "export const AGENT_LABELS"), re.M))
+    assert labelled == names
+    assert client.get(f"/api/projects/{pid}/agent-runs").status_code in (401, 403)           # members only
+
+
+def test_the_audit_result_words_cover_every_status_the_adapter_writes():
+    source = (Path(__file__).resolve().parents[1] / "app" / "agents" / "llm_adapter.py").read_text(encoding="utf-8")
+    written = set(re.findall(r'"(SCHEMA_INVALID|ERROR|OK|REPLAYED)"', source))
+    shown = set(re.findall(r'^  ([A-Z_]+): \{ label:', block(read("lib/audit.ts"), "export const RUN_STATUS"), re.M))
+    assert shown == written == {"OK", "REPLAYED", "SCHEMA_INVALID", "ERROR"}
+
+
+def test_the_audit_refresh_rate_is_gentle():
+    assert re.search(r"AUDIT_REFRESH_MS = 20000;", read("lib/audit.ts"))

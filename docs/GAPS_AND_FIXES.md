@@ -6,7 +6,7 @@ A running list of everything that is **missing, risky, unverified, or was found 
 - **Fixes** are problems that were found and already resolved, kept so the reasoning is not lost.
 - IDs are permanent. When a gap is closed, move it to Fixes (keep the ID) and say how.
 
-_Last updated: 2026-11-09, end of T-50._
+_Last updated: 2026-11-10, end of T-51._
 
 ---
 
@@ -136,6 +136,8 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | GAP-98 | Low | The ledger page loads every AG Grid Community module (349 kB of script for that page). | Register only the modules used (client-side rows, sorting, filtering, pinned rows, quick filter, themes). |
 | GAP-99 | Low | Ledgers over 200 rows use a fixed 600 px window; the grid's behaviour with thousands of rows is untested in a real browser. | Fine at demo scale. |
 | GAP-100 | Low | 'Check with PayPal' checks only the newest 30 PayPal-backed rows and is manual; a mismatch leaves no stored alert. | See GAP-85. |
+| GAP-101 | Low | The audit trail shows only the newest 500 calls (server limit) and has no CSV export. | Add the server's `agent` filter and a paged view if projects get long. |
+| GAP-102 | Low | AG Grid keeps some of its own timers after the page is left in tests, and its quick filter's use of raw codes was found by experiment, not read from its documentation. | Pinned by tests; recheck on an AG Grid upgrade. |
 
 ---
 
@@ -199,6 +201,9 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | FIX-54 | T-50 | **Time bug:** the API sends timestamps without an offset ('2026-11-10T12:00:00', UTC by convention) and the browser read them as local time, so 12:00 UTC displayed as 06:30 on an IST machine. Found by a probe, not by the earlier date tests (they used explicit offsets). | `parseApiDate` reads an offset-less timestamp as UTC; tests for eight formats; the date tests are also run under four time zones. |
 | FIX-55 | T-50 | A shell command appended a test to `backend/tests/project.test.tsx` (wrong working directory) while the real file stayed unchanged; it showed up as a stray untracked file. | Deleted; the test added to the right file; all file paths in commands are now absolute. |
 | FIX-56 | T-50 | Mutation check found 7 weak spots in the ledger screen: the pinned column, the large-ledger layout, the totals row's time cell, the reference tooltip, clearing the refresh timer, a failed refresh blanking the table, and a chip not toggling off (a wait that passed before the grid had updated). | Two small code improvements (hover text on the reference, a note on a failed refresh) and tests for each. |
+| FIX-57 | T-51 | Searching the ledger or audit trail for the words on screen ("Pledge collected", "Failed") found nothing, because AG Grid's quick filter ignores the display formatter. | `getQuickFilterText` on the type, agent and result columns; tests for plain words and raw codes. |
+| FIX-58 | T-51 | Mutation check found 25 weak spots in the audit screen (sort order, pinned column, hover texts, chip colours, red rows for each failure kind, timer clean-up, table staying visible during a refresh, switching person, 1 call wording, chips staying while one is chosen). | Tests for each; a redundant guard in `shortHash` removed. |
+| FIX-59 | T-51 | A test that faked only the interval timers made the next timing test hang (state leaking between tests in one file). | That test now runs last in its file, with a comment saying why; spies are restored in `afterEach`. |
 
 ---
 

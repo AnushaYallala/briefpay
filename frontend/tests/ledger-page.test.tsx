@@ -377,6 +377,15 @@ describe("gaps found by the mutation check", () => {
     await waitFor(() => expect(gridRows().length).toBe(1));
   });
 
+  it("search finds a row by the plain words of its type as well as the raw code", async () => {
+    await open();
+    const box = screen.getByLabelText("Search the ledger");
+    fireEvent.change(box, { target: { value: "Paid to the builder" } });
+    await waitFor(() => expect(gridRows().length).toBe(1));
+    fireEvent.change(box, { target: { value: "PLEDGE_CAPTURED" } });
+    await waitFor(() => expect(gridRows().length).toBe(2));
+  });
+
   it("a chip toggles on and off", async () => {
     await open();
     const chip = screen.getByRole("button", { name: "Pledge collected" });

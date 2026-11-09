@@ -35,6 +35,11 @@ export const ledgerRow = (over: Record<string, unknown> = {}) => ({
   paypal_ref: null, actor: "system", actor_name: "BriefPay", ref_type: "project", ref_id: "1", paypal_match: null, alert: false, meta: { from: "DRAFT", to: "REQUIREMENTS" }, ...over,
 }) as import("@/lib/types").LedgerRow;
 
+export const run = (over: Record<string, unknown> = {}) => ({
+  id: 1, created_at: "2026-11-10T12:00:00", agent: "BA_SCORE", provider: "gemini", model: "gemini-2.5-flash", prompt_version: "v1",
+  input_hash: "abcdef1234567890abcdef", latency_ms: 420, input_tokens: 100, output_tokens: 50, status: "OK", output: { score: 80 }, error: null, ...over,
+}) as import("@/lib/types").AgentRun;
+
 export const ledger = (rows: import("@/lib/types").LedgerRow[], over: Record<string, unknown> = {}) => ({
   project_id: 1, public: false, rows, totals: { pool_in_cents: 0, pool_out_cents: 0, pool_balance_cents: 0, rows: rows.length }, ...over,
 });

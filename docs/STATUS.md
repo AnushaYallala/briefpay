@@ -9,10 +9,10 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-09 by Claude: T-50 ledger grid done |
+| Last updated | 2026-11-10 by Claude: T-51 audit trail grid done |
 | Overall phase | **Back end feature-complete except the three blocked pieces (BLK-01/02/03); front end just started (home page and sign-in).** Done: BA, BRD, contract, campaign setup, plans + Guardian + executor, webhooks, poll fallback, submissions, evidence, verification, ledger/audit APIs, demo seed, deploy files, web skeleton. Plain-English summary: `docs/PROGRESS_SUMMARY.md` |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
-| Next task to pick up | Not blocked: audit trail grid (T-51), then money plans viewer (T-49), BA Studio (T-16), BRD (T-17), freelancer portal (T-35), verification report (T-36), campaign page (T-23, T-27; shows BLK-01/02 as unavailable) · **Human:** decide BLK-01/02/03 · PayPal sandbox keys, Gemini key, Cloudinary · run `backend/scripts/sandbox_check.py` once keys exist |
+| Next task to pick up | Not blocked: money plans viewer with tamper simulation (T-49; also makes the stepper steps links and wires `POST /money/refresh`), then BA Studio (T-16), BRD (T-17), freelancer portal (T-35), verification report (T-36), campaign page (T-23, T-27; shows BLK-01/02 as unavailable) · **Human:** decide BLK-01/02/03 · PayPal sandbox keys, Gemini key, Cloudinary · run `backend/scripts/sandbox_check.py` once keys exist |
 | Blockers | **BLK-01** (T-22 pledge service/endpoints), **BLK-02** (T-25 clock and lead actions), **BLK-03** (pledge-state helper used by two webhook events): the assistant's attempts to write those files were stopped by a safety check; see `docs/GAPS_AND_FIXES.md` section 0 for the full designs |
 | Deployed URLs | API: _not deployed_ · Web: _not deployed_ · Sample site: _not deployed_ |
 | Repo | https://github.com/AnushaYallala/briefpay (origin; T-01 still needs LICENSE visible in About + secret scanning) |
@@ -92,7 +92,7 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 | ID | Task | Spec | Owner | State | Branch | Notes |
 |---|---|---|---|---|---|---|
 | T-50 | UI: ledger AG Grid Community (type chips, pinned totals, filters, CSV, meta modal, live refresh) | §11 #12 |  | REVIEW |  | `/ledger?id=N`: AG Grid Community ledger with type chips, pinned totals row, quick search, column filters, safe CSV export, details dialog, PayPal-match column (button), live refresh (D-052). 36 + 34 tests, mutation-checked. Bundle is large (GAP-98) |
-| T-51 | UI: AI audit trail AG Grid | §11 #13 |  | TODO |  | **Back end done** (`GET /projects/{id}/agent-runs`); only the grid is left |
+| T-51 | UI: AI audit trail AG Grid | §11 #13 |  | REVIEW |  | `/audit?id=N`: AG Grid AI audit trail (members only): plain-words agents, result chips, red failed rows, summary line, agent chips, search, details dialog, 20 s refresh (D-053). 29 + 1 tests, mutation-checked |
 | T-52 | `seed.py`: Velugu Cove project through BRD + contract; **a project whose round 1 has failed** (holds voided, nothing charged); **a project at `PAYOUT_READY`**; record replay fixtures | §16 |  | REVIEW |  | `seed_demo.py` + `scripts/seed.py` (D-045): a failed-round project (CAMPAIGN_FAILED) and a PAYOUT_READY project, built through the real services; no PayPal call. 19 tests incl. all money invariants on the seeded data. **Replay fixtures still need the Gemini key** |
 | T-60 | Sample site v1 (missing form) + v2 (complete) in its own public repo; record both commit SHAs in §4 | §15 |  | TODO |  | |
 | T-61a | Deploy hello-world API to Render (gets webhook URL early) | §14 |  | TODO |  | |
@@ -159,6 +159,13 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-10 · Claude · T-51 AI audit trail grid (REVIEW)
+- Did: `frontend/src/app/audit/page.tsx`, `components/AuditGrid.tsx`, `components/RunDialog.tsx`, `lib/audit.ts` (agent words, result chips, filter, summary, short hash, time text), types `AgentRun`, `AgentRunsResponse`; the project page links to it for members; the ledger and audit searches now find plain words (D-053). `tests/switch.tsx` is a tiny test-only person switcher. Committed straight to `main`.
+- Tests: back end `cd backend && .venv/Scripts/python.exe -m pytest -q` -> 1562 passed (3 new contract tests: response fields, agent words equal the agents' names, result words equal the adapter's statuses, refresh rate pinned); front end `cd frontend && npm run check` -> typecheck clean, 234 tests, build includes `/audit`. Mutation-checked: 65 breakages; first run 25 survivors (2 equivalent and removed or left as is, 1 caught by the back-end contract test, the rest test gaps) -> tests added -> rerun: all caught; one planted violation (refresh rate) caught by the contract test.
+- Contract changes: D-053 (no SPEC changes).
+- Next step: the money plans viewer (T-49): list `open_plans` from the money box with their steps, show the Guardian's verdict per step, a safe tamper simulation button (demo mode only) and wire `POST /projects/{id}/money/refresh`; make the stepper's steps links to their screens (closes GAP-92 progressively).
+- Gotchas: (1) In a test file, a test that fakes only `setInterval`/`clearInterval` and spies on them must run AFTER the test that uses `useFakeTimers({ shouldAdvanceTime: true })`, otherwise the later one hangs: it is last on purpose in `audit-page.test.tsx`. (2) AG Grid keeps its own timers after unmount; assert that the page's own interval id (the one set at the refresh rate) was cleared, not that no timers remain. (3) AG Grid's quick filter does not use `valueFormatter`: give the column `getQuickFilterText`. (4) Run mutation checks in the background and do not edit files while they run.
 
 ### 2026-11-09 · Claude · T-50 ledger grid (REVIEW)
 - Did: `frontend/src/app/ledger/page.tsx`, `components/LedgerGrid.tsx`, `components/MetaDialog.tsx`, `lib/ledger.ts` (type words, filters, totals row, match symbols, safe CSV), types `LedgerRow`, `LedgerResponse`, `MatchResponse`; `ag-grid-community` and `ag-grid-react` 36.3.0 added; project page links to the ledger; **a timestamp bug fixed** (`lib/time.ts`: offset-less API timestamps are UTC). Committed straight to `main`.

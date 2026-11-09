@@ -39,7 +39,8 @@ function Workspace({ id }: { id: number }) {
 
       <Stepper state={p.state} />
       <p className="rounded-lg bg-sea-50 p-3 text-sm text-sea-700" data-testid="what-next">{WHAT_NEXT[p.state] ?? ""}</p>
-      <p className="text-sm"><Link href={`/ledger?id=${p.id}`} className="text-sea-700 underline">Open the public ledger</Link>: every money and AI event, in order.</p>
+      <p className="text-sm"><Link href={`/ledger?id=${p.id}`} className="text-sea-700 underline">Open the public ledger</Link>: every money and AI event, in order.
+        {isMember && <> <Link href={`/audit?id=${p.id}`} className="text-sea-700 underline">Open the AI audit trail</Link>: every call to an AI helper.</>}</p>
 
       <div className="grid gap-5 md:grid-cols-3">
         <div className="space-y-5 md:col-span-2">

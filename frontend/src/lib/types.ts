@@ -77,6 +77,24 @@ export type LedgerRow = {
   meta: Record<string, unknown>;
 };
 
+export type AgentRun = {
+  id: number;
+  created_at: string;
+  agent: string;
+  provider: string;
+  model: string;
+  prompt_version: string;
+  input_hash: string;
+  latency_ms: number;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  status: string;
+  output: Record<string, unknown> | null;
+  error: string | null;
+};
+
+export type AgentRunsResponse = { project_id: number; rows: AgentRun[] };
+
 export type LedgerResponse = {
   project_id: number;
   public: boolean;
