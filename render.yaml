@@ -1,0 +1,69 @@
+# Render Blueprint for BriefPay (T-61). Free plan everywhere; sandbox PayPal only.
+# Secrets are NEVER in this file: every `sync: false` value is typed into the Render dashboard (see docs/DEPLOY.md).
+# Verify field names against the current Render Blueprint docs before the first deploy.
+services:
+  - type: web
+    name: briefpay-api
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    # migrations first, then the API (which also runs the in-process job runner and the 30 s PayPal poll)
+    startCommand: alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/healthz
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.5
+      - key: APP_ENV
+        value: prod
+      - key: DEMO_MODE
+        value: "true"
+      - key: PAYPAL_ENV
+        value: sandbox
+      - key: IMAGE_PROVIDER
+        value: cloudinary
+      - key: AI_PROVIDER
+        value: replay_or_real
+      - key: JWT_SECRET
+        generateValue: true
+      # you set these in the dashboard
+      - key: APP_BASE_URL
+        sync: false
+      - key: WEB_BASE_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_SSL_CA
+        sync: false
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: PAYPAL_WEBHOOK_ID
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: AI_MODEL
+        sync: false
+      - key: CLOUDINARY_URL
+        sync: false
+      - key: GITHUB_TOKEN
+        sync: false
+
+  # The web app (static export) is added here once `frontend/` exists (T-05):
+  #
+  # - type: web
+  #   name: briefpay-web
+  #   runtime: static
+  #   rootDir: frontend
+  #   buildCommand: npm ci && npm run build
+  #   staticPublishPath: out
+  #   envVars:
+  #     - key: NEXT_PUBLIC_API_BASE_URL
+  #       sync: false
+  #     - key: NEXT_PUBLIC_PAYPAL_CLIENT_ID
+  #       sync: false
+  #
+  # The sample site (Velugu Cove, T-60) lives in its own repository and is deployed from there as a static site.

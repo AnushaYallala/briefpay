@@ -4,6 +4,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app import startup_checks
 from app.config import get_settings
 from app.db import SessionLocal
 from app.routers import auth, ba, brd, campaigns, contract, health, images, jobs, ledger, plans, projects, strategist, submissions, verification, webhooks
@@ -20,6 +21,7 @@ def build_runner(s, session_factory) -> JobRunner:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    startup_checks.enforce(settings)       # production refuses to start with an unsafe configuration (T-61)
     # With PAYPAL_CLIENT_ID/SECRET set the real client replaces the fail-safe placeholders; without them money never moves.
     paypal_client.configure_from_settings(settings)
     runner = build_runner(settings, SessionLocal)

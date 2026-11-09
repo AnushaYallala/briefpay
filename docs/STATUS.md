@@ -9,10 +9,10 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-09 by Claude: T-62 README written (honest about status); snapshot rows repaired |
+| Last updated | 2026-11-09 by Claude: T-61 deployment files and production start-up checks |
 | Overall phase | **Back end feature-complete except the three blocked pieces (BLK-01/02/03); no frontend yet.** Done: BA, BRD, contract, campaign setup, plans + Guardian + executor, webhooks, poll fallback, submissions, evidence, verification, ledger/audit APIs, demo seed. Plain-English summary: `docs/PROGRESS_SUMMARY.md` |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
-| Next task to pick up | Not blocked: **T-61** (deploy files), **T-48** (reconciliation match), the lead's decision after FAILED (GAP-70), **T-47** (Strategist wording), then the frontend (T-05 and the UI tasks) · **Human:** decide BLK-01/02/03 · PayPal sandbox keys, Gemini key, Cloudinary · run `backend/scripts/sandbox_check.py` once keys exist |
+| Next task to pick up | Not blocked: **T-48** (reconciliation match), the lead's decision after FAILED (GAP-70), **T-47** (Strategist wording), then the frontend (T-05 and the UI tasks) · **Human:** decide BLK-01/02/03 · PayPal sandbox keys, Gemini key, Cloudinary · run `backend/scripts/sandbox_check.py` once keys exist |
 | Blockers | **BLK-01** (T-22 pledge service/endpoints), **BLK-02** (T-25 clock and lead actions), **BLK-03** (pledge-state helper used by two webhook events): the assistant's attempts to write those files were stopped by a safety check; see `docs/GAPS_AND_FIXES.md` section 0 for the full designs |
 | Deployed URLs | API: _not deployed_ · Web: _not deployed_ · Sample site: _not deployed_ |
 | Repo | https://github.com/AnushaYallala/briefpay (origin; T-01 still needs LICENSE visible in About + secret scanning) |
@@ -96,7 +96,7 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 | T-52 | `seed.py`: Velugu Cove project through BRD + contract; **a project whose round 1 has failed** (holds voided, nothing charged); **a project at `PAYOUT_READY`**; record replay fixtures | §16 |  | REVIEW |  | `seed_demo.py` + `scripts/seed.py` (D-045): a failed-round project (CAMPAIGN_FAILED) and a PAYOUT_READY project, built through the real services; no PayPal call. 19 tests incl. all money invariants on the seeded data. **Replay fixtures still need the Gemini key** |
 | T-60 | Sample site v1 (missing form) + v2 (complete) in its own public repo; record both commit SHAs in §4 | §15 |  | TODO |  | |
 | T-61a | Deploy hello-world API to Render (gets webhook URL early) | §14 |  | TODO |  | |
-| T-61 | Full Render deploy via `render.yaml` (free API + 2 static sites) + env vars + Aiven CA secret file | §14 |  | TODO |  | Everything on free plans (§5.5) |
+| T-61 | Full Render deploy via `render.yaml` (free API + 2 static sites) + env vars + Aiven CA secret file | §14 |  | REVIEW |  | `render.yaml` (API), production start-up checks that refuse an unsafe config (D-046), `docs/DEPLOY.md` with the human steps. 35 tests. **Not deployed:** needs your Render/Aiven/Cloudinary/PayPal/Gemini accounts; the web service and sample site are added when they exist |
 | T-62 | README (problem, Pledge-If explained, architecture diagram, setup, demo personas, tools used, eval results, production boundaries) | §18, §19.3 |  | REVIEW |  | `README.md` written for judges: problem, how Pledge-If works, what is AI / code / human, architecture, run instructions, demo data, tools + APIMatic table, what was measured, production boundaries. **Still to add before submission:** live URLs, the AI eval table (T-63), the video link, the 5 s APIMatic capture, and a front-end section once it exists |
 | T-63 | AI eval mini-set + results table (BA, Verifier, Guardian, Strategist) | §13.3 |  | TODO |  | |
 | T-64 | Rehearse E2E on Render, record video (<3 min), upload public to YouTube | §16 |  | TODO |  | |
@@ -159,6 +159,14 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-09 · Claude · T-61 deployment files (REVIEW)
+- Did: `backend/app/startup_checks.py` (called first in the lifespan), `render.yaml`, `docs/DEPLOY.md`, the four missing settings added to `.env.example` and SPEC 14.3 (`POLL_INTERVAL_SECONDS`, `LOCAL_IMAGES_DIR`, `IMAGE_MAX_BYTES`, `IMAGE_URL_TTL_SECONDS`). Committed straight to `main`.
+- Incident: `render.yaml` was changed on disk to `PAYPAL_ENV: live` while I was working (not by me). I flagged it, did not commit it, and the human said "restore sandbox"; restored. The tests pin `sandbox` in the Blueprint and the start-up check refuses anything else.
+- Tests: `cd backend && .venv/Scripts/python -m pytest -q` -> all pass (35 new in `tests/test_deploy.py`). Mutation-checked: 22 breakages, 21 caught, 1 equivalent (`"change-me"` is already shorter than 32).
+- Contract changes: D-046 (SPEC 14.3 gained four variables).
+- Next step: T-48 (ledger vs PayPal match), the lead's decision after FAILED (GAP-70), T-47, then the front end (Node 22 is installed).
+- Gotchas: (1) A Blueprint cannot be tested against Render itself; field names should be checked against Render's current docs on first deploy. (2) `DATABASE_SSL_CA` must be a path to a Render *secret file*.
 
 ### 2026-11-09 · Claude · T-62 README (REVIEW)
 - Did: `README.md` (judges' README, honest about what is not built), repaired the Snapshot rows of this file ("Overall phase", "Next task to pick up") that earlier edits had left garbled or stale. Committed straight to `main`.

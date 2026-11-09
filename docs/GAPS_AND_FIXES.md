@@ -6,7 +6,7 @@ A running list of everything that is **missing, risky, unverified, or was found 
 - **Fixes** are problems that were found and already resolved, kept so the reasoning is not lost.
 - IDs are permanent. When a gap is closed, move it to Fixes (keep the ID) and say how.
 
-_Last updated: 2026-11-09, end of T-62._
+_Last updated: 2026-11-09, end of T-61._
 
 ---
 
@@ -93,7 +93,7 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | GAP-54 | Medium | Pages built in the browser (client-side rendered) show only their server HTML, so PAGE_CONTAINS can FAIL for text a visitor sees. Sites behind bot protection may answer 403 and FAIL URL_REACHABLE. | The teammate's demo site (T-60) should be static HTML; the LLM judge still sees the freelancer's screenshots. |
 | GAP-55 | Low (**closed in T-31**) | The result of a check was not yet stored. | `auto_checks` rows are now saved by the AUTO_CHECKS job. |
 | GAP-56 | Medium | A submission waits in QUESTIONING with no way forward until T-33/T-34 exist; the project stays VERIFYING. | T-33, T-34. |
-| GAP-57 | Medium | `APP_ENV` defaults to `dev`, which lets a submitted `http://localhost` URL be fetched by the server. Harmless on a laptop, wrong on Render. | Deployment (T-61) must set `APP_ENV=prod`; consider failing startup if prod and `JWT_SECRET` is the default. |
+| GAP-57 | Medium (**closed in T-61**: production refuses an unsafe config) | `APP_ENV` defaults to `dev`, which lets a submitted `http://localhost` URL be fetched by the server. Harmless on a laptop, wrong on Render. | Deployment (T-61) must set `APP_ENV=prod`; consider failing startup if prod and `JWT_SECRET` is the default. |
 | GAP-58 | Low | A job that keeps failing (e.g. GitHub down for long) leaves the submission in AUTO_CHECKING after the runner gives up; the freelancer cannot resubmit. | Decide in T-34: a lead 'recheck' action, or mark such a submission FAILED_TO_CHECK. |
 | GAP-59 | Low | `GET /projects/{id}/submissions` is not in SPEC 10; added for the attempt history the verification report screen needs. | Add to SPEC when the contract is next edited. |
 | GAP-60 | Medium | `CloudinaryImageStore` follows Cloudinary's documentation but has never run against a real account: the upload signature, the Admin API lookup and the signed delivery URL format (`s--sig--`) are unproven. | Add an image round trip to `scripts/sandbox_check.py` once `CLOUDINARY_URL` exists; fix the signing if it disagrees. |
@@ -118,6 +118,8 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | GAP-79 | Low | Seeded ledger and report timestamps are the seeding time (only the campaign and pledge times are shifted into the past). | Cosmetic; shows as 'just now' on the ledger. |
 | GAP-80 | Medium | Replay fixtures for the AI calls are not recorded (needs the Gemini key); without them the demo needs a live key. | T-63 with the key: run the flows once with `AI_PROVIDER=gemini` and record. |
 | GAP-81 | Medium | The README must be refreshed before submission: test count, status banner, live URLs, AI evaluation table, video link, APIMatic capture, front-end section. | Checklist in STATUS T-62; do it in T-64/T-65. |
+| GAP-82 | Low | `render.yaml` has never been run through Render; field names and the `generateValue` option are from memory of the docs. | Check against Render's current Blueprint docs on the first deploy. |
+| GAP-83 | Low | `DEMO_MODE=true` is the Blueprint default, so persona switching and the reconcile report are open on the public demo. | Intended for the hackathon; flip to false for any lasting deployment. |
 
 ---
 
@@ -167,6 +169,8 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | FIX-40 | T-52 | The capture plan was blocked by the Guardian in the first seed run (G-01, G-02, G-04, G-09) because the campaign had already been moved to CAPTURING before the review. | Review first, then transition, as the real flow does. |
 | FIX-41 | T-52 | Mutation check found untested seed facts: who requested the enquiry form, and the order of `--commit-1`/`--commit-2` (the CLI test compared a set). | Tests now check both. |
 | FIX-42 | T-62 | The STATUS snapshot rows 'Next task to pick up' and 'Overall phase' had a stale tail and an out-of-date 'Day 0' text after several doc edits (my replacement only changed the front of the line). | Rewritten whole; doc scripts should replace complete rows, not prefixes. |
+| FIX-43 | T-61 | Four settings added in earlier increments were missing from `.env.example` and SPEC 14.3, against the AGENTS.md rule. | Added; a test now fails if any setting is missing from either list. |
+| FIX-44 | T-61 | `render.yaml` was changed on disk to `PAYPAL_ENV: live` mid-increment (not by the assistant). Caught by the new Blueprint test and the start-up check; flagged to the human, who asked for sandbox. | Restored; both guards stay. |
 
 ---
 

@@ -4,6 +4,27 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 29 · Ready to deploy, and refusing to start unsafe (T-61) · Mon Nov 9
+
+**What now exists**
+- **A Render deployment file** for the back end (free plan): it applies the database migrations, starts the API, checks its health, makes up a strong login-signing secret by itself, and fixes the safe settings (production mode, **PayPal sandbox only**, Cloudinary for pictures). Every real secret is left blank on purpose: you type them in the Render dashboard.
+- **A step-by-step guide** (`docs/DEPLOY.md`) for the parts only a person can do: creating the free database, Cloudinary and Gemini accounts, the PayPal sandbox app and webhook (with the exact list of events to subscribe to), loading the demo data, and warming the servers before the video.
+- **The server now refuses to start in production with an unsafe setup**, and says why in the log (never printing a secret): a weak or default login secret, a throwaway SQLite database on a host that forgets files, anything other than PayPal's sandbox, half a set of PayPal keys, or Cloudinary chosen without its URL. Smaller weaknesses (no Gemini key, no webhook id, demo mode left on, localhost addresses) are logged as warnings.
+- **The settings lists can't drift apart any more.** Four settings I had added earlier were missing from the example environment file and the spec; they are now there, and a test fails if the code, the example file, the spec or the deploy file ever disagree.
+- **A safety moment worth knowing about:** while I was working, the deployment file was changed on disk from "sandbox" to "live" PayPal. I did not make that change. I stopped, told you, and restored "sandbox" at your word. The new start-up check and a test would now both catch this, and the app would refuse to run.
+- All automated tests pass (35 new). I broke 22 things on purpose; 21 were caught and the last changes nothing.
+
+**What it does NOT do yet**
+Nothing is deployed: that needs your accounts and secrets. The web app's entry in the deployment file will be added once the web app exists.
+
+**Progress:** 29 of ~45 tasks done or in review. Increment 29 of the 40 you asked for.
+
+**Needed from you:** BLK-01/02/03, the accounts and keys listed in `docs/DEPLOY.md`.
+
+**Next increment:** matching ledger entries to PayPal's own records (T-48), which fills the "PayPal match" column.
+
+---
+
 ## Increment 28 · The README for judges (T-62) · Mon Nov 9
 
 **What now exists**
