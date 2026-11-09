@@ -9,10 +9,10 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-09 by Claude: T-52 demo seed done (fixtures wait on the Gemini key) |
-| Overall phase | **Day 0: backend skeleton, schema, money math, state machines, ledger built; no features yet** (plain-English summary: `docs/PROGRESS_SUMMARY.md`) |
+| Last updated | 2026-11-09 by Claude: T-62 README written (honest about status); snapshot rows repaired |
+| Overall phase | **Back end feature-complete except the three blocked pieces (BLK-01/02/03); no frontend yet.** Done: BA, BRD, contract, campaign setup, plans + Guardian + executor, webhooks, poll fallback, submissions, evidence, verification, ledger/audit APIs, demo seed. Plain-English summary: `docs/PROGRESS_SUMMARY.md` |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
-| Next task to pick up | Not blocked: **T-47** (Strategist wording), **T-48** (reconciliation job), **T-62** (README), lead decision after FAILED (GAP-70), UI tasks | (Strategist AI wording), **T-43/T-44** (poll fallback) · **Human:** write BLK-01/BLK-02 files or advise · run `backend/scripts/sandbox_check.py` once keys exist |
+| Next task to pick up | Not blocked: **T-61** (deploy files), **T-48** (reconciliation match), the lead's decision after FAILED (GAP-70), **T-47** (Strategist wording), then the frontend (T-05 and the UI tasks) · **Human:** decide BLK-01/02/03 · PayPal sandbox keys, Gemini key, Cloudinary · run `backend/scripts/sandbox_check.py` once keys exist |
 | Blockers | **BLK-01** (T-22 pledge service/endpoints), **BLK-02** (T-25 clock and lead actions), **BLK-03** (pledge-state helper used by two webhook events): the assistant's attempts to write those files were stopped by a safety check; see `docs/GAPS_AND_FIXES.md` section 0 for the full designs |
 | Deployed URLs | API: _not deployed_ · Web: _not deployed_ · Sample site: _not deployed_ |
 | Repo | https://github.com/AnushaYallala/briefpay (origin; T-01 still needs LICENSE visible in About + secret scanning) |
@@ -97,7 +97,7 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 | T-60 | Sample site v1 (missing form) + v2 (complete) in its own public repo; record both commit SHAs in §4 | §15 |  | TODO |  | |
 | T-61a | Deploy hello-world API to Render (gets webhook URL early) | §14 |  | TODO |  | |
 | T-61 | Full Render deploy via `render.yaml` (free API + 2 static sites) + env vars + Aiven CA secret file | §14 |  | TODO |  | Everything on free plans (§5.5) |
-| T-62 | README (problem, Pledge-If explained, architecture diagram, setup, demo personas, tools used, eval results, production boundaries) | §18, §19.3 |  | TODO |  | |
+| T-62 | README (problem, Pledge-If explained, architecture diagram, setup, demo personas, tools used, eval results, production boundaries) | §18, §19.3 |  | REVIEW |  | `README.md` written for judges: problem, how Pledge-If works, what is AI / code / human, architecture, run instructions, demo data, tools + APIMatic table, what was measured, production boundaries. **Still to add before submission:** live URLs, the AI eval table (T-63), the video link, the 5 s APIMatic capture, and a front-end section once it exists |
 | T-63 | AI eval mini-set + results table (BA, Verifier, Guardian, Strategist) | §13.3 |  | TODO |  | |
 | T-64 | Rehearse E2E on Render, record video (<3 min), upload public to YouTube | §16 |  | TODO |  | |
 | T-65 | Devpost submission (description, tools, sponsor tracks, links) | §18 |  | TODO |  | Target Thu 6 PM IST |
@@ -159,6 +159,12 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-09 · Claude · T-62 README (REVIEW)
+- Did: `README.md` (judges' README, honest about what is not built), repaired the Snapshot rows of this file ("Overall phase", "Next task to pick up") that earlier edits had left garbled or stale. Committed straight to `main`.
+- Tests: unchanged (1376 passed). Facts in the README were checked against the repo (licence, Python version, commands, rule counts).
+- Next step: T-61 deployment files (`render.yaml`, start command with migrations, env docs), then T-48, GAP-70, T-47, then the front end.
+- Gotchas: (1) Refresh the test count, the status banner and the eval table in the README before submitting. (2) The README says what is NOT built (front end, hosted URL, video, real Gemini/PayPal runs); keep it true.
 
 ### 2026-11-09 · Claude · T-52 demo seed (REVIEW)
 - Did: `services/seed_demo.py` (`seed_demo`, `SeedReader`, the nine-requirement BRD draft), `scripts/seed.py` (`--repo --site --commit-1 --commit-2 --paypal-email`), refactors so the seed reuses real code: `brd_service.store_brd`, `verify_judge.save_report`. Committed straight to `main`.

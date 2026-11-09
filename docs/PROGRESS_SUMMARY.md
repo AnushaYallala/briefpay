@@ -4,6 +4,24 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 28 · The README for judges (T-62) · Mon Nov 9
+
+**What now exists**
+- **A README a stranger can follow.** It explains the problem in plain words, how "Pledge-If" works and why a pledge is only a hold that costs nothing unless the goal is met, which steps are done by AI, which by plain code and which by a human, an architecture picture, how to run the project and load the demo data, the demo cast, the tools used (including the PayPal and APIMatic table the contest asks for), what was measured, and what the project is deliberately not (no real money, no production login, and so on).
+- **Honest about what is missing.** A banner at the top says the back end is built and tested but the web screens, the hosted site and the video are not there yet, that three pieces are blocked, and that PayPal, Gemini and Cloudinary have only been tried against faithful fakes. Nothing in it claims a live URL or a recorded video.
+- **The status page is tidy again.** Two summary rows on the project status page had been left garbled or out of date by earlier edits; they now say where the project really stands and what comes next.
+
+**What it does NOT do yet**
+The README still needs, before submission: the live links, the AI evaluation results table (needs your Gemini key), the video link, the short APIMatic screen capture, and a front-end section once the screens exist.
+
+**Progress:** 28 of ~45 tasks done or in review. Increment 28 of the 40 you asked for.
+
+**Needed from you:** the same: BLK-01/02/03, PayPal sandbox keys, Gemini key, optionally Cloudinary.
+
+**Next increment:** deployment files for Render (T-61), so the backend can be started on the free host as soon as you create the account.
+
+---
+
 ## Increment 27 · Ready-made demo data (T-52) · Mon Nov 9
 
 **What now exists**

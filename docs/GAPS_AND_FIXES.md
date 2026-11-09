@@ -6,7 +6,7 @@ A running list of everything that is **missing, risky, unverified, or was found 
 - **Fixes** are problems that were found and already resolved, kept so the reasoning is not lost.
 - IDs are permanent. When a gap is closed, move it to Fixes (keep the ID) and say how.
 
-_Last updated: 2026-11-09, end of T-52._
+_Last updated: 2026-11-09, end of T-62._
 
 ---
 
@@ -117,6 +117,7 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | GAP-78 | Low | The seed has no BA session, scores or transcript; the BA Studio screen is empty for the seeded projects. | The video runs the BA on a fresh project; add a BA history to the seed only if time allows. |
 | GAP-79 | Low | Seeded ledger and report timestamps are the seeding time (only the campaign and pledge times are shifted into the past). | Cosmetic; shows as 'just now' on the ledger. |
 | GAP-80 | Medium | Replay fixtures for the AI calls are not recorded (needs the Gemini key); without them the demo needs a live key. | T-63 with the key: run the flows once with `AI_PROVIDER=gemini` and record. |
+| GAP-81 | Medium | The README must be refreshed before submission: test count, status banner, live URLs, AI evaluation table, video link, APIMatic capture, front-end section. | Checklist in STATUS T-62; do it in T-64/T-65. |
 
 ---
 
@@ -165,6 +166,7 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | FIX-39 | T-52 | The seed's first cast used `@velugu.example.test`; the login's email validation rejects reserved `.test` names (422), so nobody could have signed in. Found by the seed's own login test. | Cast moved to `@velugu.example.com`; test asserts a seeded person can log in. |
 | FIX-40 | T-52 | The capture plan was blocked by the Guardian in the first seed run (G-01, G-02, G-04, G-09) because the campaign had already been moved to CAPTURING before the review. | Review first, then transition, as the real flow does. |
 | FIX-41 | T-52 | Mutation check found untested seed facts: who requested the enquiry form, and the order of `--commit-1`/`--commit-2` (the CLI test compared a set). | Tests now check both. |
+| FIX-42 | T-62 | The STATUS snapshot rows 'Next task to pick up' and 'Overall phase' had a stale tail and an out-of-date 'Day 0' text after several doc edits (my replacement only changed the front of the line). | Rewritten whole; doc scripts should replace complete rows, not prefixes. |
 
 ---
 
