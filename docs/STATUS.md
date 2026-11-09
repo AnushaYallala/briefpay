@@ -9,10 +9,10 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-09 by Claude: T-48 PayPal match for the ledger |
+| Last updated | 2026-11-09 by Claude: decisions after a FAILED verification (extend / refund / override) |
 | Overall phase | **Back end feature-complete except the three blocked pieces (BLK-01/02/03); no frontend yet.** Done: BA, BRD, contract, campaign setup, plans + Guardian + executor, webhooks, poll fallback, submissions, evidence, verification, ledger/audit APIs, demo seed. Plain-English summary: `docs/PROGRESS_SUMMARY.md` |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
-| Next task to pick up | Not blocked: the lead's decision after FAILED (GAP-70), **T-47** (Strategist wording), then the frontend (T-05 and the UI tasks) · **Human:** decide BLK-01/02/03 · PayPal sandbox keys, Gemini key, Cloudinary · run `backend/scripts/sandbox_check.py` once keys exist |
+| Next task to pick up | Not blocked: **T-47** (Strategist wording), then the frontend (T-05 and the UI tasks) · **Human:** decide BLK-01/02/03 · PayPal sandbox keys, Gemini key, Cloudinary · run `backend/scripts/sandbox_check.py` once keys exist |
 | Blockers | **BLK-01** (T-22 pledge service/endpoints), **BLK-02** (T-25 clock and lead actions), **BLK-03** (pledge-state helper used by two webhook events): the assistant's attempts to write those files were stopped by a safety check; see `docs/GAPS_AND_FIXES.md` section 0 for the full designs |
 | Deployed URLs | API: _not deployed_ · Web: _not deployed_ · Sample site: _not deployed_ |
 | Repo | https://github.com/AnushaYallala/briefpay (origin; T-01 still needs LICENSE visible in About + secret scanning) |
@@ -159,6 +159,13 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-09 · Claude · Decisions after a FAILED verification (closes GAP-70)
+- Did: `services/failure_decisions.py`, four endpoints on the submissions router (`failure-options`, `extend`, `cancel-refund`, `override`), `max_attempts` in `verify_aggregate.aggregate` and the judge, allowed attempts in `create_submission`, `verification_override` flag in the payout plan inputs, Guardian soft flag S-04. Committed straight to `main`. (Extra task beyond the board; it completes the spec's FAILED path.)
+- Tests: `cd backend && .venv/Scripts/python -m pytest -q` -> 1484 passed (32 new in `tests/test_failure_decisions.py`). Mutation-checked: 40 breakages; 3 test gaps closed; 2 equivalent (the router's role checks are repeated in the service).
+- Contract changes: D-048 (soft flag S-04 added to the Guardian and to the SPEC soft-flag table).
+- Next step: T-47 (Strategist LLM wording), then the front end (Node 22 is installed).
+- Gotchas: (1) Decisions are ledger memos: tests that count APPROVAL rows must filter on `meta.kind`. (2) The override report has `overall = VERIFIED` on purpose so G-12 passes; look at `verdicts_json.override` to tell it apart. (3) Test helper `failed_world(w)` builds a funded project with two earlier rejected attempts and a third judged FAILED.
 
 ### 2026-11-09 · Claude · T-48 PayPal match (REVIEW)
 - Did: `services/ledger_match.py`, `GET /projects/{id}/ledger/paypal-match`, ledger rows keep `paypal_match: null` (the UI merges by `seq`). Committed straight to `main`.

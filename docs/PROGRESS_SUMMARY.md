@@ -4,6 +4,28 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 31 · What happens when the work fails for good · Mon Nov 9
+
+**What now exists**
+- **The "FAILED" path is finished.** After the freelancer's third attempt fails, the project used to just wait. Now the lead has three real choices, and every choice is written into the public ledger:
+  1. **Give more attempts**: one to three at a time, six extra at most. The system then counts attempts correctly, so with two extra attempts the fourth try can still be sent back for changes, and the fifth is final again.
+  2. **Cancel and refund**: builds the refund plan for all pledgers (reason "verification failed"). It then goes through the same safety review and human approval as any refund. Pressing it twice gives the same plan.
+  3. **Override**: pay the freelancer anyway, but **only if every sponsor (the lead included) agrees**. Each sponsor votes; a sponsor can change their mind; one "no" at the end stops it. When everyone has agreed, the system saves a new report that says plainly it is an override, keeps the original failed findings, lists who approved and their notes, and moves the project to "payout ready".
+- **An overridden payout gets extra caution.** The payment safety checker raises a new warning ("verification overridden") that forces a human hold: the approver must type an acknowledgement before the money can be released.
+- **Nothing is hidden.** The real failing results stay in the report, and every vote shows in the public ledger with the person's name.
+- All 1,484 automated tests pass (32 new). I broke about 40 things on purpose; the first pass found three weak spots which I covered, and the rest are caught or provably harmless.
+
+**What it does NOT do yet**
+There are no screens for these choices yet (UI work). A "no" vote that arrives after everyone else has said yes simply stops the override; sponsors cannot attach evidence to a vote.
+
+**Progress:** 30 of ~45 tasks done or in review, plus this extra step. Increment 31 of the 40 you asked for.
+
+**Needed from you:** BLK-01/02/03, PayPal sandbox keys, Gemini key.
+
+**Next increment:** the Strategist's wording (T-47): the AI phrases the forecast and the nudge messages, and code checks that it did not invent any number.
+
+---
+
 ## Increment 30 · Does the ledger agree with PayPal? (T-48) · Mon Nov 9
 
 **What now exists**

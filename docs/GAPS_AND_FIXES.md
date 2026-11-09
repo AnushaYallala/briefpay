@@ -6,7 +6,7 @@ A running list of everything that is **missing, risky, unverified, or was found 
 - **Fixes** are problems that were found and already resolved, kept so the reasoning is not lost.
 - IDs are permanent. When a gap is closed, move it to Fixes (keep the ID) and say how.
 
-_Last updated: 2026-11-09, end of T-48._
+_Last updated: 2026-11-09, end of the FAILED-path work._
 
 ---
 
@@ -106,7 +106,7 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | GAP-67 | Medium | No recorded Gemini fixture for `VERIFY_QUESTIONS`; the real prompt wording is untested against a live model. | Record fixtures in T-63 once the key exists. Until then template questions are used if the model fails. |
 | GAP-68 | Low | The 25-question cap silently drops the lowest-priority criteria of a very large BRD. | The BA gates normally keep BRDs smaller; show a note in the UI if ever hit. |
 | GAP-69 | Medium | SPEC 7.3 says the judge also sees the fetched page text for the relevant path; the auto checks do not persist page text, so the judge will see only check results. | Store a short visible-text excerpt in `auto_checks.detail_json` for PAGE_CONTAINS, or re-fetch in the judge job (T-34). |
-| GAP-70 | Medium | After a FAILED verdict (attempt 3) the lead's choices (extend, cancel and refund, all-sponsor override) are not built; the project stays in VERIFYING. | Later task: lead decision endpoint + sponsor override approvals; the refund path already exists (`REFUND_CAPTURED`). |
+| GAP-70 | Medium (**closed**: D-048, `failure_decisions.py`) | After a FAILED verdict (attempt 3) the lead's choices (extend, cancel and refund, all-sponsor override) were not built; the project stayed in VERIFYING. | Later task: lead decision endpoint + sponsor override approvals; the refund path already exists (`REFUND_CAPTURED`). |
 | GAP-71 | Low | INCONCLUSIVE and JUDGE_UNAVAILABLE change no state, so someone has to ask for judging again (a gate that ERRORed is retried once inside the job). | An automatic delayed retry through the job runner, and a clearer message in the UI. |
 | GAP-72 | Medium | The prompt `verify-judge-v1` has never been run against the real model; vision quality on real screenshots is unknown. | Record fixtures with the real key (T-63) and tune the prompt; the rules already contain a wrong 'pass' by requiring citations and confidence. |
 | GAP-73 | Low | Only the first 20 screenshots of a submission reach the reviewer; the rest are listed as 'not shown' and cannot support a pass. | Fine for the demo (<= 3 per question); raise the limit if the model allows. |
@@ -122,6 +122,8 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | GAP-83 | Low | `DEMO_MODE=true` is the Blueprint default, so persona switching and the reconcile report are open on the public demo. | Intended for the hackathon; flip to false for any lasting deployment. |
 | GAP-84 | Low | The match uses instant lookups, not Transaction Search, so it cannot independently confirm money that never passed through our own calls (e.g. a transfer made by hand in the PayPal account). | Add Transaction Search later as a second source if it proves reliable (A-2). |
 | GAP-85 | Low | The match is not stored, so a mismatch leaves no alert unless someone presses the button. | Optional: a periodic job that writes one alert memo per new mismatch. |
+| GAP-87 | Low | Decisions are read back by scanning the project's APPROVAL memos in Python. | Fine at this scale; add a table if ledgers grow large. |
+| GAP-88 | Low | A refund started from a FAILED verdict still needs the usual review and human approval; the project stays VERIFYING until that plan is approved. | By design. |
 
 ---
 
@@ -174,6 +176,7 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | FIX-43 | T-61 | Four settings added in earlier increments were missing from `.env.example` and SPEC 14.3, against the AGENTS.md rule. | Added; a test now fails if any setting is missing from either list. |
 | FIX-44 | T-61 | `render.yaml` was changed on disk to `PAYPAL_ENV: live` mid-increment (not by the assistant). Caught by the new Blueprint test and the start-up check; flagged to the human, who asked for sandbox. | Restored; both guards stay. |
 | FIX-45 | T-48 | Mutation check found three untested rules in the match: the 30-lookup limit, one lookup per payout batch (the test had a single row) and skipping a refund row with no recorded id. | Tests added. |
+| FIX-46 | FAILED path | Mutation check found three untested rules: the extension memo's new total, that votes on an earlier failed submission must not count, and that the options come from the submission's own project (the test project happened to have id 1). | Tests added, including one with two projects. |
 
 ---
 

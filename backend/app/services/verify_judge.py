@@ -16,7 +16,7 @@ from app.agents.llm_adapter import AgentError, canonical_json
 from app.agents.verifier import JudgeInputs, VerifierAgent
 from app.models import AutoCheck, BRD, Contract, Evidence, Image, Job, ProjectMember, Project, Submission, VerificationQuestion, VerificationReport
 from app.schemas.verify import ACVerdict
-from app.services import image_meta, image_store, jobs
+from app.services import failure_decisions, image_meta, image_store, jobs
 from app.services.autochecks import AutoChecker, snippet_in_file
 from app.services.image_store import ImageStoreUnavailable
 from app.services.state_machines import ProjectService
@@ -241,7 +241,8 @@ def judge(db: Session, submission_id: int, agent: VerifierAgent, checker: AutoCh
             return {"effect": "JUDGE_UNAVAILABLE", "why": str(e)[:200], "agent_run_id": getattr(e, "run_id", None)}
         verdicts, ai_summary = out.verdicts, out.summary_for_sponsors
 
-    agg = aggregate(reqs, check_dicts(checks), verdicts, asked, flagged, attempt_no=sub.attempt_no, followup_done=followup_done)
+    agg = aggregate(reqs, check_dicts(checks), verdicts, asked, flagged, attempt_no=sub.attempt_no, followup_done=followup_done,
+                    max_attempts=failure_decisions.allowed_attempts(db, contract.id))
 
     if agg.overall == "INCONCLUSIVE":
         sub.state = "EVIDENCE_RECEIVED"

@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.models import AutoCheck, BRD, Contract, Evidence, Job, Project, ProjectMember, Submission, VerificationQuestion, VerificationReport
-from app.services import contract_service, jobs
+from app.services import contract_service, failure_decisions, jobs
 from app.services.autochecks import SHA, AutoChecker, CheckResult, parse_repo
 from app.services.safe_fetch import SafeFetcher
 from app.services.state_machines import ProjectService
@@ -83,8 +83,9 @@ def create_submission(db: Session, project: Project, member: ProjectMember, *, r
     attempts = db.scalar(select(func.count(Submission.id)).where(Submission.contract_id == contract.id)) or 0
     if db.scalars(select(Submission.id).where(Submission.contract_id == contract.id, Submission.state.in_(ACTIVE_STATES))).first():
         raise SubmissionError("SUBMISSION_ACTIVE", "A submission is still being checked")
-    if attempts >= MAX_ATTEMPTS:
-        raise SubmissionError("MAX_ATTEMPTS", f"All {MAX_ATTEMPTS} attempts are used; the lead decides what happens next")
+    allowed = failure_decisions.allowed_attempts(db, contract.id)
+    if attempts >= allowed:
+        raise SubmissionError("MAX_ATTEMPTS", f"All {allowed} attempts are used; the lead decides what happens next")
     if parse_repo(repo_url) is None:
         raise SubmissionError("BAD_REPO_URL", "The repository must look like https://github.com/owner/repo", 422)
     if not SHA.match(commit_sha or ""):

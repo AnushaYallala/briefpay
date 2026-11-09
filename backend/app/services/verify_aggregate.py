@@ -98,7 +98,7 @@ def judge_criterion(req_code: str, crit: dict, own_result: str | None, verdict: 
 
 
 def aggregate(requirements: list[dict], checks: list[dict], verdicts: list[ACVerdict], asked: dict[tuple[str, str], set[int]],
-              snippet_flags: set[tuple[str, str]], *, attempt_no: int, followup_done: bool) -> Aggregation:
+              snippet_flags: set[tuple[str, str]], *, attempt_no: int, followup_done: bool, max_attempts: int = MAX_ATTEMPTS) -> Aggregation:
     by_key: dict[tuple[str, str], ACVerdict] = {}
     for v in verdicts:
         by_key.setdefault((v.requirement_code, v.criterion_id), v)         # the first verdict for a criterion counts; extras are ignored
@@ -154,7 +154,7 @@ def aggregate(requirements: list[dict], checks: list[dict], verdicts: list[ACVer
         else:
             if unclear and not any_must_fail:
                 reasons.append("STILL_UNCLEAR_AFTER_FOLLOWUP")
-            overall = "FAILED" if attempt_no >= MAX_ATTEMPTS else "NEEDS_CHANGES"
+            overall = "FAILED" if attempt_no >= max_attempts else "NEEDS_CHANGES"
 
     return Aggregation(overall, _pct(musts), _pct([r for r in req_rows if r["priority"] == "SHOULD"]), results, req_rows, gates,
                        injection, followup, reasons)

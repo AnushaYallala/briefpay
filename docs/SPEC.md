@@ -783,6 +783,7 @@ class MoneyPlanSpec(BaseModel):
 | S-01 | The freelancer's PayPal email appears among this campaign's pledgers (self-funding) |
 | S-02 | Concentration or surge: one `payer_email` holds ≥ 60% of the goal, or ≥ 50% of the goal was authorized in the last 10 minutes before the deadline (possible shill pledging) |
 | S-03 | PayPal-side proof `UNVERIFIED` (API unreachable) |
+| S-04 | A `FREELANCER_PAYOUT` whose verification was overridden by every sponsor after a FAILED verdict (D-048); the approver must write an acknowledgement |
 
 #### 7.5.4 LLM risk review (escalate-only)
 The model receives the plan summary (kinds, counts, amounts, display names, no emails), the campaign timeline (pledge times and amounts), and for payouts the verification summary and auto-check results (not raw images).
