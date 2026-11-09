@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     pledge_min_cents: int = 500
     default_close_policy: str = "EARLY_ON_GOAL"
     clock_interval_seconds: int = 60
+    poll_interval_seconds: int = 30
     ba_target_score: int = 90
     ba_max_rounds: int = 5
     demo_mode: bool = True

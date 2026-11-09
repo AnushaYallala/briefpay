@@ -7,17 +7,22 @@ from fastapi.responses import JSONResponse
 from app.config import get_settings
 from app.db import SessionLocal
 from app.routers import auth, ba, brd, campaigns, contract, health, images, jobs, ledger, plans, projects, strategist, submissions, verification, webhooks
-from app.services import job_handlers, paypal_client  # noqa: F401  (job_handlers registers the job handlers)
+from app.services import job_handlers, paypal_client, poll  # noqa: F401  (job_handlers registers the job handlers)
 from app.services.jobs import JobRunner
 
 settings = get_settings()
+
+
+def build_runner(s, session_factory) -> JobRunner:
+    """The job runner plus its recurring chores: the poll fallback for PayPal steps whose webhook never came."""
+    return JobRunner(session_factory, periodic=[(s.poll_interval_seconds, lambda: poll.run_periodic(session_factory))])
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # With PAYPAL_CLIENT_ID/SECRET set the real client replaces the fail-safe placeholders; without them money never moves.
     paypal_client.configure_from_settings(settings)
-    runner = JobRunner(SessionLocal)
+    runner = build_runner(settings, SessionLocal)
     runner.start()
     try:
         yield

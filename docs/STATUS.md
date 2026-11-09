@@ -9,10 +9,10 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-09 by Claude: T-34 done (judge, report, state changes) |
+| Last updated | 2026-11-09 by Claude: T-43/T-44 poll fallback done |
 | Overall phase | **Day 0: backend skeleton, schema, money math, state machines, ledger built; no features yet** (plain-English summary: `docs/PROGRESS_SUMMARY.md`) |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
-| Next task to pick up | Not blocked: **T-43/T-44** (poll fallback, execution paths), **T-47** (Strategist wording), **T-48**, **T-52** (seed), UI tasks (Strategist AI wording), **T-43/T-44** (poll fallback) · **Human:** write BLK-01/BLK-02 files or advise · run `backend/scripts/sandbox_check.py` once keys exist |
+| Next task to pick up | Not blocked: **T-52** (seed data for the demo), **T-47** (Strategist wording), **T-48** (reconciliation job), **T-62** (README), UI tasks (Strategist AI wording), **T-43/T-44** (poll fallback) · **Human:** write BLK-01/BLK-02 files or advise · run `backend/scripts/sandbox_check.py` once keys exist |
 | Blockers | **BLK-01** (T-22 pledge service/endpoints), **BLK-02** (T-25 clock and lead actions), **BLK-03** (pledge-state helper used by two webhook events): the assistant's attempts to write those files were stopped by a safety check; see `docs/GAPS_AND_FIXES.md` section 0 for the full designs |
 | Deployed URLs | API: _not deployed_ · Web: _not deployed_ · Sample site: _not deployed_ |
 | Repo | https://github.com/AnushaYallala/briefpay (origin; T-01 still needs LICENSE visible in About + secret scanning) |
@@ -81,8 +81,8 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 | T-45 | `MoneyExecutor` + plan lifecycle + approvals API (`plans`, `review`, `approve`) + executor tests (refuses unapproved/mismatched/foreign steps) | §8.4, §8.5, §10 | Claude | DONE | t-45-money-executor | `MoneyExecutor` + `plan_lifecycle` (review/approve/confirm) + `/auth/login`,`/auth/me` + plans API (list/create/get/review/approve/simulate-tamper) + EXECUTE_PLAN job + chokepoint scan test. 71 tests; mutation-checked. Fake writer only: real PayPal writer is T-20/T-43 (D-024) |
 | T-41 | Guardian rules G-01…G-13 + soft flags S-01…S-03 (pure; SDK mocked) + one pass/fail test per rule + tamper mutations | §7.5.2–7.5.3, §7.5.6 | Claude | DONE | t-41-guardian-rules | G-01..G-13 + S-01..S-03 + 5 tamper mutations, 63 tests incl. one pass/fail per rule; mutation-checked. PayPal reads go through an injected `PayPalReader` (real one arrives with T-20). Interpretations in D-023 |
 | T-42 | Guardian LLM review (escalate-only) + decision logic + release policies (auto vs human) | §7.5.4–7.5.5 | Claude | DONE | t-42-guardian-llm | `GuardianLLM` agent + `guardian_facts` + `guardian_decision.combine` wired into `review_plan` and the review endpoint. 33 tests; mutation-checked. Never called on BLOCK; failure => HOLD (D-025). No real Gemini call made yet (A-4) |
-| T-43 | Execution paths: capture/void steps, freelancer payout batch; webhooks + poll fallback; PAID / PAYOUT_FAILED | §8.5, §9.3–9.4 |  | TODO |  | |
-| T-44 | `REFUND_CAPTURED` execution + cancel flow (builder in T-26) | §8.1 M7 |  | TODO |  | UI is cut-order #5 |
+| T-43 | Execution paths: capture/void steps, freelancer payout batch; webhooks + poll fallback; PAID / PAYOUT_FAILED | §8.5, §9.3–9.4 |  | REVIEW |  | Capture/void/payout execution (T-45), webhooks (T-21), **poll fallback** (D-044: periodic chore, `POLL_STEPS` job, refresh endpoint); PAID / PAYOUT_FAILED follow from plan outcomes. 40 poll tests, mutation-checked |
+| T-44 | `REFUND_CAPTURED` execution + cancel flow (builder in T-26) | §8.1 M7 |  | REVIEW |  | `REFUND_CAPTURED` is built (T-26), reviewed, approved and executed through the plans API; refunds are confirmed by webhook or poll and the project ends CANCELLED. No separate cancel endpoint: uses `POST /projects/{id}/plans`. UI later |
 | T-46 | Strategist (deterministic): forecast, deadline suggestion, nudge target ranking + tests; API + forecast card | §7.4 | Claude | DONE | t-46-strategist | Pure forecast/advice/nudge math + report service + run/read/apply endpoints + STRATEGIST_RUN job. 52 tests; mutation-checked 24/24 (two added tests). LLM wording is T-47 (D-035) |
 | T-47 | Strategist LLM narrative + nudge drafts + numbers validator | §7.4 |  | TODO |  | SHOULD (cut order #1) |
 | T-48 | Ledger ↔ PayPal reconciliation job (SDK Transaction Search) + "PayPal match" column | §9.7 |  | TODO |  | SHOULD |
@@ -159,6 +159,13 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-09 · Claude · T-43/T-44 poll fallback (REVIEW)
+- Did: `services/poll.py` (`poll`, `waiting_steps`, `run_periodic`), `PayPalReader.get_refund` (protocol, placeholder, client), `JobRunner` periodic chores (`periodic=[(seconds, fn)]`), `POLL_STEPS` job, `POST /projects/{id}/money/refresh`, `main.build_runner`, setting `POLL_INTERVAL_SECONDS`. Committed straight to `main`.
+- Tests: `cd backend && .venv/Scripts/python -m pytest -q` -> 1357 passed (55 new). Mutation-checked: ~40 breakages in two passes; all caught except 2 equivalent (the authorization id in a polled resource is redundant because steps match by PayPal id; the explicit rollback is also done by `close()`).
+- Contract changes: D-044 (no SPEC changes).
+- Next step: T-52 seed data (a project whose round failed with holds voided; a project at PAYOUT_READY) so the demo has something to show without live setup, or T-62 README, or T-48.
+- Gotchas: (1) In tests, `FakeReader(db, overrides={id: PayPalObject(...)})` controls what PayPal 'says' (an override of `None` means unknown); it otherwise mirrors our own database. (2) Approving an AUTO plan queues an `EXECUTE_PLAN` job: tests about other jobs mark it DONE first. (3) A confirmed payout step's `paypal_ref` becomes the payout item id, so read the batch id before polling.
 
 ### 2026-11-09 · Claude · T-34 second half (REVIEW)
 - Did: `agents/verifier.py` (`JudgeInputs`, `build_judge_parts`, `VerifierAgent.judge`, prompt `verify_judge.md`), `services/verify_judge.py` (`request_judge`, `judge`, report hashing, plain summary), `VERIFY_JUDGE` job handler, `POST /submissions/{sid}/judge`, the report in `GET /submissions/{sid}`. Committed straight to `main`.

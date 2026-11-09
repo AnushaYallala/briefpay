@@ -4,6 +4,27 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 26 · If PayPal's message never arrives (T-43/T-44) · Mon Nov 9
+
+**What now exists**
+- **A safety net for missed messages.** The free server goes to sleep, and PayPal's "this payment finished" messages can be missed. Now every 30 seconds while the server is awake, it asks PayPal itself about anything still waiting: captures (charges), voids (released holds), refunds and payout batches. The answers are turned into the very same events a PayPal message would have carried, so there is only one set of rules for what a captured, declined, refunded or paid-out result means. Receiving both a message and a poll is harmless.
+- **Careful on purpose.** A step sent less than 20 seconds ago is left to its message first. If PayPal can't be reached, nothing is guessed or failed; it simply tries again later. A payout PayPal marks "unclaimed" is still treated as waiting, never as failed, so nobody can be paid twice. A charge for a different amount than approved is flagged, not booked. A payout batch is looked up once per pass however many items it has.
+- **A "check now" for the money screen.** When a member opens the money screen, it can ask for an immediate check (only one at a time per project).
+- **Read-only by design.** A test fails if the polling code ever mentions a PayPal write operation or an internet library.
+- **Refunds and cancelling** already worked through the plan machinery; they are now also confirmed by polling, so a cancelled project reaches "cancelled" even if PayPal's messages are lost.
+- 1,357 automated tests pass (55 new). I broke about 40 things on purpose; every one is caught except two that provably change nothing.
+
+**What it does NOT do yet**
+It has only been tested against pretend PayPal answers; the real PayPal field names are still unproven until sandbox keys exist (GAP-45). The screen that shows "checking..." is UI work.
+
+**Progress:** 27 of ~45 tasks done or in review. Increment 26 of the 30 you asked for.
+
+**Needed from you:** the same: BLK-01/02/03, PayPal sandbox keys, Gemini key, optionally Cloudinary.
+
+**Next increment:** demo seed data (T-52): ready-made projects, including one whose first campaign failed with nobody charged and one ready for payout, so the demo needs little live setup.
+
+---
+
 ## Increment 25 · The reviewer and the verification report (second half of T-34) · Mon Nov 9
 
 **What now exists**

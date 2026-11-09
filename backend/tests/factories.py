@@ -106,6 +106,10 @@ class FakeReader:
         p = self.db.scalars(select(Pledge).where(Pledge.paypal_capture_id == capture_id)).first()
         return g.PayPalObject("COMPLETED", p.captured_cents) if p else None
 
+    def get_refund(self, refund_id):
+        self._guard()
+        return self.overrides.get(refund_id)
+
     def platform_balance_cents(self):
         self._guard()
         return self.balance

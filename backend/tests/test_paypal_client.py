@@ -60,7 +60,7 @@ class Group:
 class FakeSDK:
     def __init__(self):
         self.log = []
-        self.payments = Group(["get_authorized_payment", "get_captured_payment", "capture_authorized_payment", "void_payment", "refund_captured_payment"], self.log)
+        self.payments = Group(["get_authorized_payment", "get_captured_payment", "capture_authorized_payment", "void_payment", "refund_captured_payment", "get_refund"], self.log)
         self.orders = Group(["create_order", "authorize_order", "get_order"], self.log)
         self.transaction_search = Group(["search_balances"], self.log)
 
@@ -149,8 +149,15 @@ def test_get_capture_uses_real_model_fields():
     assert (got.status, got.amount_cents) == ("COMPLETED", 10000)
 
 
+def test_get_refund_uses_real_model_fields():
+    sdk = FakeSDK()
+    sdk.payments.queue["get_refund"] = [resp(Refund(status="PENDING", id="REF1", amount=usd("12.34")))]
+    got = client(sdk).get_refund("REF1")
+    assert (got.status, got.amount_cents, got.currency) == ("PENDING", 1234, "USD") and sdk.calls("get_refund") == [{"refund_id": "REF1"}]
+
+
 def test_a_missing_object_is_none_but_any_other_failure_is_unavailable():
-    for method, name in (("get_authorization", "get_authorized_payment"), ("get_capture", "get_captured_payment")):
+    for method, name in (("get_authorization", "get_authorized_payment"), ("get_capture", "get_captured_payment"), ("get_refund", "get_refund")):
         sdk = FakeSDK()
         sdk.payments.queue[name] = [api_error(404)]
         assert getattr(client(sdk), method)("X") is None

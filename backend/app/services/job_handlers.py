@@ -58,6 +58,13 @@ def verify_judge(db: Session, payload: dict) -> dict:
     return vj.judge(db, payload["submission_id"], get_verifier(), submission_service.new_checker())
 
 
+@jobs.register("POLL_STEPS")
+def poll_steps(db: Session, payload: dict) -> dict:
+    """Ask PayPal about steps still waiting for confirmation (the webhook fallback). Read-only; safe to repeat."""
+    from app.services import poll
+    return poll.poll(db, paypal_io.get_reader(), paypal_io.get_payout_reader(), project_id=payload.get("project_id"), force=bool(payload.get("force")))
+
+
 @jobs.register("PROCESS_WEBHOOK")
 def process_webhook(db: Session, payload: dict) -> dict:
     """Apply a verified PayPal event. Safe to repeat; `NotReady` makes the runner retry with backoff."""

@@ -12,8 +12,8 @@ from sqlalchemy.orm import Session
 from app.auth import api_error, current_user, optional_user, require_member
 from app.config import get_settings
 from app.db import get_db
-from app.models import Project, ProjectMember, User
-from app.services import ledger_views, paypal_io, reconcile
+from app.models import Job, Project, ProjectMember, User
+from app.services import jobs, ledger_views, paypal_io, reconcile
 
 router = APIRouter()
 
@@ -38,6 +38,19 @@ def get_money(project_id: int, user: User = Depends(current_user), db: Session =
     _project(db, project_id)
     require_member(db, project_id, user)
     return ledger_views.money_summary(db, project_id)
+
+
+@router.post("/projects/{project_id}/money/refresh", status_code=202)
+def refresh_money(project_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)) -> dict:
+    """The money screen is open: ask PayPal now about anything still waiting (one such job at a time per project)."""
+    _project(db, project_id)
+    require_member(db, project_id, user)
+    for j in db.scalars(select(Job).where(Job.type == "POLL_STEPS", Job.state.in_(("QUEUED", "RUNNING")))):
+        if (j.payload_json or {}).get("project_id") == project_id:
+            return {"job_id": j.id, "already_running": True}
+    job = jobs.enqueue(db, "POLL_STEPS", {"project_id": project_id, "force": True})
+    db.commit()
+    return {"job_id": job.id, "already_running": False}
 
 
 @router.get("/projects/{project_id}/agent-runs")

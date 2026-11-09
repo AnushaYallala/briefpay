@@ -6,7 +6,7 @@ A running list of everything that is **missing, risky, unverified, or was found 
 - **Fixes** are problems that were found and already resolved, kept so the reasoning is not lost.
 - IDs are permanent. When a gap is closed, move it to Fixes (keep the ID) and say how.
 
-_Last updated: 2026-11-09, end of T-34._
+_Last updated: 2026-11-09, end of T-43/T-44._
 
 ---
 
@@ -84,7 +84,7 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | GAP-45 | Medium | Webhook field paths (`supplementary_data.related_ids.authorization_id` on captures, the refund's `up` link, payout item `payout_item.sender_item_id`, batch `batch_header.payout_batch_id`) come from PayPal's documented shapes, not real sandbox events (A-3). | Save the first real events to `backend/tests/fixtures/webhooks/` and replay them in tests. |
 | GAP-46 | Medium (**closed in T-50**: alert memos in the ledger, shown in the Money box) | `RECONCILIATION_MISMATCH` (PayPal captured a different amount than approved) and `ALERT` (a capture was reversed) are recorded only in the job's result: no ledger memo, no banner. | T-50: surface them in `GET /projects/{id}/money` and the UI. |
 | GAP-47 | Low | As the spec asks, events with a bad signature are stored (verified = false). Anyone can post junk to the public endpoint and grow that table. | Cap or prune unverified rows, or rate-limit by IP. |
-| GAP-48 | Medium | No poll fallback yet: if a webhook never arrives (sleeping free server, PayPal outage), a SENT step waits forever. | T-43: poll captures, refunds and payout batches while steps are SENT. |
+| GAP-48 | Medium (**closed in T-43**: the poll fallback exists) | There was no poll fallback: if a webhook never arrives (sleeping free server, PayPal outage), a SENT step waits forever. | T-43: poll captures, refunds and payout batches while steps are SENT. |
 | GAP-49 | Low | A payout RETURNED after it succeeded puts the money back in the pool but the project stays PAID. | Decide a resolution path (re-pay after fixing the email, or refund). |
 | GAP-50 | Low | Ledger rows have `paypal_match: null`; the per-row check against PayPal (SPEC 11.1 #12, SHOULD) is not built. | Needs a PayPal read per row (or a batch Transaction Search); do after sandbox keys exist. |
 | GAP-51 | Low | `/admin/reconcile` is open to any signed-in user in demo mode; there is no admin role. | Add an admin flag or env allowlist before any non-demo deployment. |
@@ -111,6 +111,9 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | GAP-72 | Medium | The prompt `verify-judge-v1` has never been run against the real model; vision quality on real screenshots is unknown. | Record fixtures with the real key (T-63) and tune the prompt; the rules already contain a wrong 'pass' by requiring citations and confidence. |
 | GAP-73 | Low | Only the first 20 screenshots of a submission reach the reviewer; the rest are listed as 'not shown' and cannot support a pass. | Fine for the demo (<= 3 per question); raise the limit if the model allows. |
 | GAP-74 | Low | Counting judge runs scans all VERIFY_JUDGE jobs in memory. | Fine at this scale; add a counter column if the jobs table grows. |
+| GAP-75 | Medium | The poll reads PayPal fields (`get_refund` status values, capture statuses such as PARTIALLY_REFUNDED) as documented, never from real sandbox answers. | Prove with `scripts/sandbox_check.py` once keys exist (add a poll round trip). |
+| GAP-76 | Low | A step that is SENT but has no PayPal id (crash between the call and saving the id) is neither polled nor confirmed until the executor retries it with the same request id. | The executor's retry covers it; add a 'stuck SENT for > 10 minutes' alert on the money box. |
+| GAP-77 | Low | The periodic chore runs on every API instance; with several instances polls would double up (harmless but wasteful). | Single free instance for now. |
 
 ---
 
@@ -155,6 +158,7 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | FIX-35 | T-33 | Mutation check found three untested rules: a failed check with an empty evidence list, a failed check with mixed evidence types, and the 'source = AI only when every criterion was covered' label. Also an over-long test fixture for the BRD that lacked the fields a real BRD has. | Tests added; the fixture now matches the real BRD shape. |
 | FIX-36 | T-34 | Writing string escapes (`\n`) through a Python heredoc put real line breaks inside string literals in `verifier.py` (SyntaxError), the third time (see FIX-22, FIX-29). | Repaired with the editor tool; rule restated: any text with backslashes is written only with the Write/Edit tools; new files are scanned for control characters before every commit. |
 | FIX-37 | T-34 | Mutation check found untested rules: the 6-run limit (the test used the constant itself), which gate is retried, 'snippet in any of several files', unreadable screenshots without a stored hash, the SHOULD percentage in the saved report, the citable ids and the notes wrapper in the prompt, and 'latest report wins'. Also a dead truncation in the follow-up question text. | Tests added; the dead code removed and its bound tested instead. |
+| FIX-38 | T-43 | Mutation check found untested numbers and wiring: the 20 s age and 50-step cap, the exact boundary of the age limit, cents with a single digit (`0.05`), a chore running again straight after a run, the runner loop actually calling the chores, a poll job of another project standing in for this one, the placeholder reader lacking `get_refund`, and the startup wiring. | Tests added; startup wiring moved into `main.build_runner` so it can be tested. |
 
 ---
 
