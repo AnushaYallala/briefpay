@@ -1,0 +1,32 @@
+# Conditional Delivery Agreement
+
+*This is a demonstration agreement for a sandbox prototype. It is not a legally binding contract.*
+
+## Parties
+
+- **Sponsors:** {{ sponsors | join(", ") }}
+- **Freelancer:** {{ freelancer }}
+- **Project:** {{ project }}
+
+## What will be built
+
+The website described in the Business Requirements Document **version {{ brd_version }}**, fingerprint `{{ brd_sha256 }}`. Anything that is not in that document is out of scope.
+
+## Price
+
+{{ amount | money(currency) }} in total, paid once.
+
+## Delivery
+
+Within {{ delivery_days }} days after this agreement takes effect.
+
+## This agreement is conditional
+
+It takes effect only if the funding campaign reaches its goal. If the goal is not reached, every pledge hold is released, nobody is charged, and this agreement ends with nothing owed by anyone.
+
+## How and when payment happens
+
+1. After the campaign is funded, the freelancer builds the website and submits it.
+2. The platform checks the submission against each requirement in the document (at most 3 attempts).
+3. When the work is verified, a sponsor approves the release and PayPal Payouts sends the price to the PayPal email the freelancer confirms when signing. That email is locked once signed.
+4. The pooled funds are held by the platform until that verified approval.

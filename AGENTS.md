@@ -47,11 +47,16 @@ If your context is about to run out, do step 3 **now**, before you lose the abil
 
 ## 4. Commands (fill these in as soon as they exist)
 ```
-# backend
-cd backend && python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
-alembic upgrade head
-uvicorn app.main:app --reload --port 8000
-pytest -q
+# backend (verified working; Windows paths shown, on macOS/Linux use .venv/bin/ instead of .venv/Scripts/)
+cd backend && python -m venv .venv && .venv/Scripts/python -m pip install -r requirements.txt
+cp ../.env.example .env                      # then fill in keys; never commit .env
+.venv/Scripts/alembic upgrade head           # creates backend/briefpay_dev.db (SQLite) unless DATABASE_URL is set
+.venv/Scripts/uvicorn app.main:app --reload --port 8000
+.venv/Scripts/python -m pytest -q            # ~440 tests, ~25 s, no network and no keys needed
+.venv/Scripts/python -m pytest -q tests/test_x.py -k name    # one test
+
+# Gotchas for AI assistants: edit files with the Edit/Write tools, not with Python inside a shell heredoc when the text
+# contains backslash escapes (it corrupted a test file once). Known gaps and fixes: docs/GAPS_AND_FIXES.md.
 
 # frontend
 cd frontend && npm install && npm run dev   # http://localhost:3000

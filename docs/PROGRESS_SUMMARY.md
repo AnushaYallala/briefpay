@@ -4,6 +4,460 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 21 · The freelancer hands in the work (first half of T-31) · Mon Nov 9
+
+**What now exists**
+- **Submitting work.** Once a project is funded and in progress, the freelancer named in the contract can submit: the GitHub repository, the exact commit, the live website address and optional notes. Nobody else can. Only one submission is checked at a time, and there are at most three attempts; a fourth is refused and left to the lead. Bad input (a non-GitHub link, a made-up commit id, a non-https site, a password inside the link) is refused with a clear message and changes nothing.
+- **Automatic checking starts by itself.** Submitting moves the project to "Verifying" (recorded in the ledger) and queues a background job. The job runs the checks from the last increment: repository public, commit exists, every page on the site map loads, and each requirement's own check from the signed BRD (a page contains given words, a file exists, mobile layout). Every result is saved with the requirement it belongs to, so the verification screen can show them next to each requirement. Each page is fetched once, however many requirements use it.
+- **Honest about trouble.** A page that is missing or a repo that is private is recorded as a failure; a site that is down or GitHub refusing us (rate limit) is recorded as "couldn't check". Neither stops the process; both feed the later judging step. If the server restarts mid-run, the job redoes the checks cleanly with no duplicates.
+- **Reading it back.** Any project member can open a submission to see its state and every check, or list all attempts.
+- 1,055 automated tests pass (47 new), including a full run through the real background-job machinery. I broke 32 things on purpose; 31 were caught and the last changes nothing (its rule is checked twice).
+
+**What it does NOT do yet**
+After the checks a submission waits: nothing writes the evidence questions yet (T-33). Uploading screenshots and code as evidence, and the image storage behind it, is the second half of this task. Judging and the verdict come after that.
+
+**Progress:** 21 of ~45 tasks done or in review, plus T-31 half done.
+
+**Needed from you:** the same: BLK-01/02/03 decisions, PayPal sandbox keys, Gemini key. When deployed, set `APP_ENV=prod` so the server never fetches `localhost` addresses.
+
+**Next increment:** image storage and the evidence upload (second half of T-31).
+
+---
+
+## Increment 20 · Checking the freelancer's work ourselves (T-32) · Mon Nov 9
+
+**What now exists**
+- **A safe way to look at the freelancer's website.** The freelancer types the web address, so we treat it as untrusted: it must be `https`, with no password in it, on the normal port. We look up the address ourselves, refuse anything that points inside our own network or to cloud-internal addresses, and then connect to exactly the address we checked. Redirects are followed at most three times and every hop is checked again. Pages over 2 MB or slower than 10 seconds are dropped. No cookies are kept.
+- **Six automatic checks, no AI involved.** The site loads; a page contains specific words (only text a visitor can see, not hidden code); the GitHub repository exists and is public; the commit exists; a file exists at that commit (and a code snippet the freelancer pasted really is in it); the site declares a mobile layout.
+- **Honest results.** Each check says PASS, FAIL or ERROR. ERROR means "we couldn't look" (site down, GitHub rate limit), which is neither a pass nor proof of failure.
+- **A safety rule kept.** Only the PayPal module may open connections to PayPal. This fetcher is the one other module allowed to use the internet; a new test makes sure it can only read, never mentions PayPal, and is used only by the checks.
+- 1,008 automated tests pass (117 new, none touch the real internet). I broke 33 things on purpose; 31 were caught and the other 2 change nothing on this Python version. I also caught myself writing an invisible stray character into one of the new tests, which would have made it useless; it's fixed and the test now fails when it should.
+
+**What it does NOT do yet**
+Nothing runs these checks for a real submission yet. The submission screen, saving results and the evidence upload are the next increment (T-31). Pages that build themselves in the browser will only show what the server sends.
+
+**Progress:** 21 of ~45 tasks done or in review.
+
+**Needed from you:** the same: a decision on BLK-01/02/03, PayPal sandbox keys, the Gemini key. A GitHub token (optional) would avoid GitHub's low anonymous limit.
+
+**Next increment:** submissions and evidence (T-31): the freelancer submits repo, commit and live URL, the checks run in the background and the results are saved and shown.
+
+---
+
+## Increment 19 · The public ledger, money box and AI audit trail (back end of T-50/T-51) · Mon Nov 9
+
+**What now exists**
+- **The ledger as data for the grid.** Every money and AI event for a project, in order, each with the running pot balance, a plain chip (Held, Captured, Paid, Refunded...), the person's display name, the PayPal reference and who did it. A totals row sits at the bottom. Anyone with the link can read it; email addresses are removed for the public, while project members see the full row.
+- **The "Money" box.** The pot balance, how many pledges are on hold and for how much (clearly labelled as not charged), the next deadline by which the holds must be honoured, open money plans, payouts waiting to be claimed, and any alerts.
+- **The AI audit trail.** Every AI call for a project: which agent, model, version, how long, whether it was valid, and what it answered. Newest first, filterable.
+- **A reconciliation report** that checks the eight money rules from the spec: the pot matches the pledges, is never negative and only pays the freelancer or refunds; captures add up to the goal exactly; the ledger has no gaps; no pledge is both charged and released; the platform's PayPal balance covers all pots (shown as "not checked" when PayPal can't be asked, never hidden); and holds are never counted as money. I planted a violation for each rule to prove the check actually fires.
+- **Alerts now show.** When PayPal captures a different amount than we approved, or reverses a capture, a note is written to the ledger and appears in the Money box. Nothing is booked.
+- 891 automated tests pass (20 new). I broke twenty things on purpose; all were caught. One real bug found by a test: my email-hiding also swallowed a comma after an address; fixed.
+
+**What it does NOT do yet**
+The grids themselves (UI) are not built. The "PayPal match" tick column is empty. The reconciliation report is open to any signed-in user in demo mode because there is no admin role yet.
+
+**Progress:** 20 of ~45 tasks done or in review; back ends of T-50/T-51 done.
+
+**Needed from you:** the same: a decision on BLK-01/02/03, PayPal sandbox keys, the Gemini key.
+
+**Next increment:** submissions and automatic checks (T-31/T-32): the freelancer submits a repo and live URL, and the system checks them.
+
+---
+
+## Increment 18 · Webhooks: PayPal telling us what happened (T-21) · Mon Nov 9
+
+**What now exists**
+- **A door PayPal can knock on.** When PayPal finishes something (a capture, a void, a refund, a payout), it sends a message to our server. The server first asks PayPal itself whether the message is genuine; fakes are recorded and refused. Each message is accepted once only (PayPal sometimes sends the same one twice, even at the same instant). If PayPal can't be reached to check, the server says "try again later" and keeps nothing, so PayPal re-sends. The real work happens a moment later in the background, so PayPal never waits.
+- **Turning messages into facts.** A completed capture confirms that step of the plan, which fills the project's pot and, once all are in, marks the campaign funded and the project in progress. A declined capture fails that step (the plan ends "partial", never pretending to be funded). A void we asked for confirms the release. A refund confirms that refund. A payout success marks the freelancer paid and empties the pot; a payout failure leaves the money in the pot and marks the payout failed.
+- **Robust to the real world.** Messages that arrive before our own record is saved are retried a little later; messages about things we never sent are ignored; repeats change nothing; and a capture for a different amount than the approved plan is flagged, not booked. Processing a message never sends anything to PayPal.
+- **A double-payment risk I caught in my own code.** A payout PayPal marks "UNCLAIMED" (the freelancer hasn't claimed it yet) has already left our account. My first draft treated it as a failure, which would have allowed a second payout. It is now treated as "waiting", with a test that proves a second payout can't start.
+- **One full run through the real path:** plan approved, the background job sends three captures, three PayPal messages arrive, the background jobs process them, and the project ends funded and in progress.
+- 871 automated tests pass (48 new). I broke seventeen rules on purpose; all were caught.
+
+**What it does NOT do yet**
+Two message types (a pledge's hold being placed, and a hold ending unexpectedly) are accepted but not acted on, because the small helper they need was blocked (BLK-03, added to the gaps file next to BLK-01 and BLK-02). The exact field names in PayPal's real messages are taken from PayPal's documentation and need checking against real sandbox messages.
+
+**Progress:** 19 of ~45 tasks done or in review; 2 blocked (partial); plus BLK-03 inside T-21.
+
+**Needed from you:** the same: a decision on BLK-01/02/03, the PayPal sandbox (and its webhook ID in `.env` as `PAYPAL_WEBHOOK_ID`), and the Gemini key.
+
+**Next increment:** the ledger, money and AI-audit endpoints (T-50/T-51 back end): the data behind the public ledger grid and the AI audit trail, plus a reconciliation report that checks the money rules hold.
+
+---
+
+## Increment 17 · The Campaign Strategist's forecast (T-46) · Sun Nov 8
+
+**What now exists**
+- **A success forecast for the lead.** For a campaign being set up or running, the Strategist computes the chance the goal will be reached, using only plain arithmetic: what is already held, what each owner who hasn't pledged yet *said* they would give weighted by how likely they are to follow through (55% if they've opened the link, 30% if not, 0% if they declined), and how fast supporters have been pledging in the last 6 hours. It is clearly labelled "estimate (heuristic)": with no history it is an informed guess, not a promise. It goes to 100% once the goal is held and to 0% once time runs out short of the goal.
+- **Deadline advice.** At setup: 48 hours by default, but if the opening forecast is weak (under 50%), it advises the longest campaign PayPal's 3-day hold guarantee allows (70 hours). While running: if the goal looks at risk (under 60%) with under a day left, it offers one extension to the longest allowed deadline, counted from when the campaign opened, never shortening it and never more than once.
+- **Who to nudge.** The owners who haven't pledged and haven't declined, ranked by how likely and how much, each with a plain reason ("hasn't opened the link, said $150"). The freelancer is never on the list.
+- **The lead can apply the advice.** The lead clicks apply (or sends a specific deadline) and the deadline changes, within the same rules. The extension can only be used once.
+- **Private to the lead**, because it reveals what each sponsor said they would pledge.
+- **A worked example from the demo:** before anyone pledges, with Lakshmi having opened the link (hoping $150) and Ravi ($150) and Meena ($100) not yet, the expected total is $157.50 of $400, a 2.6% chance, so the advice is the 70-hour campaign. I checked this by hand.
+- 823 automated tests pass (52 new). I broke twenty-four rules on purpose; two slipped through, I added tests, and now all are caught. Two of my tests were also wrong at first (they assumed everyone had opened the link); the code was right.
+
+**What it does NOT do yet**
+The optional AI wording of the explanation and the ready-to-send nudge messages (T-47). It also cannot see real pledges until the pledge service (blocked, see below) exists; tests create pledge rows directly.
+
+**Still blocked:** the pledge service (T-22) and the campaign clock (T-25), as recorded in the gaps file section 0. Everything else continues.
+
+**Progress:** 18 of ~45 tasks done or in review; 2 blocked (partial).
+
+**Needed from you:** unchanged: sandbox keys + running the PayPal check script, the Gemini key, and a decision on BLK-01/BLK-02.
+
+**Next increment:** webhooks (T-21): the endpoint PayPal calls to say a hold was placed, a capture completed, a payout succeeded, and so on: verified with PayPal, de-duplicated, safe against out-of-order delivery.
+
+---
+
+## Increment 16 · Blockers recorded; the safe parts of pledging and the clock finished
+
+**What happened.** While building pledging (T-22) and the campaign clock (T-25), an automated safety check stopped two of the files I was writing: the one that takes a pledge and creates the PayPal order, and the one that starts the capture or release plan. I was told not to produce that content again, even reworded, so I did not retry. I don't know what triggered it. Both files are code that starts money-related steps; the neighbouring pure-logic files went through without trouble. I wrote the blockers down (BLK-01 and BLK-02 in the gaps file, new "Blockers" section at the top) with the complete design, so a person can write those two files, or tell me how to proceed.
+
+**What I finished around them (all tested).**
+- **The Pledge Gate rules.** The freelancer can never fund their own job; only an open campaign before its deadline takes pledges; an amount must be at least the minimum and no more than what's still needed (and none once the goal is reached); a hold only counts if PayPal says it was placed, for exactly the amount asked; holds are guaranteed for 3 days and valid for 29; the public name is tidied and checked. A race that slightly over-pledges is allowed on purpose, because the capture is split fairly down to exactly the goal.
+- **The capture-or-release decision.** One function answers what should happen to an open campaign: a lead cancel always releases; a funded campaign is captured at once (or at the deadline, if the lead chose that), or when the lead closes it; an unfunded campaign is released only at its deadline; closing an unfunded campaign changes nothing. It counts only holds PayPal still guarantees.
+- **A separate "order" role for the PayPal connection**, so taking a pledge and moving money are different permissions.
+- 771 automated tests pass (90 new for these pieces). I broke twenty-one rules on purpose and every one was caught.
+
+**What this blocks.** Nobody can pledge yet, and no campaign is captured or released automatically. Everything else downstream (webhooks, execution, screens) can still be built and tested by creating pledge rows directly.
+
+**What I need from you.** Either someone writes the two files from the design in `docs/GAPS_AND_FIXES.md` section 0 (BLK-01, BLK-02), or you tell me how you would like me to proceed. I'm carrying on with tasks that are not blocked.
+
+**Progress:** 17 of ~45 tasks done or in review; 2 blocked (partial).
+
+**Next increment:** the Strategist's deterministic forecast (T-46): the success probability, deadline suggestion and who-to-nudge ranking, all plain arithmetic and fully testable.
+
+---
+
+## Increment 15 · The real PayPal client (T-20) · Sun Nov 8
+
+**What now exists**
+- **The PayPal connection, built on PayPal's own official kit.** I installed the PayPal developer kit (the APIMatic-generated SDK the hackathon wants us to use) and read its real method and field names straight from the installed package rather than trusting memory. On top of it sits one module that is the only place in the whole codebase allowed to talk to PayPal. It can: look up a hold or a capture (for the Guardian), read the platform balance, capture, void, refund, send a payout, check a payout's status, check that a webhook really came from PayPal, and create and authorize a pledge order. Payouts and webhook checking use plain web calls because the kit doesn't cover them (as the spec expects).
+- **Safe by construction.** It refuses anything but the PayPal sandbox. Without keys nothing is configured and every money action fails safely. Its printed form never shows the secret. Amounts are converted between cents and PayPal's text form with exact integer arithmetic, and only plain "123.45" style amounts are accepted.
+- **Errors understood once.** Timeouts, "too many requests" and server errors are marked temporary, so the executor retries them under the same reference number. Declines and bad requests are final and carry PayPal's own error code and support number. If PayPal can't answer a lookup, the Guardian is told "unverified" and the plan is held for a human rather than blocked or allowed.
+- **A bug that only real-model testing could find.** The PayPal kit leaves fields completely absent (not blank) when PayPal doesn't send them, so a normal response with no payer or no expiry time would have crashed my client. My first tests, which used blank values, hid this. Testing against the kit's real model classes exposed it and it's fixed, with a missing status now read as "UNKNOWN", which the Guardian never trusts.
+- **Proven to fit together.** The real client, driven by the real executor and checked by the real Guardian, was tested with only the PayPal kit itself faked: same reference numbers, "final capture" set, retries reusing the same reference, declines recorded with PayPal's reason.
+- **A sandbox proof script.** `backend/scripts/sandbox_check.py` will settle the assumptions the design rests on, the moment there are keys: that Payouts works, that capturing less than the hold with "final capture" releases the rest, that a captured hold can't be voided, that voids and refunds work. It pauses twice and prints a link for a human to approve a sandbox payment. I tested its whole flow against fakes, including what a failure looks like.
+- 681 automated tests pass (89 new). I broke twenty-two rules on purpose; all caught. I also made the PayPal tests 8 times faster and made them impossible to accidentally hit the real internet.
+
+**What it does NOT do yet**
+Nothing has touched real PayPal: that needs your sandbox keys. The three open assumptions (Payouts enabled, final-capture releases the remainder, void behaviour) are still unproven until you run the script.
+
+**A near miss worth knowing about:** one of the safety tests I added (that nothing but the PayPal module may use web-calling libraries) was silently toothless because my editing script turned a "\b" into an invisible backspace character. I caught it by planting a fake offending file to see whether the test would object; it didn't, so I fixed it, and now it does. It's recorded in the gaps file.
+
+**Decision to know about:** D-033 (the full mapping, error rules and the three roles).
+
+**Progress:** 17 of ~45 tasks done or in review.
+
+**Needed from you:** please run the sandbox script when keys exist: (1) set up the PayPal sandbox (US personal buyer accounts, a business account, the app with Payouts and Transaction search enabled); (2) put the Client ID and Secret in `backend/.env`; (3) run `cd backend` then `.venv/Scripts/python scripts/sandbox_check.py --payout-to <Arjun's sandbox email>`; (4) approve the two links it prints; (5) paste the summary back to me. Any FAIL is exactly what I need to know before building more on top.
+
+**Next increment:** T-22, pledging: the Pledge Gate rules (campaign open, amount within the minimum and what's still needed, right currency), creating the order, authorizing it once the supporter approves, recording the hold, and the public pledge board.
+
+---
+
+## Increment 14 · Campaign setup and launch (T-24) · Sun Nov 8
+
+**What now exists**
+- **Setting up the Pledge-If campaign.** After the freelancer signs, the lead sets the campaign's deadline (and optionally the smallest allowed pledge, a suggested share, and whether to close the moment the goal is reached or only at the deadline). **The goal is not typed in: it is the signed contract price plus any payout fee**, so there is never a surplus to refund. Setting up again simply updates the one draft campaign.
+- **A deadline that PayPal can honour.** A PayPal hold is only guaranteed for 3 days. So a campaign must run at least 1 hour and at most 70 hours (72 minus a 2-hour safety margin) after it opens; that way even the very first hold is still guaranteed when the campaign ends. The rule is checked when you set it up and again at the moment you launch (so waiting too long after setup is caught). I tested it right down to the second on each edge, in other time zones, and with a property test that no hold can be older than the guarantee when the campaign ends.
+- **Launch.** The lead clicks launch: the campaign opens, the clock starts, the project moves to the pledging stage and the ledger records both changes. A campaign can't be launched twice, and nobody but the lead can set up or launch.
+- **The public campaign page data.** Anyone, without logging in, can see: the goal, the deadline and seconds left, how much has been pledged and by how many people, how much is still needed, and a flag saying money is "held, not charged" until the funds are actually captured. It counts only confirmed holds, not abandoned or cancelled ones, and it contains no emails.
+- **Help for the lead.** The lead's view adds: whether launching is possible and, if not, the reasons in plain words (so a greyed-out button can explain itself), the allowed deadline range, and the earliest moment any hold stops being guaranteed.
+- 592 automated tests pass (48 new). I broke nineteen rules on purpose; two slipped through, I added a test for them, and now all are caught.
+
+**What it does NOT do yet**
+Nobody can pledge yet: that needs the real PayPal connection (next), and there are no screens. The Strategist's suggested deadline isn't wired in.
+
+**Decision to know about:** D-032 (the exact setup, window and public-view rules).
+
+**Progress:** 16 of ~45 tasks done.
+
+**Needed from you:** from here on PayPal is the critical path: the next two increments (the PayPal client, then pledging) are where the sandbox keys become essential. Please set up the sandbox accounts and app (all accounts US-based; Payouts and Transaction search enabled) and put the Client ID and Secret in your local `.env`.
+
+**Next increment:** T-20, the real PayPal client built on the official SDK, with its method names taken from the installed package rather than memory, plus a sandbox script that will prove authorize, capture, void and payout work as assumed once your keys are in.
+
+---
+
+## Increment 13 · The conditional contract (T-30) · Sun Nov 8
+
+**What now exists**
+- **The offer.** Once the sponsors have locked the BRD, the lead offers the freelancer a price and a delivery time. The price must be positive and within the project budget and the sandbox payout limit; the time must be 1 to 90 days. The system writes the contract text itself from a template, in plain language: who the parties are, what will be built (the BRD version and its fingerprint), the price, the delivery time, and how payment happens. It says clearly that this is a demonstration agreement, not a legally binding contract.
+- **"Effective only if the campaign funds."** The agreement states that it takes effect only if the funding goal is reached; if not, every pledge hold is released, nobody is charged and nothing is owed. It never says "escrow"; it says pooled funds are held by the platform until verified approval.
+- **What the freelancer signs is a fingerprint** of the whole text and every number in it (price, days, BRD fingerprint, who). If the lead changes anything, the old fingerprint stops working and the freelancer must read and sign the new version. A signed contract can never be replaced.
+- **Signing locks their PayPal email.** The freelancer confirms two fingerprints (the BRD and the terms) and the PayPal account to be paid. That email is locked from then on, so a later payout can only go there. The freelancer cannot name a sponsor's own account. Signing moves the project to the campaign stage and writes a ledger entry with the amounts and fingerprints but, deliberately, no email, because the ledger may be shown publicly.
+- **Who can see it:** project members (including the freelancer) can read the contract; strangers cannot.
+- 544 automated tests pass (25 new). I broke fifteen rules on purpose; all are caught or judged harmless.
+
+**What it does NOT do yet**
+No screen. The freelancer cannot decline an offer (the lead just makes a new one). Nothing about the campaign exists yet.
+
+**Housekeeping note:** at the start of this step the repository's current-branch pointer had been blanked when the previous command was cut off mid-write. I checked first, confirmed all commits and files were intact, repaired only that one pointer, re-ran the whole suite and finished the merge. Nothing was lost. It's recorded in the gaps file.
+
+**Decision to know about:** D-031 (what is signed, who can sign, and one added endpoint to read the contract).
+
+**Progress:** 15 of ~45 tasks done.
+
+**Needed from you:** unchanged: the Gemini key and the PayPal sandbox setup. The next steps (campaign, pledges) are where PayPal becomes essential.
+
+**Next increment:** T-24, campaign setup and launch: the goal is fixed by the contract; the lead picks a deadline that respects PayPal's 3-day hold guarantee (72 hours maximum, minus a 2-hour safety margin), launches, and the project goes live for pledging.
+
+---
+
+## Increment 12 · BRD approvals (T-15) · Sun Nov 8
+
+**What now exists**
+- **Sponsors vote on the exact document they read.** Each sponsor (and the lead, who is also a sponsor) approves or rejects the BRD, and the vote only counts for the document fingerprint they actually saw. If the document changes, or they send an old fingerprint, the vote is refused with a clear message and nothing is saved. Votes never carry over from one version to the next.
+- **Everyone must approve.** When the last sponsor approves, the BRD locks: it becomes APPROVED, gets a lock time, the ledger records "BRD locked" with the fingerprint, and the project moves on to the contract stage. After that nobody can approve, reject or change it.
+- **Rejecting reopens the conversation.** A rejection needs a written reason. The reason becomes a new question to all sponsors in the BA conversation (for example: "Meena asked for changes to BRD v1: 'Add a page for boat safety'. How should the document change?"). The project goes back to the requirements stage, the transcript can be edited again, and once the question is answered the system re-scores, the lead generates version 2, and everyone approves afresh.
+- **Small human touches that matter:** clicking approve twice does nothing extra; an approver who changes their mind can withdraw by rejecting with a reason; every decision is written to the ledger with who, which version, which fingerprint and any comment; the BRD page shows who has approved and who is still awaited.
+- I ran the whole loop through the real endpoints: v1, one approval, one rejection, an answer, a re-score, v2, three approvals, lock.
+- 519 automated tests pass (16 new). I broke thirteen rules on purpose; two slipped through at first, I added tests for them, and now all are caught.
+
+**What it does NOT do yet**
+There's no screen to vote on, and one risk is recorded: if a sponsor never responds, the project cannot move forward, and there's no way yet for the lead to remove them (GAP-28 in the gaps file).
+
+**Decision to know about:** D-030 (the exact voting rules).
+
+**Progress:** 14 of ~45 tasks done. The requirements side of the product (project, transcript, AI analysis, questions, BRD, approvals) is now complete in the API.
+
+**Needed from you:** unchanged: the Gemini key and model name, and the PayPal sandbox setup. Both are now the main things that stand between this and a real end-to-end run.
+
+**Next increment:** T-30, the conditional contract: the lead offers the freelancer a price and delivery time; the freelancer reviews the locked BRD and signs, which locks their PayPal email. The contract is tied to the approved BRD fingerprint and says it's "effective only if the campaign funds".
+
+---
+
+## Increment 11 · The BRD generator (T-14) · Sun Nov 8
+
+**What now exists**
+- **From finished analysis to a real document.** When the BA analysis is ready (90+ with every gate green) or the lead has finalized it, the lead clicks "Generate BRD". The AI drafts the document; code then assembles, checks, formats and fingerprints it. The result is a numbered Business Requirements Document: executive summary, goals, who needs what, audience, the page list, then the requirements as REQ-001, REQ-002 and so on. Each has a priority, a weight, who asked for it and testable acceptance criteria in plain "Given / When / Then" form, plus the evidence the freelancer should show, and, where the platform can check it mechanically, an automatic check ("the page /contact contains 'Send enquiry'").
+- **Code, not the AI, guarantees the important things:** nothing from the analysis gets dropped (every requirement found earlier must be carried over); every MUST has at least one testable criterion; the numbering is sequential with MUSTs first; the budget and delivery time come from the project record, not from the AI; people are referenced only by real sponsor ids; references to transcript lines must point at lines that exist; things explicitly ruled out always stay ruled out; and anything still unsettled (a red gate, or a thinly covered topic after finalizing) is listed under "Open items" so sponsors approve with open eyes.
+- **A fingerprint.** The document gets a SHA-256 hash computed from its canonical content, so the sponsors' approvals and the freelancer's contract can be tied to exactly this text. Anyone can recompute it.
+- **Safe to publish.** The document text is formatted by a template, not written by the AI, and everything derived from user input is escaped, so a hostile name or description can't inject headings, links or HTML. I found and fixed a real hole here during testing: lines starting with `##` could slip through and become headings.
+- **Reading it:** anyone can read the BRD and download it as a Markdown file, with no login (it contains no emails). It shows which sponsors have yet to approve. Generating a new version supersedes an unapproved older one but never an approved one.
+- **After generation** the project moves to "BRD review".
+- 503 automated tests pass (66 new). I broke fifteen rules on purpose; one slipped through at first, I added a test, and now all fifteen are caught.
+
+**What it does NOT do yet**
+Sponsors can't approve or reject yet (T-15), and no real Gemini call has been made, so the actual quality of the drafted BRDs is unseen. There is no screen.
+
+**Also done this increment (as you asked, in a separate file):** `docs/GAPS_AND_FIXES.md` lists every gap and every fix found so far (21 open gaps, 11 fixes). Along the way I fixed two problems nobody had noticed: the dependency list pinned a library version that did not match the installed one (a teammate or the CI pipeline would have failed to install), and the README-for-assistants had its commands section unfilled. I also added the automatic test pipeline (GitHub Actions) the spec asks for.
+
+**Decision to know about:** D-029 (what the AI drafts versus what code owns).
+
+**Progress:** 13 of ~45 tasks done.
+
+**Needed from you:** the Gemini key and model name are still the main unlock. Also see the High items in the gaps file: PayPal sandbox setup (GAP-01).
+
+**Next increment:** T-15, BRD approvals: each sponsor approves the exact fingerprint they saw; all must approve to lock it; any rejection with a comment sends it back to the BA conversation as a new question and produces version 2.
+
+---
+
+## Increment 10 · The BA question loop and endpoints (T-13) · Sun Nov 8
+
+**What now exists**
+- **The clarification conversation.** After scoring the meeting, the BA Agent writes up to five plain-language questions (30 words at most), aimed at the biggest gaps, with disagreements first. Each question is addressed to the right owners and often comes with 2 to 4 answer choices ("Enquiry form only" / "Online booking"). Code filters the AI's questions: only real sponsors, only topics that still have a gap, never a repeat of something already asked, never more than five. If the AI has nothing usable, a standard question for the biggest gap is asked so the loop never stalls.
+- **How a round works.** Owners answer in the app. A question for named people is complete when all of them answered; a question for everyone needs just one answer; the lead can skip any question. When every question in the round is closed, the system re-scores by itself, asks again if needed, and stops at 90 or after five rounds.
+- **The ready mark can't be faked.** Reaching 90 needs every gate green. After five rounds without that, the lead can "finalize with gaps", and those gaps will be listed as open items in the BRD.
+- **Safe to retry.** If the AI fails halfway, the score already saved is kept and a retry just continues; an unchanged transcript is never re-scored and a round never gets two sets of questions. A replaced transcript is re-scored.
+- **The endpoints the BA Studio screen needs:** run the agent (returns a job to poll), one view with the score breakdown, ten dimensions, red/green gates, score history and every question with its answers and "can I answer this?", answer, skip, and finalize. Only the lead can run, skip and finalize; only sponsors named on a question can answer it; the freelancer can read but never answer. Manual runs are limited to 8 per project per hour.
+- **I ran the whole demo scene through the real endpoints:** the score goes 58, then 79, then 93 and READY, with Lakshmi, Ravi and Meena each answering as themselves.
+- 437 automated tests pass (42 new). I broke eleven rules on purpose and every one was caught.
+
+**What it does NOT do yet**
+It is still the API only, with no screens, and no real Gemini call has been made. The questions' real quality depends on the model and prompt, which I can only judge once a key exists.
+
+**Decision to know about:** D-028 (round numbering, who completes a question, and a new session state called FINALIZED).
+
+**Progress:** 12 of ~45 tasks done.
+
+**Needed from you:** the Gemini key (billing off) and model name. From here the BA Agent and BRD are mostly AI-dependent, so a first real run would catch issues early.
+
+**Next increment:** T-14, the BRD generator: turns the finished analysis into a numbered document (REQ-001...), each with Given/When/Then acceptance criteria and the evidence expected, rendered to Markdown and locked by a fingerprint.
+
+---
+
+## Increment 9 · BA Agent scoring (T-12) · Sun Nov 8
+
+**What now exists**
+- **The AI reads the meeting and judges it; code does the maths.** For each of ten areas (goals, audience, sponsors' needs, pages, features, testable acceptance criteria, content ownership, look and feel, quality needs, constraints) the AI says how fully the meeting covers it: none, hinted, partly, mostly or fully. It also lists the requirements it found, who asked for each, any disagreements, and what was ruled out. It never picks the final number.
+- **The score is computed by code** from those judgements and the fixed weights, with exact arithmetic, so the same judgements always give the same score and anyone can re-check it. The demo scene works out as designed: 58 at the start, 79 after the first answers, 93 at the end.
+- **No evidence, no full credit.** If the AI claims an area is covered but cannot point to real transcript lines (or a real answer), code lowers that area by one level. Made-up line numbers do not count.
+- **Five hard gates, checked by code, not trusted from the AI:** budget and deadline known; every MUST requirement has a testable criterion; no unresolved disagreement between sponsors; something is marked out of scope; every sponsor's needs are captured. If any gate is red the score cannot go above 89, so the "90 and ready" mark is impossible until they are all green. I tested that a perfect analysis with a single red gate stops at 89.
+- **Safe by default:** the AI sees line-numbered transcript text and member numbers, never emails; user text sits inside fenced "untrusted" blocks; if the AI fails or answers badly, nothing changes and the user can simply retry.
+- 403 automated tests pass (67 new). I broke eight scoring rules on purpose; seven were caught and the eighth turned out not to change any result.
+
+**What it does NOT do yet**
+It is the engine, not yet reachable from the app: no "Run BA Agent" button or endpoint, no questions, no answers. That is next. No real Gemini call has been made yet.
+
+**Decision to know about:** D-027 records the exact gate definitions and how scores are stored (for example, the budget gate also passes if the lead entered a budget when creating the project).
+
+**Progress:** 11 of ~45 tasks done.
+
+**Needed from you:** the Gemini key (billing off) and model name remain the next real unlock: the BA Agent is the first thing whose quality depends on the real model.
+
+**Next increment:** T-13, the question loop: from the score gaps, the AI asks up to five plain-language questions addressed to the right owners, they answer in the app, the system re-scores, and it repeats until 90 or five rounds; plus the endpoints that expose all of this.
+
+---
+
+## Increment 8 · Projects, team invitations and the meeting transcript (T-10, T-11) · Sun Nov 8
+
+**What now exists** (the first thing a real user can do)
+- **Create a project:** sign in, give it a title, location, summary, budget and delivery days. You become the lead. You can invite the other business owners (sponsors) and the freelancer in the same step, with their business names and what each says they will pledge.
+- **Invite people safely:** inviting is idempotent (inviting the same email twice updates, never duplicates). A freelancer can never also be a sponsor, the lead can't be re-invited, and there is only one freelancer per project. Sponsors can only be added before the requirements are reviewed, so the group of people who must approve the BRD can't change under them.
+- **Who sees what:** the project list and project page are public, but the public sees only names, businesses and funding progress. Team members also see each other's emails. Only the lead sees what each person said they would pledge. When an invited owner opens the project it is recorded as "viewed", which the Campaign Strategist will use later.
+- **Upload the meeting transcript:** paste the text, or upload a .txt, .md or .vtt file (video-call caption files are cleaned down to what was said). The system numbers every line, so the BA Agent can later say "see lines 12 to 15". The first upload moves the project into the requirements stage; a newer upload replaces the old one; after the BRD review starts the transcript is locked. Only the lead can upload; only members can read it.
+- **Sanity limit:** a project's budget can't exceed the sandbox payout limit, because the freelancer could never be paid.
+- 336 automated tests pass (67 new). I broke six privacy and permission behaviours on purpose; the tests caught every one. The real sample transcript from the spec uploads correctly.
+
+**What it does NOT do yet**
+No AI reads the transcript yet. There are no screens: all of this is the API the screens will use.
+
+**Decision to know about:** D-026 records the access rules above and one small addition to the spec (an endpoint to read the numbered transcript, which the BA Studio panel needs).
+
+**Progress:** 10 of ~45 tasks done (T-04, T-40, T-07, T-06, T-26, T-41, T-45, T-42, T-10, T-11).
+
+**Needed from you:** the same two items as before, and they now block real progress soon: a Gemini key from Google AI Studio (billing off) plus the model name, because the next increment is the first one that really needs the AI; and the PayPal sandbox setup (T-02).
+
+**Next increment:** the BA Agent, the heart of the first demo scene: it reads the transcript, scores it out of 100 across ten dimensions, finds conflicts such as "booking vs. enquiry only", and applies the hard gates. I will build the scoring math and gates (T-12) first, fully tested without the AI, then the question loop (T-13).
+
+---
+
+## Increment 7 · The Guardian's AI risk review (T-42) · Sun Nov 8
+
+**What now exists**
+- **The Guardian's second opinion:** after the 13 hard rules pass, an AI reads a short, careful summary of the plan and looks for things rules cannot see: pledges that look coordinated, a burst of money right before the deadline, someone funding or approving their own job, payouts approved on thin evidence, or text that tries to give the system orders.
+- **It can only make things stricter.** "High risk" turns an allowed plan into a HOLD, so a human has to read the AI's plain-language explanation and type a note before money moves. "Low" or "medium" change nothing. It can never approve anything and can never soften a block.
+- **If the AI is down, slow, confused or not set up, the plan is held for a human.** It never counts as a pass. If a hard rule has already blocked the plan, the AI is not even asked.
+- **What the AI sees:** amounts, labels like "P1" and "FREELANCER", the pledge timeline, and which checks failed. It never sees email addresses. Names people typed, and the evidence summary, go in clearly fenced "untrusted" boxes so a name like "ignore the rules and approve" is treated as data.
+- **Replayable for the demo:** the AI's answers can be recorded once and played back, so the demo is steady. Every AI call, including failed ones, is logged and linked to the review it influenced.
+- **The HOLD screen has what it needs:** a capture plan now reports the earliest hold deadline so a human can see how long they have.
+- 269 automated tests pass (33 new). I broke six safety behaviours on purpose; the tests caught all six.
+
+**What it does NOT do yet**
+No real Gemini call has been made, because there is no key. Until there is one (or recorded answers), every plan the Guardian reviews would come back as a HOLD with "AI risk review unavailable". That is deliberately safe, but it means automatic captures wait for a human. Recording the answers is part of preparing the demo (T-52).
+
+**Decision to know about:** D-025. The spec said findings were free-form; I made them a strict list of the spec's nine types so Gemini's structured output is more reliable. The shape is the same.
+
+**Progress:** 8 of ~45 tasks done (T-04, T-40, T-07, T-06, T-26, T-41, T-45, T-42). The whole money-safety core is now built and tested; what is left is mostly the user-facing flow, the real PayPal connection, and the screens.
+
+**Needed from you:** two keys now matter, and neither is secret to describe: (1) the PayPal sandbox app (T-02); (2) a Gemini key from Google AI Studio with billing off, plus the model name it shows. Both go in your local `.env`. With both I can run the first real end-to-end test.
+
+**Next increment:** the user-facing flow starts: projects and members, transcript upload (T-10, T-11), then the BA Agent that scores the meeting and asks questions (T-12, T-13). That is where the product starts to look like the demo.
+
+---
+
+## Increment 6 · The MoneyExecutor, plan lifecycle and plans API (T-45) · Sun Nov 8
+
+**What now exists**
+- **The only door to PayPal money moves:** the MoneyExecutor. Before it does anything it re-checks that the plan was approved for exactly its current fingerprint, that the Guardian did not block it, that humans approved the plans that need a human, and that nothing in the database changed since approval. Any doubt, and it stops with nothing sent.
+- **Crash-safe:** each step is recorded as "sent" before PayPal is called. If the server dies mid-run, the restart carries on and re-sends with the same reference numbers, so PayPal cannot charge or pay twice. Temporary errors are retried at most twice; a declined payment fails just that step and the plan ends "partial" instead of pretending the project is funded.
+- **Review, approve, confirm:** the Guardian reviews a plan and stores its verdict; capture and release plans the Guardian allows are approved automatically; payouts need a lead or sponsor; refunds and any "hold" on a capture or release need the lead, with a typed note. Approval is tied to the plan's fingerprint and the latest real review (a demo "tampered" review can never approve anything). Only after PayPal confirms does the ledger change: captures fill the pool, payouts empty it, refunds return it, and the project moves on (funded, failed, paid, cancelled).
+- **Login and the plans API:** sign in with an email and name, get a token, then list, create, review, approve and (demo mode) simulate-tamper plans over HTTP. Errors now use the spec's format.
+- **The chokepoint is enforced by a test:** it reads the source and fails if any file other than the executor calls a PayPal write or obtains a writer. I planted a rogue file to confirm the test catches it.
+- 236 automated tests pass (71 new). I also broke nine safety checks on purpose; the tests caught every one.
+
+**What it does NOT do yet**
+It runs against a fake PayPal. The real PayPal connection (T-20) and the webhooks that confirm payments (T-21) don't exist, so nothing real has moved. Without PayPal credentials, executing a plan fails safely and no money moves.
+
+**Progress:** 7 of ~45 tasks done (T-04, T-40, T-07, T-06, T-26, T-41, T-45).
+
+**Needed from you:** the PayPal sandbox keys are now the main thing holding up real testing. Please do T-02 when you can: sandbox accounts (all US), an app with Payouts and Transaction search enabled, and the Client ID and Secret in your local `.env`. Still optional for now: a Gemini key, and your teammate's demo repo.
+
+**Next increment:** options: (a) T-42, the Guardian's AI risk review that can only make a decision stricter; (b) projects and transcript upload (T-10/T-11), the start of the user-facing flow; (c) webhooks (T-21). I'll do T-42 next unless you want to start on the user-facing flow.
+
+---
+
+## Increment 5 · Guardian rules (T-41) · Sun Nov 8
+
+**What now exists**
+- **The Guardian's checklist, in code:** 13 hard rules that look at a proposed money plan and say pass or fail, plus 3 softer warning flags. Examples: is this exactly the plan the system would build right now? Does every payment belong to this project? Does PayPal's own record agree with ours? Does the payout go to the email locked in the contract, for the contract amount, after a verified report? Do refunds go back to the original payers only?
+- **Decision logic:** any failed hard rule means **BLOCK**. Otherwise any warning flag (the freelancer funding their own job, one person providing 60% or more of the goal, a late surge of pledges, or PayPal being unreachable) means **HOLD** for a human. Otherwise **ALLOW**. PayPal being down never counts as a failure; it just forces a human look.
+- **"Simulate tampered plan":** the five demo attacks (swap the recipient, inflate the amount, add an extra recipient, capture twice, capture inside a release plan) are built and every one is caught. The attacks are re-fingerprinted like a careful attacker would, and the Guardian still blocks them on substance. A simulation writes nothing and never touches PayPal.
+- **Checked the checker:** I deliberately broke two rules to confirm the tests notice. They did.
+- 165 automated tests pass (63 new).
+
+**What it does NOT do yet**
+Nothing executes. The Guardian's AI risk review (it can only make things stricter) is next, as is the executor that actually moves money. PayPal lookups use a stand-in until the real PayPal connection exists (T-20).
+
+**Decision to know about:** the spec left a few checks open to interpretation (what counts as a "live" hold, who may request a refund, and so on). I fixed them conservatively and logged them as D-023.
+
+**Progress:** 6 of ~45 tasks done (T-04, T-40, T-07, T-06, T-26, T-41).
+
+**Needed from you:** nothing new. Pending as before: sandbox keys (T-20), a Gemini key (not blocking), your teammate's demo repo (T-60).
+
+**Next increment:** T-45, the MoneyExecutor: the only code allowed to call PayPal writes. It refuses anything unapproved or changed, runs the steps in order with safe retries, and is tested against a fake PayPal. After that, T-42 (the AI risk review and release policies).
+
+---
+
+## Increment 4 · Plan builder (T-26) · Sun Nov 8
+
+**What now exists**
+- **The plan builder:** given the current state of a campaign or project, it writes out the exact list of PayPal actions needed, as a fixed "money plan" with a fingerprint. Plain code, no AI. It covers all four plans:
+  - **Capture:** the goal is reached, so charge each pledger their share. The shares add up to exactly the goal, and no one is charged more than they pledged.
+  - **Release:** the deadline was missed or the lead cancelled, so cancel every hold and charge nobody. It refuses to run if anything was already charged.
+  - **Freelancer payout:** only after the latest submission is verified, only to the PayPal email locked into the contract, only the contract amount, and only if the pool really holds that money.
+  - **Refund:** give captured money back to the original payments, and only while the pool still holds it.
+- **Safety by construction:** a hold that has passed its 3-day guarantee is not counted. If anything changes after a plan is previewed (a pledger voids, a hold lapses, the recipient email is edited), rebuilding gives a different fingerprint, which is how the Guardian and the executor will notice.
+- **Retries:** a failed plan can be retried as a new plan with fresh keys instead of clashing with the old one. I found this gap while reviewing my own tests; it is logged as D-022.
+- 102 automated tests pass (39 new).
+
+**What it does NOT do yet**
+Nothing is reviewed or executed. No Guardian rules, no approvals, no PayPal calls. Plans can be built and stored as "proposed", and that is all.
+
+**Progress:** 5 of ~45 tasks done (T-04, T-40, T-07, T-06, T-26).
+
+**Needed from you:** nothing new. Still pending as before: a Gemini key (not blocking), sandbox keys (needed at T-20), and your teammate's demo repo (T-60).
+
+**Next increment:** T-41, the Guardian's 13 deterministic rules plus soft flags and the "simulate tampered plan" mutations. It builds directly on this and needs no keys. After that, the MoneyExecutor (T-45).
+
+---
+
+## Increment 3 · AI adapter, replay mode, job runner (T-06) · Sun Nov 8
+
+**What now exists**
+- **One door to the AI:** every agent will talk to Gemini through a single adapter. It checks the answer matches the expected shape, retries once if not, and if it still fails it stops safely instead of guessing.
+- **Audit trail:** every AI call is recorded (which agent, model, how long, tokens, success or failure). This will feed the "AI audit trail" screen. The record is kept even if the surrounding operation is cancelled.
+- **Replay mode:** AI answers can be recorded once and played back later, so the demo video doesn't depend on Gemini being fast or within its free limits. If a recording is missing it calls Gemini once and saves it. Changing a prompt makes old recordings stop matching on purpose.
+- **Prompt-injection guard:** a helper that wraps anything users type (transcripts, evidence) so the AI treats it as data, not instructions.
+- **Background jobs:** slow work (AI calls, webhooks) runs in the background. The app returns a job id, and `GET /api/jobs/{id}` says queued, running, done or failed. Failed jobs retry up to 3 times, and jobs interrupted by a restart start again. I ran the real app and watched a job complete.
+- 63 automated tests pass (24 new).
+
+**What it does NOT do yet**
+No real Gemini call has been made, because there is no key or model name configured. The Gemini code is tested against a fake client only. The first real call is the moment we learn whether Gemini accepts our output shapes (assumption A-4 in the spec).
+
+**Progress:** 4 of ~45 tasks done (T-04, T-40, T-07, T-06).
+
+**Needed from you (when convenient, not blocking):**
+- **Gemini key:** create one at Google AI Studio **without enabling billing**, and tell me which Flash model name it shows. Put it in your local `.env` as `GEMINI_API_KEY` and `AI_MODEL`. I'll run one real test call then.
+- Sandbox keys (T-20) and the teammate's demo repo (T-60) are still pending as before.
+
+**Next increment:** T-26 PlanBuilder (turns pledges and a goal into the exact list of capture, void and payout steps, using the money math), or login plus projects so the app has its first real endpoints. I'll start with PlanBuilder unless you prefer the latter.
+
+---
+
+## Increment 2 · Money math, state machines, ledger (T-40, T-07) · Sun Nov 8
+
+**What now exists**
+- **Money math:** given the pledges that are held and the goal, the code works out exactly how much to capture from each so the total equals the goal to the cent (for example $400 goal, holds of $150/$150/$100/$20 become captures that sum to exactly $400, none above its hold). It never uses decimals. Tested with the spec's worked examples plus thousands of random cases.
+- **Tamper-proof fingerprint:** every money plan gets a hash. Change the recipient or the amount by one cent and the hash changes, which is what the Guardian and approvals will rely on.
+- **Project and campaign state machines:** the legal journey (draft -> requirements -> BRD -> contract -> campaign -> pledging -> in progress -> verifying -> paid, plus the failure and relaunch loops). Every illegal jump is rejected, tested pair by pair.
+- **Ledger:** append-only (rows can't be edited or deleted), numbered with no gaps, one pot of captured money (POOL) that can never go below zero. A pledge hold is recorded but counts as $0 because it isn't money yet.
+- 39 automated tests pass.
+
+**What it does NOT do yet**
+Still no screens, login, AI or PayPal calls. These are the rules and safety rails the later features plug into.
+
+**Decision to know about:** the spec had a circular definition of the plan fingerprint and its step keys; I resolved it (D-021) and logged it.
+
+**Progress:** 3 of ~45 tasks done (T-04, T-40, T-07).
+
+**Needed from you:** still nothing new. Sandbox keys are needed at T-20; the teammate's demo repo at T-60.
+
+**Next increment:** T-06 (AI adapter with recorded-replay mode, AI call logging, background job runner), then T-26 (builds the capture/void/payout plans using the money math).
+
+---
+
 ## Increment 1 · Backend foundation (T-04) · Sun Nov 8
 
 **What now exists**

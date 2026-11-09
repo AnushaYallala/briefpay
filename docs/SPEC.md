@@ -1044,6 +1044,7 @@ Base `/api`. JSON. Errors: `{"error": {"code": "STRING", "message": "...", "deta
 | GET | `/projects` / `/projects/{id}` | any | list / detail incl. state, members, current campaign summary |
 | PUT | `/projects/{id}/members` | lead | invite sponsors/freelancer; `expected_pledge_cents` per invitee |
 | POST | `/projects/{id}/transcripts` | lead | text or file upload |
+| GET | `/projects/{id}/transcript` | member | latest transcript as numbered lines (BA Studio panel; `source_refs` like `L12-L15` use these numbers). Added by D-026 |
 | POST | `/projects/{id}/ba/run` | lead | score + questions for current round → 202 job |
 | GET | `/projects/{id}/ba` | member | session, latest score breakdown, questions, history |
 | POST | `/ba/questions/{qid}/answers` | addressed member | `{answer_text, selected_option?}` |
@@ -1055,6 +1056,7 @@ Base `/api`. JSON. Errors: `{"error": {"code": "STRING", "message": "...", "deta
 | POST | `/projects/{id}/brd/{version}/decision` | sponsor | `{decision, brd_sha256, comment?}` |
 | POST | `/projects/{id}/contract/offer` | lead | `{amount_cents, delivery_days}` to the invited freelancer |
 | POST | `/projects/{id}/contract/accept` | freelancer | `{paypal_email, brd_sha256, terms_sha256}` → conditional contract |
+| GET | `/projects/{id}/contract` | member | the offer or signed contract: terms, hashes, status (PayPal email visible to members once signed). Added by D-031 |
 | POST | `/projects/{id}/campaigns` | lead | `{deadline_at, close_policy, min_pledge_cents?, suggested_share_cents?}` → campaign in `SETUP` (goal computed) |
 | GET | `/campaigns/{cid}` | any | public view: goal, pledged (Σ AUTHORIZED), count, deadline, state, countdown. Lead also gets forecast and `honor_until` limits |
 | POST | `/campaigns/{cid}/launch` | lead | requires contract signed → `OPEN` |

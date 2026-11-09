@@ -9,11 +9,11 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-08 13:20 IST by Gemini: T-60 sample site done |
+| Last updated | 2026-11-08 by Claude: T-04 backend foundation done |
 | Overall phase | **Day 0: backend skeleton + schema built; no features yet** (plain-English summary: `docs/PROGRESS_SUMMARY.md`) |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
-| Next task to pick up | Track A: **T-40**, then **T-07**, **T-06** · Track B: **T-02** (human, sandbox keys), **T-08**, then **T-20** |
-| Blockers | None yet |
+| Next task to pick up | Not blocked: **T-31 second half** (ImageStore, `/images`, evidence), **T-33** (verifier questions), **T-47** (Strategist AI wording), **T-43/T-44** (poll fallback) · **Human:** write BLK-01/BLK-02 files or advise · run `backend/scripts/sandbox_check.py` once keys exist |
+| Blockers | **BLK-01** (T-22 pledge service/endpoints), **BLK-02** (T-25 clock and lead actions), **BLK-03** (pledge-state helper used by two webhook events): the assistant's attempts to write those files were stopped by a safety check; see `docs/GAPS_AND_FIXES.md` section 0 for the full designs |
 | Deployed URLs | API: _not deployed_ · Web: _not deployed_ · Sample site: _not deployed_ |
 | Repo | https://github.com/AnushaYallala/briefpay (origin; T-01 still needs LICENSE visible in About + secret scanning) |
 | Demo video | _not recorded_ |
@@ -35,39 +35,39 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 | T-03 | **Human:** free accounts, **no credit card anywhere**: Aiven free PostgreSQL (CA cert), Cloudinary free plan, Gemini key (AI Studio, no billing), GitHub fine-grained token, Render Hobby workspace | §5.5, §14.3 |  | TODO |  | Note Cloudinary credits + Gemini RPM/RPD in §4 |
 | T-04 | Backend skeleton: FastAPI, config, SQLAlchemy models for **all §6.2 tables**, Alembic initial migration, `/api/healthz` | §6, §10 | Claude | DONE | t-04-backend-foundation | 32 tables, migration 0001, 4 tests pass. SQLite default for local dev; set `DATABASE_URL` for Postgres |
 | T-05 | Frontend skeleton: Next.js static export, Tailwind, query-param routes, API client with Bearer token, login + `/auth/me`, persona switcher, wake-up screen | §5.2, §11, §14.4, §14.5 |  | TODO |  | `npm run build` must produce `out/` |
-| T-06 | LLM adapter (`GeminiModel`, `ReplayModel`), `agent_runs` logging, in-process DB job runner + `GET /jobs/{id}` | §7.0 |  | TODO |  | Verify Gemini model name (A-4). No HF adapter (D-019) |
-| T-07 | `ProjectService` + `CampaignService` state machines (+ illegal-transition tests); `LedgerService` (append-only, gapless seq, POOL bucket) | §6.1, §6.3 |  | TODO |  | |
+| T-06 | LLM adapter (`GeminiModel`, `ReplayModel`), `agent_runs` logging, in-process DB job runner + `GET /jobs/{id}` | §7.0 | Claude | DONE | t-06-llm-adapter-jobs | LLMAdapter + GeminiBackend + ReplayBackend (record on miss), agent_runs logging, DB job runner with retry/backoff + `GET /api/jobs/{id}`. 24 tests. **A-4 still open**: no real Gemini call made yet (needs key + model name) |
+| T-07 | `ProjectService` + `CampaignService` state machines (+ illegal-transition tests); `LedgerService` (append-only, gapless seq, POOL bucket) | §6.1, §6.3 | Claude | DONE | t-40-settlement-state-ledger | Project + campaign state machines (every illegal pair tested), append-only gapless POOL ledger, pool can't go negative. LedgerService has no bond/bonus types (D-020) |
 | T-08 | Configure the **APIMatic Context Plugin** (MCP) in every AI coding tool used; add exact setup steps to AGENTS.md §6; claim free APIMatic subscription | §9.7 |  | TODO |  | Before T-20 |
 
 ### Track A1: Requirements (BA Agent + BRD)
 | ID | Task | Spec | Owner | State | Branch | Notes |
 |---|---|---|---|---|---|---|
-| T-10 | Projects + members (sponsors, supporters, freelancer) API | §10 |  | TODO |  | |
-| T-11 | Transcript upload (text/file), line numbering | §7.1 |  | TODO |  | Sample: `docs/samples/velugu_cove_meeting_transcript.txt` |
-| T-12 | BA scoring: prompt, `BAScoreOutput`, code-side total, gates, cap 89, source_refs downgrade + unit tests | §7.1 |  | TODO |  | |
-| T-13 | BA questions: prompt, `BAQuestionsOutput`, answer/skip endpoints, rounds, MAX_ROUNDS + finalize | §7.1 |  | TODO |  | |
-| T-14 | BRD generator: prompt, `BRDContent`, REQ codes, Jinja Markdown, sha256 | §7.2 |  | TODO |  | |
-| T-15 | BRD approvals (hash-bound, unanimous), reject → new BA round + version bump | §7.2 |  | TODO |  | |
+| T-10 | Projects + members (sponsors, supporters, freelancer) API | §10 | Claude | DONE | t-10-projects-transcripts | Create/list/get project, idempotent member invites, public vs member views, viewed-tracking. 31 tests (D-026) |
+| T-11 | Transcript upload (text/file), line numbering | §7.1 | Claude | DONE | t-10-projects-transcripts | JSON or file upload (.txt/.vtt/.md), VTT cleaning, line numbering, `GET /projects/{id}/transcript` (added to SPEC 10). 25 tests; mutation-checked (D-026) |
+| T-12 | BA scoring: prompt, `BAScoreOutput`, code-side total, gates, cap 89, source_refs downgrade + unit tests | §7.1 | Claude | DONE | t-12-ba-scoring | Schemas, pure scoring + gates + cap, prompt `ba-score-v1`, `BAAgent`, `ba_service.score_round`. 67 tests; mutation-checked; demo scene scores 58/79/93. No endpoint yet (T-13). No real Gemini call yet (A-4) (D-027) |
+| T-13 | BA questions: prompt, `BAQuestionsOutput`, answer/skip endpoints, rounds, MAX_ROUNDS + finalize | §7.1 | Claude | DONE | t-13-ba-questions | Question agent + code-side filtering, rounds, answer/skip/finalize, run/view endpoints, `BA_RUN` job, rate limit. 83 tests; mutation-checked (11/11). Whole 58->79->93 scene passes over HTTP. No real Gemini call yet (D-028) |
+| T-14 | BRD generator: prompt, `BRDContent`, REQ codes, Jinja Markdown, sha256 | §7.2 | Claude | DONE | t-14-brd-generator | Schemas, prompt `brd-gen-v1`, `BRDGenerator`, code-side assembly, Jinja renderer with escaping, sha256, `BRD_GENERATE` job, generate/read/download endpoints. 75 tests; mutation-checked (15/15 after one added test). Approvals are T-15. No real Gemini call yet (D-029) |
+| T-15 | BRD approvals (hash-bound, unanimous), reject → new BA round + version bump | §7.2 | Claude | DONE | t-15-brd-approvals | Hash-bound unanimous decisions, lock + ledger + CONTRACTING, rejection reopens BA with a question for ALL, withdraw-by-reject, stale/foreign hash refused. 16 tests; mutation-checked (all caught after 2 added tests). (D-030) |
 | T-16 | UI: BA Studio | §11 #4 |  | TODO |  | |
 | T-17 | UI: BRD page (AG Grid requirements, approve/reject, download) | §11 #5 |  | TODO |  | |
 
 ### Track B1: Pledge-If (campaigns, holds, webhooks)
 | ID | Task | Spec | Owner | State | Branch | Notes |
 |---|---|---|---|---|---|---|
-| T-20 | `PayPalClient`: SDK for Orders (create `AUTHORIZE`, authorize), Payments (authorization get/capture/void/reauthorize, capture get, refund), Transaction Search; `httpx` for Payouts + webhook verify. **Plus a sandbox script:** authorize→capture (partial, `final_capture`), authorize→void, payout | §9.2–9.4, §9.7 |  | TODO |  | Resolves A-1, A-2, A-8, A-9. Use the Context Plugin for method names |
-| T-21 | Webhook endpoint: signature verify, dedupe, job enqueue, monotonic processors for authorization/capture/refund/payout events (§9.5 table) | §9.5 |  | TODO |  | Save real event samples to `backend/tests/fixtures/webhooks/` |
-| T-22 | Pledge Gate + pledge service: `pledges/order`, `pledges/authorize`, webhook effects, progress, goal-reached trigger | §8.2, §9.2 |  | TODO |  | |
+| T-20 | `PayPalClient`: SDK for Orders (create `AUTHORIZE`, authorize), Payments (authorization get/capture/void/reauthorize, capture get, refund), Transaction Search; `httpx` for Payouts + webhook verify. **Plus a sandbox script:** authorize→capture (partial, `final_capture`), authorize→void, payout | §9.2–9.4, §9.7 | Claude | REVIEW | t-20-paypal-client | Client built on SDK 2.4.0 (reader, writer, order gateway, payouts, webhook verify, balances) + `scripts/sandbox_check.py`. 89 tests incl. real-model fakes; mutation-checked 22/22. **Needs a human:** run the script with sandbox keys to resolve A-1, A-2, A-8, A-9 (D-033) |
+| T-21 | Webhook endpoint: signature verify, dedupe, job enqueue, monotonic processors for authorization/capture/refund/payout events (§9.5 table) | §9.5 | Claude | REVIEW | t-21-webhooks | Receiver (verify, store once, queue, 400/413/503 rules) + processing for captures, planned voids, refunds, payout items and batches + PROCESS_WEBHOOK job. 48 tests; mutation-checked 17/17. **Partial:** hold-placed and unplanned-void events are NOT_HANDLED until BLK-03. Real payload shapes unverified (A-3) (D-036) |
+| T-22 | Pledge Gate + pledge service: `pledges/order`, `pledges/authorize`, webhook effects, progress, goal-reached trigger | §8.2, §9.2 | Claude | BLOCKED | t-22-pledges | **BLOCKED (partial).** Done and tested: `pledge_gate.py` (56 tests), `OrderGateway` role + client wiring (4 tests). Missing: `pledge_service.py`, `routers/pledges.py` (BLK-01, design in GAPS section 0). Mutation-checked (D-034) |
 | T-23 | UI: public campaign page (progress "held, not charged", countdown, PayPal button `intent=authorize`, pledge board AG Grid) | §11 #8 |  | TODO |  | A-11 |
-| T-24 | Campaign setup API + launch (needs signed contract); deadline rule (`≤ opens_at + 72h − 2h`) | §8.2, §6.1 |  | TODO |  | |
-| T-25 | Campaign outcome engine + clock job (every 60 s): goal reached / deadline → enqueue plan builds; `demo/campaigns/{id}/expire`; honor-period warnings; relaunch | §8.2, §6.1 |  | TODO |  | `decide_campaign_outcome` is a pure function with tests |
+| T-24 | Campaign setup API + launch (needs signed contract); deadline rule (`≤ opens_at + 72h − 2h`) | §8.2, §6.1 | Claude | DONE | t-24-campaign-setup | Setup (goal from contract + fees), launch (window re-checked), public view with lead controls and plain-words blockers. 48 tests; mutation-checked 19/19 after one added test (D-032). UI is screen #7/#8, not built |
+| T-25 | Campaign outcome engine + clock job (every 60 s): goal reached / deadline → enqueue plan builds; `demo/campaigns/{id}/expire`; honor-period warnings; relaunch | §8.2, §6.1 |  | BLOCKED |  | **BLOCKED (partial).** Done and tested: `campaign_outcome.py` (30 tests). Missing: `campaign_clock.py`, close/cancel/relaunch/demo endpoints, `ClockRunner` (BLK-02, design in GAPS section 0) |
 | T-27 | UI: campaign setup + lead panel (close and capture, cancel, relaunch, simulate deadline) | §11 #7, #8 |  | TODO |  | |
 
 ### Track A2: Contract, build & verify
 | ID | Task | Spec | Owner | State | Branch | Notes |
 |---|---|---|---|---|---|---|
-| T-30 | Conditional contract: offer, accept (BRD hash, PayPal email lock), `effective_at` on capture | §6.2, §10 |  | TODO |  | UI is screen #6 |
-| T-31 | Submissions + `ImageStore` (Cloudinary signed upload, `POST /images`, signed URLs; `LocalImageStore` for dev) + evidence API | §7.3, §10, §12 |  | TODO |  | Verifier fetches image bytes server-side for Gemini |
-| T-32 | AutoChecks: SSRF-safe fetcher, URL/page/repo/commit/file/viewport checks + SSRF tests | §7.3 |  | TODO |  | |
+| T-30 | Conditional contract: offer, accept (BRD hash, PayPal email lock), `effective_at` on capture | §6.2, §10 | Claude | DONE | t-30-contract | Offer (replaces unsigned), accept (both hashes, locks PayPal email), GET for members; terms rendered from template; ledger CONTRACT_SIGNED without email. 25 tests; mutation-checked (D-031). UI is screen #6 (not built) |
+| T-31 | Submissions + `ImageStore` (Cloudinary signed upload, `POST /images`, signed URLs; `LocalImageStore` for dev) + evidence API | §7.3, §10, §12 |  | IN PROGRESS |  | **Half done:** submit endpoint + AUTO_CHECKS job + read endpoints (D-039). **Left:** `ImageStore` (Cloudinary + local), `/images` endpoints, evidence endpoint. Verifier fetches image bytes server-side for Gemini |
+| T-32 | AutoChecks: SSRF-safe fetcher, URL/page/repo/commit/file/viewport checks + SSRF tests | §7.3 |  | REVIEW |  | `safe_fetch.py` (SSRF-safe) + `autochecks.py` (URL_REACHABLE, PAGE_CONTAINS, REPO_PUBLIC, COMMIT_EXISTS, FILE_EXISTS + snippet check, MOBILE_VIEWPORT). 117 tests, no network; mutation-checked. Not yet run per submission or saved to `auto_checks` (T-31) (D-038) |
 | T-33 | Verifier questions: prompt, `VerifyQuestion`, skip ACs settled by auto checks | §7.3 |  | TODO |  | |
 | T-34 | Verifier judge (vision) + snippet-in-repo check + deterministic aggregation + follow-up round + attempts | §7.3 |  | TODO |  | One judge call per submission |
 | T-35 | UI: freelancer portal (contract, submit, evidence uploaders) | §11 #6, #9 |  | TODO |  | |
@@ -76,14 +76,14 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 ### Track B2: Money core, Guardian, payouts
 | ID | Task | Spec | Owner | State | Branch | Notes |
 |---|---|---|---|---|---|---|
-| T-40 | Settlement engine (pure): `split_pro_rata`, `plan_captures`, `plan_refunds`, `plan_freelancer_payout`, `plan_hash` + tests (incl. property tests) | §8.3 |  | TODO |  | Do this early; everything depends on it |
-| T-26 | `PlanBuilder` (pure, reads DB): `CAPTURE_PLEDGES`, `RELEASE_HOLDS`, `FREELANCER_PAYOUT`, `REFUND_CAPTURED` specs + steps + idempotency keys + tests | §7.5.1, §8.3 |  | TODO |  | Depends on T-40 |
-| T-45 | `MoneyExecutor` + plan lifecycle + approvals API (`plans`, `review`, `approve`) + executor tests (refuses unapproved/mismatched/foreign steps) | §8.4, §8.5, §10 |  | TODO |  | Only module allowed to call PayPal writes |
-| T-41 | Guardian rules G-01…G-13 + soft flags S-01…S-03 (pure; SDK mocked) + one pass/fail test per rule + tamper mutations | §7.5.2–7.5.3, §7.5.6 |  | TODO |  | G-06/G-08 use SDK reads |
-| T-42 | Guardian LLM review (escalate-only) + decision logic + release policies (auto vs human) | §7.5.4–7.5.5 |  | TODO |  | |
+| T-40 | Settlement engine (pure): `split_pro_rata`, `plan_captures`, `plan_refunds`, `plan_freelancer_payout`, `plan_hash` + tests (incl. property tests) | §8.3 | Claude | DONE | t-40-settlement-state-ledger | 13 tests incl. hypothesis property tests; worked examples 1-3 from SPEC 8.3 verified. `plan_hash` excludes idempotency keys (D-021) |
+| T-26 | `PlanBuilder` (pure, reads DB): `CAPTURE_PLEDGES`, `RELEASE_HOLDS`, `FREELANCER_PAYOUT`, `REFUND_CAPTURED` specs + steps + idempotency keys + tests | §7.5.1, §8.3 | Claude | DONE | t-26-plan-builder | Four plan kinds + `save_proposed` + `rebuild` + release policies. 39 tests. Retry attempts in inputs (D-022). `REAUTH_PLEDGES` not built (SHOULD) |
+| T-45 | `MoneyExecutor` + plan lifecycle + approvals API (`plans`, `review`, `approve`) + executor tests (refuses unapproved/mismatched/foreign steps) | §8.4, §8.5, §10 | Claude | DONE | t-45-money-executor | `MoneyExecutor` + `plan_lifecycle` (review/approve/confirm) + `/auth/login`,`/auth/me` + plans API (list/create/get/review/approve/simulate-tamper) + EXECUTE_PLAN job + chokepoint scan test. 71 tests; mutation-checked. Fake writer only: real PayPal writer is T-20/T-43 (D-024) |
+| T-41 | Guardian rules G-01…G-13 + soft flags S-01…S-03 (pure; SDK mocked) + one pass/fail test per rule + tamper mutations | §7.5.2–7.5.3, §7.5.6 | Claude | DONE | t-41-guardian-rules | G-01..G-13 + S-01..S-03 + 5 tamper mutations, 63 tests incl. one pass/fail per rule; mutation-checked. PayPal reads go through an injected `PayPalReader` (real one arrives with T-20). Interpretations in D-023 |
+| T-42 | Guardian LLM review (escalate-only) + decision logic + release policies (auto vs human) | §7.5.4–7.5.5 | Claude | DONE | t-42-guardian-llm | `GuardianLLM` agent + `guardian_facts` + `guardian_decision.combine` wired into `review_plan` and the review endpoint. 33 tests; mutation-checked. Never called on BLOCK; failure => HOLD (D-025). No real Gemini call made yet (A-4) |
 | T-43 | Execution paths: capture/void steps, freelancer payout batch; webhooks + poll fallback; PAID / PAYOUT_FAILED | §8.5, §9.3–9.4 |  | TODO |  | |
 | T-44 | `REFUND_CAPTURED` execution + cancel flow (builder in T-26) | §8.1 M7 |  | TODO |  | UI is cut-order #5 |
-| T-46 | Strategist (deterministic): forecast, deadline suggestion, nudge target ranking + tests; API + forecast card | §7.4 |  | TODO |  | MVP |
+| T-46 | Strategist (deterministic): forecast, deadline suggestion, nudge target ranking + tests; API + forecast card | §7.4 | Claude | DONE | t-46-strategist | Pure forecast/advice/nudge math + report service + run/read/apply endpoints + STRATEGIST_RUN job. 52 tests; mutation-checked 24/24 (two added tests). LLM wording is T-47 (D-035) |
 | T-47 | Strategist LLM narrative + nudge drafts + numbers validator | §7.4 |  | TODO |  | SHOULD (cut order #1) |
 | T-48 | Ledger ↔ PayPal reconciliation job (SDK Transaction Search) + "PayPal match" column | §9.7 |  | TODO |  | SHOULD |
 | T-49 | UI: money plans viewer (steps grid, rule rows, risk card, decision, approve, simulate tamper) | §11 #11 |  | TODO |  | |
@@ -91,8 +91,8 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 ### Track C: Ledger, polish, ship
 | ID | Task | Spec | Owner | State | Branch | Notes |
 |---|---|---|---|---|---|---|
-| T-50 | UI: ledger AG Grid Community (type chips, pinned totals, filters, CSV, meta modal, live refresh) | §11 #12 |  | TODO |  | No Enterprise features |
-| T-51 | UI: AI audit trail AG Grid | §11 #13 |  | TODO |  | |
+| T-50 | UI: ledger AG Grid Community (type chips, pinned totals, filters, CSV, meta modal, live refresh) | §11 #12 |  | TODO |  | No Enterprise features. **Back end done** (`GET /projects/{id}/ledger`, `/money`; D-037); only the grid is left |
+| T-51 | UI: AI audit trail AG Grid | §11 #13 |  | TODO |  | **Back end done** (`GET /projects/{id}/agent-runs`); only the grid is left |
 | T-52 | `seed.py`: Velugu Cove project through BRD + contract; **a project whose round 1 has failed** (holds voided, nothing charged); **a project at `PAYOUT_READY`**; record replay fixtures | §16 |  | TODO |  | Don't pre-authorize live pledges more than ~2 days before recording |
 | T-60 | Sample site v1 (missing form) + v2 (complete) in its own public repo; record both commit SHAs in §4 | §15 | Gemini | DONE | t-60-sample-site | Public repo https://github.com/meghavardhan-git/velugu-cove-site (v1: 677da6f, v2: 1a75b03); mirrored in sample-site/ |
 | T-61a | Deploy hello-world API to Render (gets webhook URL early) | §14 |  | TODO |  | |
@@ -159,14 +159,6 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
-
-### 2026-11-08 13:20 IST · Gemini · T-60
-- Did: Built Velugu Cove sample site (HTML/CSS/JS, mobile-first, custom properties, placeholder images, Google Fonts, all 3 businesses featured). Created public repo at `https://github.com/meghavardhan-git/velugu-cove-site`, committed and tagged v1 (`v1-missing-form`, SHA `677da6fb5b2f7e69c54eb9ee1ad5c4bb880d0c9f`), created `contact.html` with enquiry form + reference number generator, committed and tagged v2 (`v2-complete`, SHA `1a75b0389d2208b8de14595a25f7fab5f51f9f5d`). Mirrored files into `briefpay/sample-site/` for `render.yaml` deployment.
-- State now: T-60 DONE.
-- Tests: static site verified with HTML/CSS inspection. Backend tests untouched.
-- Contract changes: none.
-- Next step for whoever picks up: Push `velugu-cove-site` tags to GitHub remote (needs user credentials in interactive terminal); for BriefPay, continue with Track A: **T-40** (Settlement engine) or **T-06** (LLM adapter) / **T-07** (state machines + LedgerService), or Track B: **T-02** / **T-08** / **T-20**.
-- Gotchas: Git push from non-interactive subshell blocked on Git Credential Manager, so user can run `git push origin main --tags` inside `C:\Users\tammi\OneDrive\Desktop\velugu-cove-site`.
 
 ### 2026-11-08 · Claude · T-04
 - Did: moved docs to the spec layout (root `AGENTS.md`, `.env.example`, `docs/`); added `.gitignore`, MIT `LICENSE`; built `backend/` (FastAPI app, `config.py`, `db.py`, `/api/healthz`), SQLAlchemy models for all 32 §6.2 tables (`app/models/tables.py`), Alembic migration `0001`, pytest setup.
