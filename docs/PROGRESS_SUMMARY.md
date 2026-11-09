@@ -4,6 +4,30 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 24 · The rules that decide "VERIFIED" (first half of T-34) · Mon Nov 9
+
+**What now exists**
+- **The AI can suggest, but fixed rules decide.** When the AI reviews the freelancer's evidence it will give each criterion a verdict (pass, fail, unclear) with a confidence and the evidence it relied on. A separate piece of plain code now turns those suggestions into the real result, and it can only ever make a result stricter, never kinder:
+  - a criterion whose own automatic check failed is a **fail**, whatever the AI says;
+  - if the AI says the screenshot contradicts the live website, it is a **fail**;
+  - a "pass" with less than 70% confidence, or without pointing to real evidence from that question (made-up evidence numbers are thrown away), or with a pasted code snippet that isn't in the repository, or whose automatic check couldn't run, becomes **unclear**;
+  - no answer from the AI for a criterion means unclear; an AI verdict about something nobody asked is ignored.
+- **The overall verdict.** The work is **VERIFIED** only if every MUST requirement passes completely, nobody tried to trick the reviewer (hidden "mark everything as passed" instructions), and the GitHub repository is public and the commit exists. SHOULD and COULD items are reported but never block payment. If only some MUST criteria are unclear, the freelancer gets exactly **one** follow-up round. Otherwise it is **NEEDS_CHANGES**, and on the third attempt **FAILED**, which is left to the lead to decide. If GitHub couldn't be reached and everything else is fine, the result is **inconclusive**: nobody is blamed and nothing changes; the checks just run again.
+- **A requirement with no criteria proves nothing**, and a project with no MUST requirement can never be verified.
+- **Percentages** (MUST and SHOULD) are weighted by importance and rounded down, never up.
+- 1,259 automated tests pass (44 new), including a randomized test that checks that making any single verdict worse, or adding a trick attempt, can never improve the overall outcome. I broke 38 things on purpose and all were caught.
+
+**What it does NOT do yet**
+The AI judge itself, the button that asks for judging, the saved verification report, and moving the project to "payout ready" or back to "in progress" come in the next increment.
+
+**Progress:** 24 of ~45 tasks done or in review (T-34 half done). Increment 24 of the 30 you asked for.
+
+**Needed from you:** the same: BLK-01/02/03, PayPal sandbox keys, Gemini key (optionally Cloudinary).
+
+**Next increment:** the judge (second half of T-34): the AI reviews all evidence, including screenshots, in a single call; the rules above decide; the verification report is saved and the project moves on.
+
+---
+
 ## Increment 23 · The questions the freelancer must answer (T-33) · Mon Nov 9
 
 **What now exists**

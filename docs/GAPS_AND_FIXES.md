@@ -6,7 +6,7 @@ A running list of everything that is **missing, risky, unverified, or was found 
 - **Fixes** are problems that were found and already resolved, kept so the reasoning is not lost.
 - IDs are permanent. When a gap is closed, move it to Fixes (keep the ID) and say how.
 
-_Last updated: 2026-11-09, end of T-33._
+_Last updated: 2026-11-09, end of T-34 first half._
 
 ---
 
@@ -105,6 +105,9 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | GAP-66 | Low | A criterion whose automatic check FAILED is still asked about, although aggregation will fail it regardless. | Deliberate (the freelancer can show the check was wrong); revisit if the demo feels long. |
 | GAP-67 | Medium | No recorded Gemini fixture for `VERIFY_QUESTIONS`; the real prompt wording is untested against a live model. | Record fixtures in T-63 once the key exists. Until then template questions are used if the model fails. |
 | GAP-68 | Low | The 25-question cap silently drops the lowest-priority criteria of a very large BRD. | The BA gates normally keep BRDs smaller; show a note in the UI if ever hit. |
+| GAP-69 | Medium | SPEC 7.3 says the judge also sees the fetched page text for the relevant path; the auto checks do not persist page text, so the judge will see only check results. | Store a short visible-text excerpt in `auto_checks.detail_json` for PAGE_CONTAINS, or re-fetch in the judge job (T-34). |
+| GAP-70 | Medium | After a FAILED verdict (attempt 3) the lead's choices (extend, cancel and refund, all-sponsor override) are not built; the project stays in VERIFYING. | Later task: lead decision endpoint + sponsor override approvals; the refund path already exists (`REFUND_CAPTURED`). |
+| GAP-71 | Low | INCONCLUSIVE (GitHub could not be asked) changes no state, so someone has to re-run the checks and the judge; there is no automatic retry yet. | T-34 second half: a retry through the job runner with backoff, and a clear message. |
 
 ---
 
