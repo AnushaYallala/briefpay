@@ -28,17 +28,21 @@ PAGES = {
 }
 
 
+def ac(ident, hint=None, evidence=("SCREENSHOT", "CODE_SNIPPET"), given="a visitor opens the page", when="they use it", then="it works"):
+    return {"id": ident, "given": given, "when": when, "then": then, "evidence": list(evidence), "auto_check_hint": hint}
+
+
 def content():
     return {
         "sitemap": [{"path": "/", "purpose": "home"}, {"path": "/stay", "purpose": "stay"}, {"path": "/contact", "purpose": "form"}],
         "requirements": [
-            {"code": "REQ-001", "acceptance_criteria": [
-                {"id": "AC-1", "auto_check_hint": {"type": "PAGE_CONTAINS", "path": "/contact", "text": "Send enquiry"}},
-                {"id": "AC-2", "auto_check_hint": {"type": "FILE_EXISTS", "path": "src/form.js"}},
-                {"id": "AC-3", "auto_check_hint": None}]},
-            {"code": "REQ-002", "acceptance_criteria": [
-                {"id": "AC-1", "auto_check_hint": {"type": "MOBILE_VIEWPORT", "path": None}},
-                {"id": "AC-2", "auto_check_hint": {"type": "URL_REACHABLE", "path": "/stay"}}]},
+            {"code": "REQ-001", "title": "Enquiry form", "priority": "MUST", "acceptance_criteria": [
+                ac("AC-1", {"type": "PAGE_CONTAINS", "path": "/contact", "text": "Send enquiry"}, evidence=("LIVE_URL_CHECK", "SCREENSHOT")),
+                ac("AC-2", {"type": "FILE_EXISTS", "path": "src/form.js"}, evidence=("REPO_PATH",)),
+                ac("AC-3", None, evidence=("SCREENSHOT",))]},
+            {"code": "REQ-002", "title": "Works on phones", "priority": "SHOULD", "acceptance_criteria": [
+                ac("AC-1", {"type": "MOBILE_VIEWPORT", "path": None}, evidence=("LIVE_URL_CHECK",)),
+                ac("AC-2", {"type": "URL_REACHABLE", "path": "/stay"}, evidence=("LIVE_URL_CHECK",))]},
         ]}
 
 
@@ -294,7 +298,7 @@ def test_the_real_job_runner_runs_the_checks_with_the_installed_checker(w, db):
     assert jobs.run_one(factory) is True
     db.expire_all()
     assert db.get(Submission, sub.id).state == "QUESTIONING" and len(checks_of(w, sub)) == 9
-    assert db.query(Job).one().state == "DONE"
+    assert [(j.type, j.state) for j in db.query(Job).order_by(Job.id)] == [("AUTO_CHECKS", "DONE"), ("VERIFY_QUESTIONS", "QUEUED")]
 
 
 @pytest.mark.parametrize("env,local", [("dev", True), ("prod", False), ("staging", False)])

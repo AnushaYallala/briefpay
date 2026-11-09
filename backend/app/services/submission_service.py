@@ -175,7 +175,8 @@ def run_auto_checks(db: Session, submission_id: int, checker: AutoChecker | None
         db.add(AutoCheck(submission_id=sub.id, check_type=r.check_type, requirement_code=r.requirement_code,
                          input_json={**r.input, **({"criterion_id": item["criterion_id"]} if item["criterion_id"] else {})},
                          result=r.result, detail_json=r.detail))
-    sub.state = "QUESTIONING"           # T-33 writes the questions from here
+    sub.state = "QUESTIONING"
+    jobs.enqueue(db, "VERIFY_QUESTIONS", {"submission_id": sub.id})        # T-33: the questions follow the checks
     db.flush()
     return {"effect": "CHECKED", "submission_id": sub.id, **counts}
 

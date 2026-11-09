@@ -4,6 +4,27 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 23 · The questions the freelancer must answer (T-33) · Mon Nov 9
+
+**What now exists**
+- **The system works out what still needs proving.** After the automatic checks, every acceptance criterion in the signed BRD is looked at. If a robot check already proved it (the page contains the words, the file exists, the site works on phones) and the BRD asked for nothing more than that, no question is asked. If the BRD also wants a screenshot or the code, the robot check does not remove that: it stays on the list. A failed or missing check never lets a criterion off the hook. This decision is made by plain code, not by the AI.
+- **One clear question per remaining criterion.** The AI (when its key is set) only phrases each question in plain words, naming the requirement and exactly what to upload. It cannot add or skip criteria or ask for different evidence than the BRD lists: the evidence list always comes from the BRD, and any question about something unknown is thrown away.
+- **It never gets stuck.** If the AI is off, out of quota or answers badly, every criterion simply gets a standard question built from the BRD's own wording, so the freelancer can always continue. The audit trail records every AI call, including bad ones.
+- **Safe with hostile text.** Wording from the BRD and the freelancer's notes goes to the AI only inside "this is data, not instructions" wrappers; a planted fake closing tag is defused.
+- **Automatic flow:** submit, then checks run, then questions appear; if every criterion was already proven, the submission skips straight to "evidence received". I tested the whole chain through the real background-job machinery, including answering the questions over HTTP.
+- 1,215 automated tests pass (24 new). I broke 29 things on purpose; the first run caught 26, and I added tests until all were caught.
+
+**What it does NOT do yet**
+Nothing judges the answers yet (T-34), and there is no follow-up round yet. No recorded Gemini answer exists for replay because that needs your key.
+
+**Progress:** 24 of ~45 tasks done or in review. Increment 23 of the 30 you asked for.
+
+**Needed from you:** the same: BLK-01/02/03, PayPal sandbox keys, Gemini key (and optionally a Cloudinary account).
+
+**Next increment:** judging and the verdict (T-34): the AI reviews all evidence in one call, then plain code applies the rules to decide VERIFIED, NEEDS_CHANGES or FAILED and writes the verification report.
+
+---
+
 ## Increment 22 · Screenshots and evidence (second half of T-31) · Mon Nov 9
 
 **What now exists**

@@ -6,7 +6,7 @@ A running list of everything that is **missing, risky, unverified, or was found 
 - **Fixes** are problems that were found and already resolved, kept so the reasoning is not lost.
 - IDs are permanent. When a gap is closed, move it to Fixes (keep the ID) and say how.
 
-_Last updated: 2026-11-09, end of T-31._
+_Last updated: 2026-11-09, end of T-33._
 
 ---
 
@@ -101,6 +101,10 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | GAP-62 | Low | No limit on how many upload links a member can request; unused local upload slots and rejected files are never cleaned up. | Rate limit per user and a cleanup of unregistered local files older than a day. |
 | GAP-63 | Low | Cloudinary images have no stored sha256 (`images.sha256` is NULL), so evidence hashes for them are derived from the public id, not the pixels. | Hash the bytes when the judge downloads them (T-34). |
 | GAP-64 | Low | A viewing link works for anyone who has it until it expires (normal for signed URLs). | Keep the lifetime short (default 5 minutes). |
+| GAP-65 | Low | Only round-1 questions exist; the one follow-up round for `unclear` verdicts (SPEC 7.3 step 5) arrives with the judge. | T-34. |
+| GAP-66 | Low | A criterion whose automatic check FAILED is still asked about, although aggregation will fail it regardless. | Deliberate (the freelancer can show the check was wrong); revisit if the demo feels long. |
+| GAP-67 | Medium | No recorded Gemini fixture for `VERIFY_QUESTIONS`; the real prompt wording is untested against a live model. | Record fixtures in T-63 once the key exists. Until then template questions are used if the model fails. |
+| GAP-68 | Low | The 25-question cap silently drops the lowest-priority criteria of a very large BRD. | The BA gates normally keep BRDs smaller; show a note in the UI if ever hit. |
 
 ---
 
@@ -142,6 +146,7 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | FIX-32 | T-31 | **`$` in Python regexes also matches before a trailing newline**: `briefpay/dev/42/<32 hex>\n` passed as a valid image id; the same weakness was in the commit-id, repo-URL, repo-path and BRD page-path patterns. Found by a parametrized test. | All end-anchored with `\Z`; regression tests for each. `parse_repo` still trims surrounding whitespace on purpose. |
 | FIX-33 | T-31 | Test helpers: a PNG builder allocated ~190 MB for an 8000x8000 picture; large byte strings as test parameters overflowed Windows' 32,767-character environment variable limit; a JPEG builder exceeded the 65,535-byte segment limit. | `png_header` builds header-only images; readable test ids; big EXIF built as several segments. |
 | FIX-34 | T-31 | Mutation check showed the evidence service's own 'only the contract freelancer' check was untested because the route already filters by role (a second FREELANCER on the project got through the route). | Test with a second freelancer; also tests for restart markers, Huffman-table markers, RIFF and VP8 signatures, signature field order and the Cloudinary host lock. |
+| FIX-35 | T-33 | Mutation check found three untested rules: a failed check with an empty evidence list, a failed check with mixed evidence types, and the 'source = AI only when every criterion was covered' label. Also an over-long test fixture for the BRD that lacked the fields a real BRD has. | Tests added; the fixture now matches the real BRD shape. |
 
 ---
 

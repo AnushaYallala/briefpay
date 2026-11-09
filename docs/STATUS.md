@@ -9,10 +9,10 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-09 by Claude: T-31 done (submissions, images, evidence); working directly on `main` from now on |
+| Last updated | 2026-11-09 by Claude: T-33 verification questions in REVIEW |
 | Overall phase | **Day 0: backend skeleton, schema, money math, state machines, ledger built; no features yet** (plain-English summary: `docs/PROGRESS_SUMMARY.md`) |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
-| Next task to pick up | Not blocked: **T-33** (verifier questions), **T-34** (judge + aggregation), **T-47** (Strategist AI wording), **T-43/T-44** (poll fallback) · **Human:** write BLK-01/BLK-02 files or advise · run `backend/scripts/sandbox_check.py` once keys exist |
+| Next task to pick up | Not blocked: **T-34** (judge + aggregation + report), **T-47** (Strategist AI wording), **T-43/T-44** (poll fallback) · **Human:** write BLK-01/BLK-02 files or advise · run `backend/scripts/sandbox_check.py` once keys exist |
 | Blockers | **BLK-01** (T-22 pledge service/endpoints), **BLK-02** (T-25 clock and lead actions), **BLK-03** (pledge-state helper used by two webhook events): the assistant's attempts to write those files were stopped by a safety check; see `docs/GAPS_AND_FIXES.md` section 0 for the full designs |
 | Deployed URLs | API: _not deployed_ · Web: _not deployed_ · Sample site: _not deployed_ |
 | Repo | https://github.com/AnushaYallala/briefpay (origin; T-01 still needs LICENSE visible in About + secret scanning) |
@@ -68,7 +68,7 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 | T-30 | Conditional contract: offer, accept (BRD hash, PayPal email lock), `effective_at` on capture | §6.2, §10 | Claude | DONE | t-30-contract | Offer (replaces unsigned), accept (both hashes, locks PayPal email), GET for members; terms rendered from template; ledger CONTRACT_SIGNED without email. 25 tests; mutation-checked (D-031). UI is screen #6 (not built) |
 | T-31 | Submissions + `ImageStore` (Cloudinary signed upload, `POST /images`, signed URLs; `LocalImageStore` for dev) + evidence API | §7.3, §10, §12 |  | REVIEW |  | Submissions API + AUTO_CHECKS job (D-039); `image_meta`, `ImageStore` (local + Cloudinary), image endpoints, evidence endpoint (D-040). Cloudinary not run against a real account (GAP-60). Questions come from T-33 |
 | T-32 | AutoChecks: SSRF-safe fetcher, URL/page/repo/commit/file/viewport checks + SSRF tests | §7.3 |  | REVIEW |  | `safe_fetch.py` (SSRF-safe) + `autochecks.py` (URL_REACHABLE, PAGE_CONTAINS, REPO_PUBLIC, COMMIT_EXISTS, FILE_EXISTS + snippet check, MOBILE_VIEWPORT). 117 tests, no network; mutation-checked. Not yet run per submission or saved to `auto_checks` (T-31) (D-038) |
-| T-33 | Verifier questions: prompt, `VerifyQuestion`, skip ACs settled by auto checks | §7.3 |  | TODO |  | |
+| T-33 | Verifier questions: prompt, `VerifyQuestion`, skip ACs settled by auto checks | §7.3 |  | REVIEW |  | `VerifierAgent` + prompt + `VerifyQuestion` schema; `verify_questions.py` (which criteria, template fallback, job); queued by AUTO_CHECKS. 23 tests, mutation-checked. No recorded Gemini fixture yet (needs the key) (D-041) |
 | T-34 | Verifier judge (vision) + snippet-in-repo check + deterministic aggregation + follow-up round + attempts | §7.3 |  | TODO |  | One judge call per submission |
 | T-35 | UI: freelancer portal (contract, submit, evidence uploaders) | §11 #6, #9 |  | TODO |  | |
 | T-36 | UI: verification report with AG Grid matrix | §11 #10 |  | TODO |  | |
@@ -159,6 +159,13 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-09 · Claude · T-33 (REVIEW)
+- Did: `agents/verifier.py` (`VerifierAgent.ask`, `get_verifier`/`set_verifier`), `agents/prompts/verify_questions.md`, `schemas/verify.py`, `services/verify_questions.py` (`needed_criteria`, `template_question`, `generate`), `VERIFY_QUESTIONS` job handler; `run_auto_checks` now queues it. Committed straight to `main`.
+- Tests: `cd backend && .venv/Scripts/python -m pytest -q` -> 1215 passed (24 new in `tests/test_verify_questions.py`, incl. the full submit -> checks -> questions -> answer run through the real job runner). Mutation-checked: 29 breakages, all caught after 3 test additions.
+- Contract changes: D-041 (no SPEC changes).
+- Next step: T-34: `VerifyJudge` (one vision call for all criteria; images read through the `ImageStore`), `POST /submissions/{sid}/judge` (<= 6 judge runs), deterministic aggregation (SPEC 7.3 table), `verification_reports` with sha256, project VERIFYING -> PAYOUT_READY / IN_PROGRESS, the snippet-in-repo check, one follow-up round for `unclear`.
+- Gotchas: (1) Tests that need the verifier call `set_verifier(VerifierAgent(adapter))`; the autouse fixture in `test_verify_questions.py` resets it. (2) With no Gemini key the agent is unconfigured and every question is a template question: the demo still works. (3) The BRD fixture in `test_submissions.py` now carries title/priority/given/when/then/evidence like a real BRD.
 
 ### 2026-11-09 · Claude · T-31 second half (REVIEW) — and a change of working method
 - Method change (from the human): **no more branch per increment. Work and commit directly on `main`.** `AGENTS.md` step 5 updated. Old `t-*` branches stay on the remote, all already merged.

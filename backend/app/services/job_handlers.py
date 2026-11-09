@@ -42,6 +42,14 @@ def auto_checks(db: Session, payload: dict) -> dict:
     return submission_service.run_auto_checks(db, payload["submission_id"])
 
 
+@jobs.register("VERIFY_QUESTIONS")
+def verify_questions(db: Session, payload: dict) -> dict:
+    """Write the evidence questions for a checked submission. Falls back to template questions if the AI is unavailable. Safe to retry."""
+    from app.agents.verifier import get_verifier
+    from app.services import verify_questions as vq
+    return vq.generate(db, payload["submission_id"], get_verifier())
+
+
 @jobs.register("PROCESS_WEBHOOK")
 def process_webhook(db: Session, payload: dict) -> dict:
     """Apply a verified PayPal event. Safe to repeat; `NotReady` makes the runner retry with backoff."""
