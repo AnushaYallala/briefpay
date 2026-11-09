@@ -6,7 +6,7 @@ A running list of everything that is **missing, risky, unverified, or was found 
 - **Fixes** are problems that were found and already resolved, kept so the reasoning is not lost.
 - IDs are permanent. When a gap is closed, move it to Fixes (keep the ID) and say how.
 
-_Last updated: 2026-11-09, end of the project page._
+_Last updated: 2026-11-09, end of T-50._
 
 ---
 
@@ -133,6 +133,9 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | GAP-95 | Low | The persona switcher and sign-in are demo authentication (an email is enough). | Documented as sandbox only; real auth is out of scope. |
 | GAP-96 | Low | The Money box only reads; the 'check with PayPal now' button (`POST /money/refresh`) and the PayPal-match column are not wired in the UI. | With the ledger screen and money plans viewer. |
 | GAP-97 | Low | Dates are shown in UTC only. | Deliberate (same moment for everyone, stable tests); add a local-time toggle if it matters. |
+| GAP-98 | Low | The ledger page loads every AG Grid Community module (349 kB of script for that page). | Register only the modules used (client-side rows, sorting, filtering, pinned rows, quick filter, themes). |
+| GAP-99 | Low | Ledgers over 200 rows use a fixed 600 px window; the grid's behaviour with thousands of rows is untested in a real browser. | Fine at demo scale. |
+| GAP-100 | Low | 'Check with PayPal' checks only the newest 30 PayPal-backed rows and is manual; a mismatch leaves no stored alert. | See GAP-85. |
 
 ---
 
@@ -193,6 +196,9 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | FIX-51 | project page | The type check in `test_frontend_contract.py` stopped at the first `};` and could not read `Base & {...}` types, and it only checked that real fields were declared, not that every declared field exists (a made-up `ssn` field in the Member type was not flagged). | Brace-matching parser; declared fields must equal the fields actually seen. |
 | FIX-52 | project page | The front-end mutation script crashed on printing a check mark (Windows code page) before reaching most mutants. | Run with `PYTHONIOENCODING=utf-8` and decode the subprocess output as UTF-8; remaining mutants rerun. |
 | FIX-53 | project page | Mutation check found 8 weak tests: the 'no money has moved' message while alerts or plans exist, role badge colours, the project's currency reaching the money box, and the person-switch reload, among others. | Tests added. |
+| FIX-54 | T-50 | **Time bug:** the API sends timestamps without an offset ('2026-11-10T12:00:00', UTC by convention) and the browser read them as local time, so 12:00 UTC displayed as 06:30 on an IST machine. Found by a probe, not by the earlier date tests (they used explicit offsets). | `parseApiDate` reads an offset-less timestamp as UTC; tests for eight formats; the date tests are also run under four time zones. |
+| FIX-55 | T-50 | A shell command appended a test to `backend/tests/project.test.tsx` (wrong working directory) while the real file stayed unchanged; it showed up as a stray untracked file. | Deleted; the test added to the right file; all file paths in commands are now absolute. |
+| FIX-56 | T-50 | Mutation check found 7 weak spots in the ledger screen: the pinned column, the large-ledger layout, the totals row's time cell, the reference tooltip, clearing the refresh timer, a failed refresh blanking the table, and a chip not toggling off (a wait that passed before the grid had updated). | Two small code improvements (hover text on the reference, a note on a failed refresh) and tests for each. |
 
 ---
 

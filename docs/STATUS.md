@@ -9,10 +9,10 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-09 by Claude: project workspace page (stepper, money box) done |
+| Last updated | 2026-11-09 by Claude: T-50 ledger grid done |
 | Overall phase | **Back end feature-complete except the three blocked pieces (BLK-01/02/03); front end just started (home page and sign-in).** Done: BA, BRD, contract, campaign setup, plans + Guardian + executor, webhooks, poll fallback, submissions, evidence, verification, ledger/audit APIs, demo seed, deploy files, web skeleton. Plain-English summary: `docs/PROGRESS_SUMMARY.md` |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
-| Next task to pick up | Not blocked: the UI screens in demo order: ledger grid (T-50) and audit trail (T-51) with AG Grid, campaign page (T-23, T-27; shows BLK-01/02 as unavailable), BA Studio (T-16), BRD (T-17), money plans (T-49), freelancer portal (T-35), verification report (T-36) · **Human:** decide BLK-01/02/03 · PayPal sandbox keys, Gemini key, Cloudinary · run `backend/scripts/sandbox_check.py` once keys exist |
+| Next task to pick up | Not blocked: audit trail grid (T-51), then money plans viewer (T-49), BA Studio (T-16), BRD (T-17), freelancer portal (T-35), verification report (T-36), campaign page (T-23, T-27; shows BLK-01/02 as unavailable) · **Human:** decide BLK-01/02/03 · PayPal sandbox keys, Gemini key, Cloudinary · run `backend/scripts/sandbox_check.py` once keys exist |
 | Blockers | **BLK-01** (T-22 pledge service/endpoints), **BLK-02** (T-25 clock and lead actions), **BLK-03** (pledge-state helper used by two webhook events): the assistant's attempts to write those files were stopped by a safety check; see `docs/GAPS_AND_FIXES.md` section 0 for the full designs |
 | Deployed URLs | API: _not deployed_ · Web: _not deployed_ · Sample site: _not deployed_ |
 | Repo | https://github.com/AnushaYallala/briefpay (origin; T-01 still needs LICENSE visible in About + secret scanning) |
@@ -91,7 +91,7 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 ### Track C: Ledger, polish, ship
 | ID | Task | Spec | Owner | State | Branch | Notes |
 |---|---|---|---|---|---|---|
-| T-50 | UI: ledger AG Grid Community (type chips, pinned totals, filters, CSV, meta modal, live refresh) | §11 #12 |  | TODO |  | No Enterprise features. **Back end done** (`GET /projects/{id}/ledger`, `/money`; D-037); only the grid is left |
+| T-50 | UI: ledger AG Grid Community (type chips, pinned totals, filters, CSV, meta modal, live refresh) | §11 #12 |  | REVIEW |  | `/ledger?id=N`: AG Grid Community ledger with type chips, pinned totals row, quick search, column filters, safe CSV export, details dialog, PayPal-match column (button), live refresh (D-052). 36 + 34 tests, mutation-checked. Bundle is large (GAP-98) |
 | T-51 | UI: AI audit trail AG Grid | §11 #13 |  | TODO |  | **Back end done** (`GET /projects/{id}/agent-runs`); only the grid is left |
 | T-52 | `seed.py`: Velugu Cove project through BRD + contract; **a project whose round 1 has failed** (holds voided, nothing charged); **a project at `PAYOUT_READY`**; record replay fixtures | §16 |  | REVIEW |  | `seed_demo.py` + `scripts/seed.py` (D-045): a failed-round project (CAMPAIGN_FAILED) and a PAYOUT_READY project, built through the real services; no PayPal call. 19 tests incl. all money invariants on the seeded data. **Replay fixtures still need the Gemini key** |
 | T-60 | Sample site v1 (missing form) + v2 (complete) in its own public repo; record both commit SHAs in §4 | §15 |  | TODO |  | |
@@ -159,6 +159,13 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-09 · Claude · T-50 ledger grid (REVIEW)
+- Did: `frontend/src/app/ledger/page.tsx`, `components/LedgerGrid.tsx`, `components/MetaDialog.tsx`, `lib/ledger.ts` (type words, filters, totals row, match symbols, safe CSV), types `LedgerRow`, `LedgerResponse`, `MatchResponse`; `ag-grid-community` and `ag-grid-react` 36.3.0 added; project page links to the ledger; **a timestamp bug fixed** (`lib/time.ts`: offset-less API timestamps are UTC). Committed straight to `main`.
+- Tests: back end `cd backend && .venv/Scripts/python -m pytest -q` -> 1559 passed (5 new contract tests: ledger types and words, match response); front end `cd frontend && npm run check` -> typecheck clean, 203 tests, build includes `/ledger`. Mutation-checked: ~55 breakages on the ledger code; 7 survivors triaged (two code improvements: the PayPal reference now has a real `title`, and a failed refresh shows a note; five weak tests fixed) and rechecked: all caught. The time helper was also run under four time zones.
+- Contract changes: D-052 (no SPEC changes).
+- Next step: the AI audit trail grid (T-51) at `/audit?id=N` from `GET /api/projects/{id}/agent-runs` (members only): agent, model, prompt version, latency, status chip, input hash, expandable output JSON; reuse `LedgerGrid`'s approach (a thin grid, logic in `lib/`).
+- Gotchas: (1) Tests find rows with `.ag-grid-scrolling-container .ag-row` and the pinned row in `.ag-grid-pinned-bottom-rows-container`. (2) jsdom's `Blob` has no `.text()`: read it with a `FileReader`. (3) The first mutation run took long because every pass runs all grid tests (about 15 s); run it in the background and do not add test files while it runs. (4) A heredoc appended a test to `backend/tests/` by mistake once (wrong working directory): always use absolute paths.
 
 ### 2026-11-09 · Claude · Project workspace page (part of T-05, REVIEW)
 - Did: `/project?id=N` (`app/project/page.tsx`), `Stepper`, `MoneyBox`, `MembersPanel`, `lib/steps.ts` (state to step, what-happens-next words), `lib/time.ts`, types for `Member`, `ProjectDetail`, `Money`; cards on the home page link to the project; `useApi` takes a refresh key. Committed straight to `main`.

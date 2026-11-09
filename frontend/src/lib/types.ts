@@ -57,3 +57,38 @@ export type Money = {
   unclaimed_payouts: number;
   alerts: { seq: number; created_at: string; meta: Record<string, unknown> }[];
 };
+
+export type LedgerRow = {
+  seq: number;
+  created_at: string;
+  bucket: "POOL" | "NONE";
+  type: string;
+  counterparty: string | null;
+  amount_cents: number;
+  running_balance_cents: number;
+  status: string | null;
+  paypal_ref: string | null;
+  actor: string;
+  actor_name: string;
+  ref_type: string | null;
+  ref_id: string | null;
+  paypal_match: null;
+  alert: boolean;
+  meta: Record<string, unknown>;
+};
+
+export type LedgerResponse = {
+  project_id: number;
+  public: boolean;
+  rows: LedgerRow[];
+  totals: { pool_in_cents: number; pool_out_cents: number; pool_balance_cents: number; rows: number };
+};
+
+export type MatchStatus = "MATCH" | "PENDING" | "MISMATCH" | "NOT_FOUND" | "UNAVAILABLE";
+export type MatchResponse = {
+  project_id: number;
+  results: Record<string, { status: MatchStatus; detail: string; paypal_ref?: string; paypal_status?: string; paypal_cents?: number }>;
+  counts: Record<MatchStatus, number>;
+  limited: boolean;
+  all_match: boolean;
+};

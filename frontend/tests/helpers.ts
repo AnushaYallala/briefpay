@@ -29,3 +29,12 @@ export const project = (over: Record<string, unknown> = {}) => ({
   budget_cents: 40000, currency: "USD",
   campaign: { id: 1, number: 1, state: "OPEN", goal_cents: 40000, pledged_cents: 15000, pledge_count: 1, deadline_at: null }, ...over,
 });
+
+export const ledgerRow = (over: Record<string, unknown> = {}) => ({
+  seq: 1, created_at: "2026-11-10T12:00:00", bucket: "NONE", type: "STATE_CHANGE", counterparty: null, amount_cents: 0, running_balance_cents: 0, status: null,
+  paypal_ref: null, actor: "system", actor_name: "BriefPay", ref_type: "project", ref_id: "1", paypal_match: null, alert: false, meta: { from: "DRAFT", to: "REQUIREMENTS" }, ...over,
+}) as import("@/lib/types").LedgerRow;
+
+export const ledger = (rows: import("@/lib/types").LedgerRow[], over: Record<string, unknown> = {}) => ({
+  project_id: 1, public: false, rows, totals: { pool_in_cents: 0, pool_out_cents: 0, pool_balance_cents: 0, rows: rows.length }, ...over,
+});

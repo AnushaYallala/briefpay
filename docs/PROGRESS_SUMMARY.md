@@ -4,6 +4,28 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 35 · The public ledger as a table (T-50) · Mon Nov 9
+
+**What now exists**
+- **The ledger page.** From a project's page, "Open the public ledger" shows every money and AI event in order, as a proper table (AG Grid, the grid the contest sponsor asks to see used): number, time, whether it is real money in the pool or just a memo, a plain-words type ("Pledge held", "Pledge collected", "Hold released", "Paid to the builder", "Safety check"...), who it concerns, the amount (green in, red out, a dash for notes: a hold is not money), the pool balance after it, a status, PayPal's reference (short, the whole thing on hover), and who did it.
+- **Find things fast.** Clickable chips filter by type (only types that exist are offered), a search box looks across the table, columns sort and filter, and a bottom row always adds up what is shown ("Total of 2 rows $250.00") next to the real pool balance. Row "Details" opens the full record behind any line, shown as plain text so nothing in it can run.
+- **Download it safely.** "Export CSV" saves exactly the rows you see. Any cell that could be mistaken for a spreadsheet formula (starting with `=`, `+`, `-` or `@`) is defused, so opening the file in Excel cannot run something nasty from a name or note.
+- **"Check with PayPal".** For people on the project, one button asks PayPal about every charge, refund and payout and puts a tick (agrees), hourglass (not final yet) or cross (disagrees, or no such payment) on each row, with a one-line summary. The public never sees the button.
+- **Stays fresh.** The table updates itself every 15 seconds while the tab is open (not when hidden), and keeps the old rows on screen if an update fails, with a note.
+- **A real bug found on the way:** the server sends some times without a time zone, and the browser read them as local time, so 12:00 showed as 06:30 for me. They are now read as UTC and tested under four different time zones.
+- 203 front-end tests and 1,559 back-end tests pass. About 55 deliberate breakages: seven slipped through the first time (two led to small improvements: the PayPal reference now has a proper hover text and a failed update now shows a note; five were weak tests); all are now caught.
+
+**What it does NOT do yet**
+The page's code is large (349 kB) because every grid feature is loaded; it can be trimmed. Only the 30 newest PayPal-backed rows are checked per click.
+
+**Progress:** 33 of ~45 tasks done or in review. Increment 35 of the 45 you asked for.
+
+**Needed from you:** BLK-01/02/03, PayPal sandbox keys, Gemini key.
+
+**Next increment:** the AI audit trail table (T-51): every AI call with its model, version, speed and result.
+
+---
+
 ## Increment 34 · The project page (stepper and money box) · Mon Nov 9
 
 **What now exists**

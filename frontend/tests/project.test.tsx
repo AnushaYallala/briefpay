@@ -297,3 +297,20 @@ describe("gaps found by the mutation check", () => {
     expect((await screen.findByTestId("pool")).textContent).toBe("EUR 4.00");
   });
 });
+
+describe("timestamps without an offset", () => {
+  it.each([
+    ["2026-11-10T12:00:00", "Nov 10, 12:00 UTC"], ["2026-11-10T12:00:00.123456", "Nov 10, 12:00 UTC"], ["2026-11-10T12:00:00Z", "Nov 10, 12:00 UTC"],
+    ["2026-11-10T12:00:00+00:00", "Nov 10, 12:00 UTC"], ["2026-11-10T17:30:00+05:30", "Nov 10, 12:00 UTC"], ["2026-11-10T07:00:00-0500", "Nov 10, 12:00 UTC"],
+    ["2026-11-10T12:00:00z", "Nov 10, 12:00 UTC"], ["  2026-11-10T12:00:00  ", "Nov 10, 12:00 UTC"],
+  ])("%s is read as UTC", (iso, text) => expect(formatDateTime(iso)).toBe(text));
+});
+
+describe("ledger link", () => {
+  it("the project page points to the public ledger", async () => {
+    mockFetch({ "GET /projects/1": { body: detail() } });
+    wrapped(<ProjectPage />);
+    const link = await screen.findByRole("link", { name: "Open the public ledger" });
+    expect(link.getAttribute("href")).toBe("/ledger?id=1");
+  });
+});

@@ -180,3 +180,45 @@ def test_the_money_box_type_matches_the_real_response(client, seeded):  # noqa: 
 def test_the_plan_words_in_the_money_box_cover_every_plan_kind():
     kinds = set(re.findall(r"\b([A-Z_]{6,}): \"", block(read("components/MoneyBox.tsx"), "const PLAN_WORDS")))
     assert kinds == {"CAPTURE_PLEDGES", "RELEASE_HOLDS", "FREELANCER_PAYOUT", "REFUND_CAPTURED"}
+
+
+def auth_header(client, who="lakshmi"):
+    login = client.post("/api/auth/login", json={"email": sd.email(who), "display_name": who.title()}).json()
+    return {"Authorization": f"Bearer {login['token']}"}
+
+
+def test_the_ledger_types_match_the_real_responses(client, seeded):  # noqa: F811
+    types = read("lib/types.ts")
+    pid = seeded["payout_ready_project_id"]
+    for headers in (None, auth_header(client)):
+        got = client.get(f"/api/projects/{pid}/ledger", headers=headers).json()
+        assert set(got) == fields_of(types, "LedgerResponse") and set(got["totals"]) == nested_fields(types, "LedgerResponse", "totals")
+        assert got["rows"] and all(set(r) == fields_of(types, "LedgerRow") for r in got["rows"])
+    assert client.get(f"/api/projects/{pid}/ledger").json()["public"] is True
+
+
+def test_every_ledger_row_type_has_words_in_the_web_app():
+    from app.services.ledger import LEDGER_TYPES
+    labels = set(re.findall(r'^  ([A-Z_]+): "', block(read("lib/ledger.ts"), "export const TYPE_LABELS"), re.M))
+    assert labels == set(LEDGER_TYPES)
+
+
+def test_the_paypal_match_response_matches_what_the_web_app_reads(client, seeded):  # noqa: F811
+    from app.services import ledger_match
+    types = read("lib/types.ts")
+    got = client.get(f"/api/projects/{seeded['payout_ready_project_id']}/ledger/paypal-match", headers=auth_header(client)).json()
+    assert set(got) == fields_of(types, "MatchResponse")
+    statuses = set(re.findall(r'"([A-Z_]+)"', re.search(r"export type MatchStatus = (.*?);", types).group(1)))
+    assert statuses == set(ledger_match.RESULTS) == set(got["counts"])
+    assert got["results"] and all(set(v) <= {"status", "detail", "paypal_ref", "paypal_status", "paypal_cents"} and v["status"] in statuses for v in got["results"].values())
+    symbols = set(re.findall(r"^  ([A-Z_]+): \{ symbol:", read("lib/ledger.ts"), re.M))
+    assert symbols == set(ledger_match.RESULTS)
+
+
+def test_the_status_chips_the_ledger_prints_are_the_ones_the_grid_knows():
+    from app.services.ledger_views import STATUS_CHIP
+    assert set(STATUS_CHIP) <= set(re.findall(r'^  ([A-Z_]+): "', read("lib/ledger.ts"), re.M))
+
+
+def test_the_ledger_refresh_rate_is_gentle():
+    assert re.search(r"REFRESH_MS = 15000;", read("lib/ledger.ts"))
