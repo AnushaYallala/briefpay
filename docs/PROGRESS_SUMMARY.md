@@ -4,6 +4,30 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 27 · Ready-made demo data (T-52) · Mon Nov 9
+
+**What now exists**
+- **One command loads the demo story.** `scripts/seed.py` creates the Velugu Cove cast (Lakshmi, Ravi, Meena and the freelancer Arjun) and two projects, so the video does not need minutes of live setup:
+  1. **"Velugu Cove tourism website"**: the first campaign missed its deadline. $300 of $400 was pledged, the Guardian checked the release plan and allowed it, all three holds were released, and **nothing was charged**. The project is waiting for Lakshmi to relaunch.
+  2. **"... (build phase)"**: the same story one round on. $400 was pledged and captured, the contract is in force, and the freelancer submitted twice: the first attempt was rejected because the enquiry form was missing on the live site, the second was verified. The project is **ready for payout**, so the demo can build the payout, show the tampered-payout block, and approve it.
+- **Built the honest way.** The data is created by the same code the app really runs (BRD approval and hashing, contract signing, campaigns, the Guardian's reviews, the verification rules and report), not typed in by hand, so the ledger, plans and reports are consistent. A test checks that all eight money rules pass on the seeded data, and that the real payout plan built from it is accepted by the Guardian.
+- **Cannot touch PayPal.** Nothing is sent: steps are marked as done in the database, and any background job that would have executed them is switched off. Ids look like `SEED-...`.
+- **Your real details can be plugged in:** the freelancer's real PayPal sandbox email (so the final payout goes to your test account), the sample site's address, repository and the two commit ids from the teammate's build.
+- **Safe:** it only runs in demo mode, and running it twice changes nothing.
+- A real bug found on the way: the app's login refuses fake addresses ending in `.test`, so the first version's cast could not have logged in. They now use `example.com`, which is reserved for examples.
+- 1,376 automated tests pass (19 new). I broke 22 things on purpose; all are caught.
+
+**What it does NOT do yet**
+The seeded projects have no earlier requirements-analysis history (the "58 to 93" scoring shown live in the video comes from a fresh project). Recording the AI answers for replay (the other half of this task) needs your Gemini key.
+
+**Progress:** 28 of ~45 tasks done or in review. Increment 27 of the 40 you asked for.
+
+**Needed from you:** BLK-01/02/03, PayPal sandbox keys (and the freelancer's sandbox email), Gemini key (to record the replay fixtures).
+
+**Next increment:** a README that gets a new reader from zero to the demo (T-62).
+
+---
+
 ## Increment 26 · If PayPal's message never arrives (T-43/T-44) · Mon Nov 9
 
 **What now exists**

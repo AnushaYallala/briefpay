@@ -154,6 +154,25 @@ def plain_summary(agg, attempt_no: int) -> str:
 
 # =============================== the job ===============================
 
+def save_report(db: Session, sub: Submission, project: Project, agg, *, ai_summary: str, facts: list, run_id: int | None) -> VerificationReport:
+    """Store the report for a decided submission and move the submission and the project on (D-043). Shared with the demo seed."""
+    payload = {"criteria": [c.as_dict() for c in agg.criteria], "requirements": agg.requirements, "gates": agg.gates,
+               "injection_attempts": agg.injection_attempts, "reasons": agg.reasons, "attempt_no": sub.attempt_no,
+               "ai_summary": " ".join((ai_summary or "").split())[:600], "facts": facts}
+    summary = plain_summary(agg, sub.attempt_no)
+    report = VerificationReport(submission_id=sub.id, verdicts_json=payload, overall=agg.overall, must_pass_pct=agg.must_pass_pct,
+                                should_pass_pct=agg.should_pass_pct, summary=summary,
+                                sha256=report_sha(payload, agg.overall, agg.must_pass_pct, agg.should_pass_pct, summary), agent_run_id=run_id)
+    db.add(report)
+    sub.state = agg.overall
+    if agg.overall == "VERIFIED":
+        ProjectService.transition(db, project, "PAYOUT_READY", actor="agent:verifier", reason=f"verification report, attempt {sub.attempt_no}")
+    elif agg.overall == "NEEDS_CHANGES":
+        ProjectService.transition(db, project, "IN_PROGRESS", actor="agent:verifier", reason=f"attempt {sub.attempt_no} needs changes")
+    db.flush()                                      # FAILED: the project stays VERIFYING until the lead decides (GAP-70)
+    return report
+
+
 def judge(db: Session, submission_id: int, agent: VerifierAgent, checker: AutoChecker) -> dict:
     sub = db.get(Submission, submission_id)
     if sub is None:
@@ -239,18 +258,5 @@ def judge(db: Session, submission_id: int, agent: VerifierAgent, checker: AutoCh
         db.flush()
         return {"effect": "FOLLOWUP_ASKED", "questions": len(agg.followup), "agent_run_id": run_id}
 
-    payload = {"criteria": [c.as_dict() for c in agg.criteria], "requirements": agg.requirements, "gates": agg.gates,
-               "injection_attempts": agg.injection_attempts, "reasons": agg.reasons, "attempt_no": sub.attempt_no,
-               "ai_summary": " ".join((ai_summary or "").split())[:600], "facts": facts}
-    summary = plain_summary(agg, sub.attempt_no)
-    report = VerificationReport(submission_id=sub.id, verdicts_json=payload, overall=agg.overall, must_pass_pct=agg.must_pass_pct,
-                                should_pass_pct=agg.should_pass_pct, summary=summary,
-                                sha256=report_sha(payload, agg.overall, agg.must_pass_pct, agg.should_pass_pct, summary), agent_run_id=run_id)
-    db.add(report)
-    sub.state = agg.overall
-    if agg.overall == "VERIFIED":
-        ProjectService.transition(db, project, "PAYOUT_READY", actor="agent:verifier", reason=f"verification report, attempt {sub.attempt_no}")
-    elif agg.overall == "NEEDS_CHANGES":
-        ProjectService.transition(db, project, "IN_PROGRESS", actor="agent:verifier", reason=f"attempt {sub.attempt_no} needs changes")
-    db.flush()                                      # FAILED: the project stays VERIFYING until the lead decides (GAP-70)
+    report = save_report(db, sub, project, agg, ai_summary=ai_summary, facts=facts, run_id=run_id)
     return {"effect": agg.overall, "report_id": report.id, "must_pass_pct": agg.must_pass_pct, "should_pass_pct": agg.should_pass_pct, "agent_run_id": run_id}

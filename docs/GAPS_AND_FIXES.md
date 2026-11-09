@@ -6,7 +6,7 @@ A running list of everything that is **missing, risky, unverified, or was found 
 - **Fixes** are problems that were found and already resolved, kept so the reasoning is not lost.
 - IDs are permanent. When a gap is closed, move it to Fixes (keep the ID) and say how.
 
-_Last updated: 2026-11-09, end of T-43/T-44._
+_Last updated: 2026-11-09, end of T-52._
 
 ---
 
@@ -114,6 +114,9 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | GAP-75 | Medium | The poll reads PayPal fields (`get_refund` status values, capture statuses such as PARTIALLY_REFUNDED) as documented, never from real sandbox answers. | Prove with `scripts/sandbox_check.py` once keys exist (add a poll round trip). |
 | GAP-76 | Low | A step that is SENT but has no PayPal id (crash between the call and saving the id) is neither polled nor confirmed until the executor retries it with the same request id. | The executor's retry covers it; add a 'stuck SENT for > 10 minutes' alert on the money box. |
 | GAP-77 | Low | The periodic chore runs on every API instance; with several instances polls would double up (harmless but wasteful). | Single free instance for now. |
+| GAP-78 | Low | The seed has no BA session, scores or transcript; the BA Studio screen is empty for the seeded projects. | The video runs the BA on a fresh project; add a BA history to the seed only if time allows. |
+| GAP-79 | Low | Seeded ledger and report timestamps are the seeding time (only the campaign and pledge times are shifted into the past). | Cosmetic; shows as 'just now' on the ledger. |
+| GAP-80 | Medium | Replay fixtures for the AI calls are not recorded (needs the Gemini key); without them the demo needs a live key. | T-63 with the key: run the flows once with `AI_PROVIDER=gemini` and record. |
 
 ---
 
@@ -159,6 +162,9 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | FIX-36 | T-34 | Writing string escapes (`\n`) through a Python heredoc put real line breaks inside string literals in `verifier.py` (SyntaxError), the third time (see FIX-22, FIX-29). | Repaired with the editor tool; rule restated: any text with backslashes is written only with the Write/Edit tools; new files are scanned for control characters before every commit. |
 | FIX-37 | T-34 | Mutation check found untested rules: the 6-run limit (the test used the constant itself), which gate is retried, 'snippet in any of several files', unreadable screenshots without a stored hash, the SHOULD percentage in the saved report, the citable ids and the notes wrapper in the prompt, and 'latest report wins'. Also a dead truncation in the follow-up question text. | Tests added; the dead code removed and its bound tested instead. |
 | FIX-38 | T-43 | Mutation check found untested numbers and wiring: the 20 s age and 50-step cap, the exact boundary of the age limit, cents with a single digit (`0.05`), a chore running again straight after a run, the runner loop actually calling the chores, a poll job of another project standing in for this one, the placeholder reader lacking `get_refund`, and the startup wiring. | Tests added; startup wiring moved into `main.build_runner` so it can be tested. |
+| FIX-39 | T-52 | The seed's first cast used `@velugu.example.test`; the login's email validation rejects reserved `.test` names (422), so nobody could have signed in. Found by the seed's own login test. | Cast moved to `@velugu.example.com`; test asserts a seeded person can log in. |
+| FIX-40 | T-52 | The capture plan was blocked by the Guardian in the first seed run (G-01, G-02, G-04, G-09) because the campaign had already been moved to CAPTURING before the review. | Review first, then transition, as the real flow does. |
+| FIX-41 | T-52 | Mutation check found untested seed facts: who requested the enquiry form, and the order of `--commit-1`/`--commit-2` (the CLI test compared a set). | Tests now check both. |
 
 ---
 

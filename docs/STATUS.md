@@ -9,10 +9,10 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-09 by Claude: T-43/T-44 poll fallback done |
+| Last updated | 2026-11-09 by Claude: T-52 demo seed done (fixtures wait on the Gemini key) |
 | Overall phase | **Day 0: backend skeleton, schema, money math, state machines, ledger built; no features yet** (plain-English summary: `docs/PROGRESS_SUMMARY.md`) |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
-| Next task to pick up | Not blocked: **T-52** (seed data for the demo), **T-47** (Strategist wording), **T-48** (reconciliation job), **T-62** (README), UI tasks (Strategist AI wording), **T-43/T-44** (poll fallback) · **Human:** write BLK-01/BLK-02 files or advise · run `backend/scripts/sandbox_check.py` once keys exist |
+| Next task to pick up | Not blocked: **T-47** (Strategist wording), **T-48** (reconciliation job), **T-62** (README), lead decision after FAILED (GAP-70), UI tasks | (Strategist AI wording), **T-43/T-44** (poll fallback) · **Human:** write BLK-01/BLK-02 files or advise · run `backend/scripts/sandbox_check.py` once keys exist |
 | Blockers | **BLK-01** (T-22 pledge service/endpoints), **BLK-02** (T-25 clock and lead actions), **BLK-03** (pledge-state helper used by two webhook events): the assistant's attempts to write those files were stopped by a safety check; see `docs/GAPS_AND_FIXES.md` section 0 for the full designs |
 | Deployed URLs | API: _not deployed_ · Web: _not deployed_ · Sample site: _not deployed_ |
 | Repo | https://github.com/AnushaYallala/briefpay (origin; T-01 still needs LICENSE visible in About + secret scanning) |
@@ -93,7 +93,7 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 |---|---|---|---|---|---|---|
 | T-50 | UI: ledger AG Grid Community (type chips, pinned totals, filters, CSV, meta modal, live refresh) | §11 #12 |  | TODO |  | No Enterprise features. **Back end done** (`GET /projects/{id}/ledger`, `/money`; D-037); only the grid is left |
 | T-51 | UI: AI audit trail AG Grid | §11 #13 |  | TODO |  | **Back end done** (`GET /projects/{id}/agent-runs`); only the grid is left |
-| T-52 | `seed.py`: Velugu Cove project through BRD + contract; **a project whose round 1 has failed** (holds voided, nothing charged); **a project at `PAYOUT_READY`**; record replay fixtures | §16 |  | TODO |  | Don't pre-authorize live pledges more than ~2 days before recording |
+| T-52 | `seed.py`: Velugu Cove project through BRD + contract; **a project whose round 1 has failed** (holds voided, nothing charged); **a project at `PAYOUT_READY`**; record replay fixtures | §16 |  | REVIEW |  | `seed_demo.py` + `scripts/seed.py` (D-045): a failed-round project (CAMPAIGN_FAILED) and a PAYOUT_READY project, built through the real services; no PayPal call. 19 tests incl. all money invariants on the seeded data. **Replay fixtures still need the Gemini key** |
 | T-60 | Sample site v1 (missing form) + v2 (complete) in its own public repo; record both commit SHAs in §4 | §15 |  | TODO |  | |
 | T-61a | Deploy hello-world API to Render (gets webhook URL early) | §14 |  | TODO |  | |
 | T-61 | Full Render deploy via `render.yaml` (free API + 2 static sites) + env vars + Aiven CA secret file | §14 |  | TODO |  | Everything on free plans (§5.5) |
@@ -159,6 +159,14 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-09 · Claude · T-52 demo seed (REVIEW)
+- Did: `services/seed_demo.py` (`seed_demo`, `SeedReader`, the nine-requirement BRD draft), `scripts/seed.py` (`--repo --site --commit-1 --commit-2 --paypal-email`), refactors so the seed reuses real code: `brd_service.store_brd`, `verify_judge.save_report`. Committed straight to `main`.
+- Tests: `cd backend && .venv/Scripts/python -m pytest -q` -> 1376 passed (19 new in `tests/test_seed.py`; the reconciliation report is all PASS on the seeded data). Mutation-checked: 22 breakages, all caught after 2 test additions.
+- Contract changes: D-045 (no SPEC changes).
+- To use: `cd backend && .venv/Scripts/python -m alembic upgrade head && .venv/Scripts/python scripts/seed.py --paypal-email <freelancer sandbox email> --repo <url> --site <url> --commit-1 <sha> --commit-2 <sha>`; log in as `lakshmi@velugu.example.com` (also ravi, meena, arjun).
+- Next step: T-62 README, T-48 reconciliation job, T-47 Strategist wording, or the lead decision after FAILED (GAP-70).
+- Gotchas: (1) The login rejects reserved `.test` emails (found by the seed's own login test): use `example.com`-style domains for fake users. (2) Review the capture plan BEFORE moving the campaign to CAPTURING: the Guardian expects OPEN. (3) The seed is not a fixture for tests of other features; those build their own worlds.
 
 ### 2026-11-09 · Claude · T-43/T-44 poll fallback (REVIEW)
 - Did: `services/poll.py` (`poll`, `waiting_steps`, `run_periodic`), `PayPalReader.get_refund` (protocol, placeholder, client), `JobRunner` periodic chores (`periodic=[(seconds, fn)]`), `POLL_STEPS` job, `POST /projects/{id}/money/refresh`, `main.build_runner`, setting `POLL_INTERVAL_SECONDS`. Committed straight to `main`.
