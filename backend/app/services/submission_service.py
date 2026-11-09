@@ -13,7 +13,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
-from app.models import AutoCheck, BRD, Contract, Job, Project, ProjectMember, Submission
+from app.models import AutoCheck, BRD, Contract, Evidence, Job, Project, ProjectMember, Submission, VerificationQuestion
 from app.services import contract_service, jobs
 from app.services.autochecks import SHA, AutoChecker, CheckResult, parse_repo
 from app.services.safe_fetch import SafeFetcher
@@ -188,12 +188,16 @@ def check_view(c: AutoCheck) -> dict:
 
 
 def submission_view(db: Session, s: Submission) -> dict:
+    from app.services import evidence_service      # imported here: evidence_service imports this module
     checks = list(db.scalars(select(AutoCheck).where(AutoCheck.submission_id == s.id).order_by(AutoCheck.id)))
     summary = {r: sum(1 for c in checks if c.result == r) for r in ("PASS", "FAIL", "ERROR")}
+    questions = list(db.scalars(select(VerificationQuestion).where(VerificationQuestion.submission_id == s.id).order_by(VerificationQuestion.id)))
+    evidence = list(db.scalars(select(Evidence).where(Evidence.submission_id == s.id).order_by(Evidence.id)))
     return {"id": s.id, "contract_id": s.contract_id, "attempt_no": s.attempt_no, "state": s.state, "repo_url": s.repo_url,
             "commit_sha": s.commit_sha, "deployed_url": s.deployed_url, "notes": s.notes, "created_at": s.created_at.isoformat(),
             "auto_checks": [check_view(c) for c in checks], "auto_check_summary": summary,
-            "questions": [], "evidence": [], "report": None}   # filled by T-33 / T-34
+            "questions": [evidence_service.question_view(q) for q in questions],
+            "evidence": [evidence_service.evidence_view(e) for e in evidence], "report": None}   # report: T-34
 
 
 def project_submissions(db: Session, project_id: int) -> list[Submission]:

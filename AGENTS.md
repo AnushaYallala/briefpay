@@ -12,9 +12,9 @@ Small businesses **pledge** money via PayPal to hire a freelancer (Pledge-If: pl
 2. Pick your task:
    - If the human named a task ID, take that.
    - Else continue any task `IN_PROGRESS` with **your** name, else take the "Next task to pick up" in the Snapshot, else the first `TODO` whose dependencies are `DONE`.
-3. Mark it `IN_PROGRESS` with your name and branch in `docs/STATUS.md` and commit that change first (`T-xx: start`). This prevents two assistants doing the same task.
+3. Mark it `IN_PROGRESS` with your name in `docs/STATUS.md` and commit that change first (`T-xx: start`). This prevents two assistants doing the same task.
 4. Read **only** the `docs/SPEC.md` sections listed in the task's "Spec" column, plus `docs/DECISIONS.md` if you touch contracts.
-5. `git pull`, create/checkout branch `t-xx-short-name`.
+5. `git pull` and work directly on `main` (the human's decision, Nov 9: no branch per task; commit small and often, run the whole suite before every commit).
 
 ## 2. While working
 - **Contracts are fixed:** SPEC §6 (data model), §7 agent schemas, §10 API. If you must change one, update SPEC.md **and** add a `D-00N` entry to DECISIONS.md in the same commit, and mention it in your handoff.

@@ -6,7 +6,7 @@ A running list of everything that is **missing, risky, unverified, or was found 
 - **Fixes** are problems that were found and already resolved, kept so the reasoning is not lost.
 - IDs are permanent. When a gap is closed, move it to Fixes (keep the ID) and say how.
 
-_Last updated: 2026-11-09, end of T-31 first half._
+_Last updated: 2026-11-09, end of T-31._
 
 ---
 
@@ -96,6 +96,11 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | GAP-57 | Medium | `APP_ENV` defaults to `dev`, which lets a submitted `http://localhost` URL be fetched by the server. Harmless on a laptop, wrong on Render. | Deployment (T-61) must set `APP_ENV=prod`; consider failing startup if prod and `JWT_SECRET` is the default. |
 | GAP-58 | Low | A job that keeps failing (e.g. GitHub down for long) leaves the submission in AUTO_CHECKING after the runner gives up; the freelancer cannot resubmit. | Decide in T-34: a lead 'recheck' action, or mark such a submission FAILED_TO_CHECK. |
 | GAP-59 | Low | `GET /projects/{id}/submissions` is not in SPEC 10; added for the attempt history the verification report screen needs. | Add to SPEC when the contract is next edited. |
+| GAP-60 | Medium | `CloudinaryImageStore` follows Cloudinary's documentation but has never run against a real account: the upload signature, the Admin API lookup and the signed delivery URL format (`s--sig--`) are unproven. | Add an image round trip to `scripts/sandbox_check.py` once `CLOUDINARY_URL` exists; fix the signing if it disagrees. |
+| GAP-61 | Low | The snippet-in-repo cross-check (SPEC 7.3 step 3) is not run yet. | T-34 judging, using `autochecks.file_at_commit` and `snippet_in_file`. |
+| GAP-62 | Low | No limit on how many upload links a member can request; unused local upload slots and rejected files are never cleaned up. | Rate limit per user and a cleanup of unregistered local files older than a day. |
+| GAP-63 | Low | Cloudinary images have no stored sha256 (`images.sha256` is NULL), so evidence hashes for them are derived from the public id, not the pixels. | Hash the bytes when the judge downloads them (T-34). |
+| GAP-64 | Low | A viewing link works for anyone who has it until it expires (normal for signed URLs). | Keep the lifetime short (default 5 minutes). |
 
 ---
 
@@ -134,6 +139,9 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | FIX-29 | T-32 | Repeat of FIX-22: a `\b` inside a Python heredoc became a backspace character in a new chokepoint test, so it matched nothing and would have passed forever. | Found because the test failed on clean code (it listed no users); line rewritten, all new files scanned for control characters, and every new guard checked against a planted violation. |
 | FIX-30 | T-32 | The existing rule 'only paypal_client imports an HTTP library' blocked the new fetcher. | Not loosened silently: `safe_fetch.py` is named as the one other importer and has its own guards (GET only, no PayPal, used only by autochecks). |
 | FIX-31 | T-31 | A mutation check showed the 'localhost only in dev' rule for the production fetcher was untested (the test ran only in dev mode), and one planned mutation was a no-op. | Test now runs for dev, prod and staging; the no-op mutant replaced with a real one. |
+| FIX-32 | T-31 | **`$` in Python regexes also matches before a trailing newline**: `briefpay/dev/42/<32 hex>\n` passed as a valid image id; the same weakness was in the commit-id, repo-URL, repo-path and BRD page-path patterns. Found by a parametrized test. | All end-anchored with `\Z`; regression tests for each. `parse_repo` still trims surrounding whitespace on purpose. |
+| FIX-33 | T-31 | Test helpers: a PNG builder allocated ~190 MB for an 8000x8000 picture; large byte strings as test parameters overflowed Windows' 32,767-character environment variable limit; a JPEG builder exceeded the 65,535-byte segment limit. | `png_header` builds header-only images; readable test ids; big EXIF built as several segments. |
+| FIX-34 | T-31 | Mutation check showed the evidence service's own 'only the contract freelancer' check was untested because the route already filters by role (a second FREELANCER on the project got through the route). | Test with a second freelancer; also tests for restart markers, Huffman-table markers, RIFF and VP8 signatures, signature field order and the Cloudinary host lock. |
 
 ---
 

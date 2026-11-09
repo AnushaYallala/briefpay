@@ -4,6 +4,28 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 22 · Screenshots and evidence (second half of T-31) · Mon Nov 9
+
+**What now exists**
+- **A safe place for screenshots.** The freelancer asks for an upload link, uploads a picture, and the server then checks it is really a JPEG, PNG or WebP by reading the file's first bytes (a file called `.png` that is really a web page or an SVG is refused), within sensible size limits (5 MB, no absurd dimensions). Pictures are private: only project members can ask for a viewing link, and that link stops working after a few minutes. In development they sit in a local folder; in production they go to Cloudinary with signed uploads, which is built and tested against a pretend Cloudinary but not yet against a real account.
+- **Answering a question with evidence.** For each verification question the freelancer can attach up to three of their own screenshots, paste code (up to 200 lines), name a file in the repository, add a link and a short note. Posting again replaces the previous answer. Once every question has an answer, the submission moves to "evidence received". Only the contract's freelancer can do this, and what they write is stored as plain data; it is never treated as an instruction.
+- **The submission page data now includes the questions and answers.**
+- **A real bug found and fixed.** A pattern I used in several places (image ids, commit ids, repository paths, page paths) wrongly accepted a value with a trailing line break. All are now strict, with tests.
+- 1,191 automated tests pass (136 new). I broke 51 things on purpose; 49 were caught and 2 change nothing in practice. I also added tests for the gaps those checks exposed.
+
+**How we work now:** following your instruction, everything is committed straight to `main`; there are no more per-increment branches. `AGENTS.md` says so.
+
+**What it does NOT do yet**
+Nothing writes the verification questions yet (T-33), so the evidence form has nothing to answer in a real run. Cloudinary is unproven until an account exists. No limit yet on how many upload links one person can request.
+
+**Progress:** 23 of ~45 tasks done or in review.
+
+**Needed from you:** the same: BLK-01/02/03, PayPal sandbox keys, Gemini key. A free Cloudinary account (cloud name, key, secret in `.env` as `CLOUDINARY_URL`) would let me prove the image path.
+
+**Next increment:** the Verification Agent's questions (T-33): one clear question per acceptance criterion that the automatic checks did not already settle.
+
+---
+
 ## Increment 21 · The freelancer hands in the work (first half of T-31) · Mon Nov 9
 
 **What now exists**

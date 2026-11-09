@@ -97,6 +97,12 @@ def test_the_url_fetcher_can_only_read_and_knows_nothing_about_paypal():
         assert 'client.stream("GET"' in text
 
 
+def test_the_image_store_can_only_reach_cloudinary():
+    text = (APP / "services" / "image_store.py").read_text(encoding="utf-8")
+    assert 'allowed_hosts={"api.cloudinary.com", "res.cloudinary.com"}' in text
+
+
 def test_only_the_check_modules_use_the_url_fetcher():
     users = sorted(p.name for p, t in sources() if "safe_fetch" in t and p.name != "safe_fetch.py")
-    assert users == ["autochecks.py", "submission_service.py"]   # the checks, and the service that builds the production fetcher for them
+    # the checks; the service that builds their production fetcher; the image store (talks only to Cloudinary: its fetcher is host-locked)
+    assert users == ["autochecks.py", "image_store.py", "submission_service.py"]

@@ -26,6 +26,9 @@ class Settings(BaseSettings):
 
     image_provider: str = "local"
     cloudinary_url: str = ""
+    local_images_dir: str = "./local_images"
+    image_max_bytes: int = 5_000_000
+    image_url_ttl_seconds: int = 300
 
     fee_reserve_per_item_cents: int = 0
     payout_max_cents: int = 100000

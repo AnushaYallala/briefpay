@@ -455,3 +455,16 @@ def test_the_github_client_cannot_be_pointed_at_another_host():
     with pytest.raises(FetchBlocked):
         c.github.get("https://site.example/repos/x/y")
     assert net.sent == []
+
+
+@pytest.mark.parametrize("sha", [SHA40 + "\n", "abcdef1\n", "\nabcdef1"])
+def test_a_commit_id_with_a_stray_newline_is_not_accepted(sha):
+    assert not ac.SHA.match(sha)
+
+
+def test_a_repo_url_or_path_with_a_trailing_newline_is_not_accepted():
+    assert ac.parse_repo("https://github.com/anu/si\nte") is None and ac.parse_repo("https://github.com/anu/site\n/x") is None
+    assert ac.parse_repo("  https://github.com/anu/site\n") == ("anu", "site")      # surrounding whitespace is trimmed, never kept
+    assert not ac.PATH_OK.match("src/form.js\n")
+    from app.schemas.brd import PATH_PATTERN
+    assert not PATH_PATTERN.match("/stay\n") and PATH_PATTERN.match("/stay")

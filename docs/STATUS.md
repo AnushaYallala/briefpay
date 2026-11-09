@@ -9,10 +9,10 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-09 by Claude: T-31 first half (submissions API + auto-check job) done; images and evidence left |
+| Last updated | 2026-11-09 by Claude: T-31 done (submissions, images, evidence); working directly on `main` from now on |
 | Overall phase | **Day 0: backend skeleton, schema, money math, state machines, ledger built; no features yet** (plain-English summary: `docs/PROGRESS_SUMMARY.md`) |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
-| Next task to pick up | Not blocked: **T-31 second half** (ImageStore, `/images`, evidence), **T-33** (verifier questions), **T-47** (Strategist AI wording), **T-43/T-44** (poll fallback) · **Human:** write BLK-01/BLK-02 files or advise · run `backend/scripts/sandbox_check.py` once keys exist |
+| Next task to pick up | Not blocked: **T-33** (verifier questions), **T-34** (judge + aggregation), **T-47** (Strategist AI wording), **T-43/T-44** (poll fallback) · **Human:** write BLK-01/BLK-02 files or advise · run `backend/scripts/sandbox_check.py` once keys exist |
 | Blockers | **BLK-01** (T-22 pledge service/endpoints), **BLK-02** (T-25 clock and lead actions), **BLK-03** (pledge-state helper used by two webhook events): the assistant's attempts to write those files were stopped by a safety check; see `docs/GAPS_AND_FIXES.md` section 0 for the full designs |
 | Deployed URLs | API: _not deployed_ · Web: _not deployed_ · Sample site: _not deployed_ |
 | Repo | https://github.com/AnushaYallala/briefpay (origin; T-01 still needs LICENSE visible in About + secret scanning) |
@@ -66,7 +66,7 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 | ID | Task | Spec | Owner | State | Branch | Notes |
 |---|---|---|---|---|---|---|
 | T-30 | Conditional contract: offer, accept (BRD hash, PayPal email lock), `effective_at` on capture | §6.2, §10 | Claude | DONE | t-30-contract | Offer (replaces unsigned), accept (both hashes, locks PayPal email), GET for members; terms rendered from template; ledger CONTRACT_SIGNED without email. 25 tests; mutation-checked (D-031). UI is screen #6 (not built) |
-| T-31 | Submissions + `ImageStore` (Cloudinary signed upload, `POST /images`, signed URLs; `LocalImageStore` for dev) + evidence API | §7.3, §10, §12 |  | IN PROGRESS |  | **Half done:** submit endpoint + AUTO_CHECKS job + read endpoints (D-039). **Left:** `ImageStore` (Cloudinary + local), `/images` endpoints, evidence endpoint. Verifier fetches image bytes server-side for Gemini |
+| T-31 | Submissions + `ImageStore` (Cloudinary signed upload, `POST /images`, signed URLs; `LocalImageStore` for dev) + evidence API | §7.3, §10, §12 |  | REVIEW |  | Submissions API + AUTO_CHECKS job (D-039); `image_meta`, `ImageStore` (local + Cloudinary), image endpoints, evidence endpoint (D-040). Cloudinary not run against a real account (GAP-60). Questions come from T-33 |
 | T-32 | AutoChecks: SSRF-safe fetcher, URL/page/repo/commit/file/viewport checks + SSRF tests | §7.3 |  | REVIEW |  | `safe_fetch.py` (SSRF-safe) + `autochecks.py` (URL_REACHABLE, PAGE_CONTAINS, REPO_PUBLIC, COMMIT_EXISTS, FILE_EXISTS + snippet check, MOBILE_VIEWPORT). 117 tests, no network; mutation-checked. Not yet run per submission or saved to `auto_checks` (T-31) (D-038) |
 | T-33 | Verifier questions: prompt, `VerifyQuestion`, skip ACs settled by auto checks | §7.3 |  | TODO |  | |
 | T-34 | Verifier judge (vision) + snippet-in-repo check + deterministic aggregation + follow-up round + attempts | §7.3 |  | TODO |  | One judge call per submission |
@@ -159,6 +159,15 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-09 · Claude · T-31 second half (REVIEW) — and a change of working method
+- Method change (from the human): **no more branch per increment. Work and commit directly on `main`.** `AGENTS.md` step 5 updated. Old `t-*` branches stay on the remote, all already merged.
+- Did: `services/image_meta.py` (header sniffing), `services/image_store.py` (`LocalImageStore`, `CloudinaryImageStore`, `get_image_store`/`configure`), `routers/images.py` (upload-signature, local-upload, register, url, local file), `services/evidence_service.py` + `routers/verification.py` (`POST /verification/questions/{qid}/evidence`), submission view now lists questions and evidence. New settings `LOCAL_IMAGES_DIR`, `IMAGE_MAX_BYTES`, `IMAGE_URL_TTL_SECONDS`.
+- Tests: `cd backend && .venv/Scripts/python -m pytest -q` -> 1191 passed (136 new). Mutation-checked: 51 breakages; 49 caught, 2 equivalent (a non-200 Cloudinary reply becomes 'unavailable' either way; the evidence router's role check is duplicated in the service).
+- Bug found by the new tests and fixed everywhere: `$` in a Python regex also matches before a trailing newline, so `...\n` passed as a valid image id, commit id, repo path and BRD page path. Patterns are now end-anchored with `\Z` (FIX-32).
+- Contract changes: D-040 (no SPEC changes).
+- Next step: T-33 verifier questions (LLM, one per AC not settled by auto checks; uses `plan_checks` results) then T-34 judging and aggregation.
+- Gotchas: (1) Tests that need an image store call `image_store.configure(LocalImageStore(tmp_path, ...))`; reset with `configure(None)`. (2) Do not parametrize tests with large byte strings: Windows limits the test-name environment variable to 32,767 characters. (3) `tests/imgs.py` builds tiny real images; use `png_header` for 'huge' sizes.
 
 ### 2026-11-09 · Claude · T-31 first half (IN PROGRESS)
 - Did: `services/submission_service.py` (entry rules, `plan_checks`, `run_auto_checks`, views, `configure` for tests), `routers/submissions.py` (`POST /projects/{id}/submissions` 202, `GET /submissions/{sid}`, `GET /projects/{id}/submissions`), `AUTO_CHECKS` job handler; `AutoChecker` now fetches each page once per run.
