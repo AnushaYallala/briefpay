@@ -50,6 +50,14 @@ def verify_questions(db: Session, payload: dict) -> dict:
     return vq.generate(db, payload["submission_id"], get_verifier())
 
 
+@jobs.register("VERIFY_JUDGE")
+def verify_judge(db: Session, payload: dict) -> dict:
+    """Judge a submission's evidence (one model call) and apply the fixed rules. Never decides on a model failure. Safe to retry."""
+    from app.agents.verifier import get_verifier
+    from app.services import submission_service, verify_judge as vj
+    return vj.judge(db, payload["submission_id"], get_verifier(), submission_service.new_checker())
+
+
 @jobs.register("PROCESS_WEBHOOK")
 def process_webhook(db: Session, payload: dict) -> dict:
     """Apply a verified PayPal event. Safe to repeat; `NotReady` makes the runner retry with backoff."""

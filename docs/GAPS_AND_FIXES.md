@@ -6,7 +6,7 @@ A running list of everything that is **missing, risky, unverified, or was found 
 - **Fixes** are problems that were found and already resolved, kept so the reasoning is not lost.
 - IDs are permanent. When a gap is closed, move it to Fixes (keep the ID) and say how.
 
-_Last updated: 2026-11-09, end of T-34 first half._
+_Last updated: 2026-11-09, end of T-34._
 
 ---
 
@@ -101,13 +101,16 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | GAP-62 | Low | No limit on how many upload links a member can request; unused local upload slots and rejected files are never cleaned up. | Rate limit per user and a cleanup of unregistered local files older than a day. |
 | GAP-63 | Low | Cloudinary images have no stored sha256 (`images.sha256` is NULL), so evidence hashes for them are derived from the public id, not the pixels. | Hash the bytes when the judge downloads them (T-34). |
 | GAP-64 | Low | A viewing link works for anyone who has it until it expires (normal for signed URLs). | Keep the lifetime short (default 5 minutes). |
-| GAP-65 | Low | Only round-1 questions exist; the one follow-up round for `unclear` verdicts (SPEC 7.3 step 5) arrives with the judge. | T-34. |
+| GAP-65 | Low (**closed in T-34**: the follow-up round exists) | Only round-1 questions existed; the one follow-up round for `unclear` verdicts (SPEC 7.3 step 5) arrives with the judge. | T-34. |
 | GAP-66 | Low | A criterion whose automatic check FAILED is still asked about, although aggregation will fail it regardless. | Deliberate (the freelancer can show the check was wrong); revisit if the demo feels long. |
 | GAP-67 | Medium | No recorded Gemini fixture for `VERIFY_QUESTIONS`; the real prompt wording is untested against a live model. | Record fixtures in T-63 once the key exists. Until then template questions are used if the model fails. |
 | GAP-68 | Low | The 25-question cap silently drops the lowest-priority criteria of a very large BRD. | The BA gates normally keep BRDs smaller; show a note in the UI if ever hit. |
 | GAP-69 | Medium | SPEC 7.3 says the judge also sees the fetched page text for the relevant path; the auto checks do not persist page text, so the judge will see only check results. | Store a short visible-text excerpt in `auto_checks.detail_json` for PAGE_CONTAINS, or re-fetch in the judge job (T-34). |
 | GAP-70 | Medium | After a FAILED verdict (attempt 3) the lead's choices (extend, cancel and refund, all-sponsor override) are not built; the project stays in VERIFYING. | Later task: lead decision endpoint + sponsor override approvals; the refund path already exists (`REFUND_CAPTURED`). |
-| GAP-71 | Low | INCONCLUSIVE (GitHub could not be asked) changes no state, so someone has to re-run the checks and the judge; there is no automatic retry yet. | T-34 second half: a retry through the job runner with backoff, and a clear message. |
+| GAP-71 | Low | INCONCLUSIVE and JUDGE_UNAVAILABLE change no state, so someone has to ask for judging again (a gate that ERRORed is retried once inside the job). | An automatic delayed retry through the job runner, and a clearer message in the UI. |
+| GAP-72 | Medium | The prompt `verify-judge-v1` has never been run against the real model; vision quality on real screenshots is unknown. | Record fixtures with the real key (T-63) and tune the prompt; the rules already contain a wrong 'pass' by requiring citations and confidence. |
+| GAP-73 | Low | Only the first 20 screenshots of a submission reach the reviewer; the rest are listed as 'not shown' and cannot support a pass. | Fine for the demo (<= 3 per question); raise the limit if the model allows. |
+| GAP-74 | Low | Counting judge runs scans all VERIFY_JUDGE jobs in memory. | Fine at this scale; add a counter column if the jobs table grows. |
 
 ---
 
@@ -150,6 +153,8 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | FIX-33 | T-31 | Test helpers: a PNG builder allocated ~190 MB for an 8000x8000 picture; large byte strings as test parameters overflowed Windows' 32,767-character environment variable limit; a JPEG builder exceeded the 65,535-byte segment limit. | `png_header` builds header-only images; readable test ids; big EXIF built as several segments. |
 | FIX-34 | T-31 | Mutation check showed the evidence service's own 'only the contract freelancer' check was untested because the route already filters by role (a second FREELANCER on the project got through the route). | Test with a second freelancer; also tests for restart markers, Huffman-table markers, RIFF and VP8 signatures, signature field order and the Cloudinary host lock. |
 | FIX-35 | T-33 | Mutation check found three untested rules: a failed check with an empty evidence list, a failed check with mixed evidence types, and the 'source = AI only when every criterion was covered' label. Also an over-long test fixture for the BRD that lacked the fields a real BRD has. | Tests added; the fixture now matches the real BRD shape. |
+| FIX-36 | T-34 | Writing string escapes (`\n`) through a Python heredoc put real line breaks inside string literals in `verifier.py` (SyntaxError), the third time (see FIX-22, FIX-29). | Repaired with the editor tool; rule restated: any text with backslashes is written only with the Write/Edit tools; new files are scanned for control characters before every commit. |
+| FIX-37 | T-34 | Mutation check found untested rules: the 6-run limit (the test used the constant itself), which gate is retried, 'snippet in any of several files', unreadable screenshots without a stored hash, the SHOULD percentage in the saved report, the citable ids and the notes wrapper in the prompt, and 'latest report wins'. Also a dead truncation in the follow-up question text. | Tests added; the dead code removed and its bound tested instead. |
 
 ---
 

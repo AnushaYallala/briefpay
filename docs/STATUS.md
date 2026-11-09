@@ -9,10 +9,10 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-09 by Claude: T-34 first half (judge schemas + deterministic aggregation) done |
+| Last updated | 2026-11-09 by Claude: T-34 done (judge, report, state changes) |
 | Overall phase | **Day 0: backend skeleton, schema, money math, state machines, ledger built; no features yet** (plain-English summary: `docs/PROGRESS_SUMMARY.md`) |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
-| Next task to pick up | Not blocked: **T-34 second half** (judge agent, job, endpoint, report), **T-47** (Strategist AI wording), **T-43/T-44** (poll fallback) · **Human:** write BLK-01/BLK-02 files or advise · run `backend/scripts/sandbox_check.py` once keys exist |
+| Next task to pick up | Not blocked: **T-43/T-44** (poll fallback, execution paths), **T-47** (Strategist wording), **T-48**, **T-52** (seed), UI tasks (Strategist AI wording), **T-43/T-44** (poll fallback) · **Human:** write BLK-01/BLK-02 files or advise · run `backend/scripts/sandbox_check.py` once keys exist |
 | Blockers | **BLK-01** (T-22 pledge service/endpoints), **BLK-02** (T-25 clock and lead actions), **BLK-03** (pledge-state helper used by two webhook events): the assistant's attempts to write those files were stopped by a safety check; see `docs/GAPS_AND_FIXES.md` section 0 for the full designs |
 | Deployed URLs | API: _not deployed_ · Web: _not deployed_ · Sample site: _not deployed_ |
 | Repo | https://github.com/AnushaYallala/briefpay (origin; T-01 still needs LICENSE visible in About + secret scanning) |
@@ -69,7 +69,7 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 | T-31 | Submissions + `ImageStore` (Cloudinary signed upload, `POST /images`, signed URLs; `LocalImageStore` for dev) + evidence API | §7.3, §10, §12 |  | REVIEW |  | Submissions API + AUTO_CHECKS job (D-039); `image_meta`, `ImageStore` (local + Cloudinary), image endpoints, evidence endpoint (D-040). Cloudinary not run against a real account (GAP-60). Questions come from T-33 |
 | T-32 | AutoChecks: SSRF-safe fetcher, URL/page/repo/commit/file/viewport checks + SSRF tests | §7.3 |  | REVIEW |  | `safe_fetch.py` (SSRF-safe) + `autochecks.py` (URL_REACHABLE, PAGE_CONTAINS, REPO_PUBLIC, COMMIT_EXISTS, FILE_EXISTS + snippet check, MOBILE_VIEWPORT). 117 tests, no network; mutation-checked. Not yet run per submission or saved to `auto_checks` (T-31) (D-038) |
 | T-33 | Verifier questions: prompt, `VerifyQuestion`, skip ACs settled by auto checks | §7.3 |  | REVIEW |  | `VerifierAgent` + prompt + `VerifyQuestion` schema; `verify_questions.py` (which criteria, template fallback, job); queued by AUTO_CHECKS. 23 tests, mutation-checked. No recorded Gemini fixture yet (needs the key) (D-041) |
-| T-34 | Verifier judge (vision) + snippet-in-repo check + deterministic aggregation + follow-up round + attempts | §7.3 |  | IN PROGRESS |  | **Half done:** schemas (`ACVerdict`, `VerifyJudgeOutput`) and the pure aggregation `verify_aggregate.py` (D-042). **Left:** judge agent (vision), snippet cross-check, `VERIFY_JUDGE` job, `POST /submissions/{sid}/judge`, report row with sha256, state changes, follow-up round |
+| T-34 | Verifier judge (vision) + snippet-in-repo check + deterministic aggregation + follow-up round + attempts | §7.3 |  | REVIEW |  | Aggregation (D-042) + judge agent (vision, one call), snippet cross-check, `VERIFY_JUDGE` job, `POST /submissions/{sid}/judge`, report row with sha256, state changes, follow-up round (D-043). 43 + 44 tests, mutation-checked. No recorded Gemini fixture yet |
 | T-35 | UI: freelancer portal (contract, submit, evidence uploaders) | §11 #6, #9 |  | TODO |  | |
 | T-36 | UI: verification report with AG Grid matrix | §11 #10 |  | TODO |  | |
 
@@ -159,6 +159,14 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-09 · Claude · T-34 second half (REVIEW)
+- Did: `agents/verifier.py` (`JudgeInputs`, `build_judge_parts`, `VerifierAgent.judge`, prompt `verify_judge.md`), `services/verify_judge.py` (`request_judge`, `judge`, report hashing, plain summary), `VERIFY_JUDGE` job handler, `POST /submissions/{sid}/judge`, the report in `GET /submissions/{sid}`. Committed straight to `main`.
+- Tests: `cd backend && .venv/Scripts/python -m pytest -q` -> 1302 passed (43 new in `tests/test_verify_judge.py`, incl. the HTTP round trip through the real job runner). Mutation-checked: about 50 breakages in two passes; every one caught except 3 judged equivalent or dead (router role check duplicated in the service; gate refresh writing the same values; an unreachable truncation, which was removed).
+- Contract changes: D-043 (no SPEC changes).
+- The verification pipeline is now complete end to end: submit -> auto checks -> questions -> evidence -> judge -> VERIFIED/NEEDS_CHANGES/FAILED -> project PAYOUT_READY or back to IN_PROGRESS. A `PAYOUT_READY` project can already get its `FREELANCER_PAYOUT` plan (T-26/T-41/T-45).
+- Next step: pick from T-43/T-44 (poll fallback for SENT steps, payout poll), T-47, T-48, T-52 (seed data for the demo), UI tasks. The lead's decision after FAILED (GAP-70) is still unbuilt.
+- Gotchas: (1) Tests that need images call `image_store.configure(LocalImageStore(tmp_path, ...))` and write real files with `tests/imgs.py`; `answered(w)` in `test_verify_judge.py` builds a whole submission ready for judging. (2) The judge is told the evidence ids it may cite; a pass that cites none of them is downgraded by the rules. (3) A model failure never decides anything. (4) I again wrote string escapes through a Python heredoc and got real line breaks inside string literals (FIX-36): for any text with backslashes use the Write/Edit tools.
 
 ### 2026-11-09 · Claude · T-34 first half (IN PROGRESS)
 - Did: `schemas/verify.py` gained `ACVerdict` and `VerifyJudgeOutput` (SPEC shapes); `services/verify_aggregate.py` (`judge_criterion`, `aggregate`, `Aggregation`, `AcResult`). Committed straight to `main`.

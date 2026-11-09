@@ -4,6 +4,28 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 25 · The reviewer and the verification report (second half of T-34) · Mon Nov 9
+
+**What now exists**
+- **Asking for review.** Once the freelancer has answered every question, they (or the lead) press "ask for judging". It can be asked at most six times per submission, and only once at a time.
+- **The AI reviewer sees everything in one go.** One call, all criteria, with the freelancer's notes, code, links and the screenshots themselves, each labelled with its evidence number. Screenshots that are missing, were changed after upload, or can't be read are simply not shown, and can't count as proof. If the freelancer pasted code and named the file, the system checks that the code really is in that file at that commit, and tells the reviewer.
+- **The AI only proposes; fixed rules decide.** The rules from the last increment turn the proposals into the final verdict. If the AI is down, out of quota, or answers nonsense, nothing is decided and the freelancer can simply ask again.
+- **What happens next:** VERIFIED moves the project to "payout ready" (so the payout plan can now be built, reviewed by the Guardian and approved by a human). NEEDS_CHANGES sends the project back to "in progress" so a new attempt (up to three) can be made. A third failed attempt is FAILED and waits for the lead. If some MUST criteria are only unclear, the freelancer gets exactly one follow-up round with a question that quotes the reviewer's reason; both rounds' evidence is judged together. If GitHub could not be reached, nothing changes and nobody is blamed (GitHub is also retried once automatically).
+- **The saved report** lists every criterion with its verdict, who decided it (automatic check, AI, or rules), its flags and the evidence cited, plus the gates, any attempted trickery, and the percentages. Its summary sentence is written by the rules, not the AI, so it can never say "perfect" when the verdict is "needs changes"; the AI's own comment is shown separately and labelled. The report has a fingerprint (sha256); the payout safety check (G-12) later ties the payout to exactly this report.
+- **The whole verification pipeline now works end to end** with fake internet and fake AI in the tests: submit, automatic checks, questions, evidence upload, judging, verdict, project moves on.
+- 1,302 automated tests pass (43 new). I broke about 50 things on purpose; the first pass caught most, I added tests for the rest, and now all are caught except three that provably change nothing.
+
+**What it does NOT do yet**
+No real Gemini answer has ever been seen (needs your key), so the prompt wording is untested against the real model. After a FAILED verdict the lead has no screen or button yet to extend, cancel and refund, or override. The reviewer does not see the live page's text, only the automatic check results.
+
+**Progress:** 25 of ~45 tasks done or in review. Increment 25 of the 30 you asked for.
+
+**Needed from you:** the same: BLK-01/02/03, PayPal sandbox keys, Gemini key (this is where it matters most), optionally Cloudinary.
+
+**Next increment:** the poll fallback (T-43): if PayPal's message never arrives, the system asks PayPal itself about captures, refunds and payouts that are still waiting.
+
+---
+
 ## Increment 24 · The rules that decide "VERIFIED" (first half of T-34) · Mon Nov 9
 
 **What now exists**
