@@ -204,12 +204,35 @@ def test_spec_section_14_3_lists_every_backend_setting():
 def test_the_deploy_guide_names_every_dashboard_value_and_every_webhook_event_we_handle():
     guide = (REPO / "docs" / "DEPLOY.md").read_text(encoding="utf-8")
     blueprint = yaml.safe_load(RENDER.read_text(encoding="utf-8"))
-    for e in blueprint["services"][0]["envVars"]:
-        if e.get("sync") is False:
-            assert e["key"] in guide, e["key"]
+    for svc in blueprint["services"]:
+        for e in svc["envVars"]:
+            if e.get("sync") is False:
+                assert e["key"] in guide, e["key"]
     source = (REPO / "backend" / "app" / "services" / "webhook_processing.py").read_text(encoding="utf-8")
     events = set(re.findall(r'"((?:PAYMENT|CHECKOUT)\.[A-Z.\-]+[A-Z])"', source))
     assert events >= {"PAYMENT.CAPTURE.COMPLETED", "PAYMENT.AUTHORIZATION.VOIDED", "CHECKOUT.ORDER.APPROVED"}
     for ev in events:
         assert ev in guide, ev
     assert "PAYMENT.PAYOUTS-ITEM.*" in guide and "PAYMENT.PAYOUTSBATCH.*" in guide
+
+
+def test_the_web_service_is_a_static_site_built_from_the_frontend(blueprint):
+    web = next(s for s in blueprint["services"] if s["name"] == "briefpay-web")
+    assert (web["type"], web["runtime"], web["rootDir"], web["staticPublishPath"]) == ("web", "static", "frontend", "out")
+    assert web["buildCommand"] == "npm ci && npm run build"
+    keys = {e["key"]: e for e in web["envVars"]}
+    assert keys["NEXT_PUBLIC_DEMO_MODE"]["value"] == "true"
+    assert all(k.startswith("NEXT_PUBLIC_") for k in keys), "only public values belong in the browser bundle: no secret may be named here"
+    assert keys["NEXT_PUBLIC_API_BASE_URL"] == {"key": "NEXT_PUBLIC_API_BASE_URL", "sync": False}
+
+
+def test_ci_checks_both_halves_on_the_versions_we_ship():
+    ci = yaml.safe_load((REPO / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8"))
+    assert sorted(ci["jobs"]) == ["backend", "frontend"]
+    import sys
+    py = next(s for s in ci["jobs"]["backend"]["steps"] if s.get("uses", "").startswith("actions/setup-python"))["with"]["python-version"]
+    assert py == f"{sys.version_info.major}.{sys.version_info.minor}"
+    node = next(s for s in ci["jobs"]["frontend"]["steps"] if s.get("uses", "").startswith("actions/setup-node"))["with"]["node-version"]
+    assert node == "22"
+    runs = [s["run"] for s in ci["jobs"]["frontend"]["steps"] if "run" in s]
+    assert runs == ["npm ci", "npm run typecheck", "npm test", "npm run build"]

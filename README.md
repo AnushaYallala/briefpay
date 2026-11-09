@@ -4,7 +4,7 @@
 
 BriefPay was built for the PayPal AI hackathon. Everything runs on **PayPal sandbox money** and fictional people (the Velugu Cove demo). It is not a payments product and moves no real money.
 
-> **Honest status (see [docs/STATUS.md](docs/STATUS.md) for the live board):** the whole back end is built and tested (1,376 automated tests at the time of writing, no network or keys needed). The web front end, the hosted Render deployment and the demo video are **not built yet**. Three back-end pieces are blocked and described in [docs/GAPS_AND_FIXES.md](docs/GAPS_AND_FIXES.md) section 0. PayPal, Gemini and Cloudinary have only been exercised against faithful fakes so far, because no sandbox keys have been supplied.
+> **Honest status (see [docs/STATUS.md](docs/STATUS.md) for the live board):** the whole back end is built and tested (1,550 back-end tests at the time of writing, no network or keys needed). The web front end has only just been started (a home page listing projects, and sign-in, with 72 tests); the project screens, the hosted Render deployment and the demo video are **not built yet**. Three back-end pieces are blocked and described in [docs/GAPS_AND_FIXES.md](docs/GAPS_AND_FIXES.md) section 0. PayPal, Gemini and Cloudinary have only been exercised against faithful fakes so far, because no sandbox keys have been supplied.
 
 ---
 
@@ -41,7 +41,7 @@ Every AI call is logged with its prompt version, input hash, status and output, 
 ## Architecture
 
 ```
- Browser (static Next.js, planned)                      PayPal sandbox
+ Browser (static Next.js, started)                      PayPal sandbox
         |  HTTPS JSON, Bearer token                      ^   |  webhooks
         v                                                |   v
  +------------------------------ FastAPI (backend/app) ------------------------------+
@@ -79,7 +79,16 @@ cp ../.env.example .env                                      # keys are optional
 .venv/Scripts/alembic upgrade head                           # creates backend/briefpay_dev.db (SQLite)
 .venv/Scripts/python scripts/seed.py                         # loads the Velugu Cove demo data (see below)
 .venv/Scripts/uvicorn app.main:app --reload --port 8000      # API at http://localhost:8000/api, docs at /docs
-.venv/Scripts/python -m pytest -q                            # 1,376 tests, about a minute, no network
+.venv/Scripts/python -m pytest -q                            # the back-end tests, about a minute, no network
+```
+
+The web app (Node 22; a static Next.js export, started: home page and sign-in so far):
+
+```bash
+cd frontend
+npm install
+npm run dev        # http://localhost:3000, talks to the API on http://localhost:8000/api
+npm run check      # typecheck, the front-end tests, and the static build into frontend/out
 ```
 
 ### Demo data and personas
@@ -103,6 +112,7 @@ Put keys in `backend/.env` (see [.env.example](.env.example)). `backend/scripts/
 | **APIMatic**-generated `paypal-server-sdk` | Orders, Payments and balance reads (Payouts and webhook verification use `httpx`, as the SDK does not cover them) |
 | **Gemini** (Flash model, set by `AI_MODEL`) | BA scoring and questions, BRD drafting, the verification questions and the vision review of evidence, the Guardian risk review. Not yet run against the real model |
 | **FastAPI, SQLAlchemy 2, Alembic, Pydantic 2** | The service |
+| **Next.js 15, React 19, Tailwind, Vitest** | The web app (a static export) |
 | **AG Grid Community** | Planned for the ledger, audit trail, pledge board, BRD requirements, verification matrix and plan steps |
 | **Render, Aiven PostgreSQL, Cloudinary** (free plans) | Planned hosting, database and screenshot storage |
 

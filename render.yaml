@@ -52,18 +52,21 @@ services:
       - key: GITHUB_TOKEN
         sync: false
 
-  # The web app (static export) is added here once `frontend/` exists (T-05):
-  #
-  # - type: web
-  #   name: briefpay-web
-  #   runtime: static
-  #   rootDir: frontend
-  #   buildCommand: npm ci && npm run build
-  #   staticPublishPath: out
-  #   envVars:
-  #     - key: NEXT_PUBLIC_API_BASE_URL
-  #       sync: false
-  #     - key: NEXT_PUBLIC_PAYPAL_CLIENT_ID
-  #       sync: false
-  #
+  # The web app: a static export (D-010). NEXT_PUBLIC_* values are public by design (they end up in the browser); no secret goes here.
+  - type: web
+    name: briefpay-web
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: out
+    envVars:
+      - key: NEXT_PUBLIC_API_BASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_PAYPAL_CLIENT_ID
+        sync: false
+      - key: NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: NEXT_PUBLIC_DEMO_MODE
+        value: "true"
+
   # The sample site (Velugu Cove, T-60) lives in its own repository and is deployed from there as a static site.

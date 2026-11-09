@@ -4,6 +4,29 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 33 · The web app begins (T-05) · Mon Nov 9
+
+**What now exists**
+- **A real website, for the first time.** `frontend/` is a working web app. Open it and you see the headline "Pledge together. Pay only if we get there.", then a card for each project: its name and place, a plain-words state ("Collecting pledges", "Goal missed: nobody was charged", "Verified: ready to pay"), the budget, and for projects with a campaign a progress bar ("Pledged $150.00 of $400.00 by 1 person") with the promise that a pledge is only a hold.
+- **Sign-in and the demo cast.** A sign-in page (email and name, no password: demo only), and a "Demo person" menu that switches between Lakshmi, Ravi, Meena and Arjun with one click, so the video can change roles quickly.
+- **It never looks broken.** Every screen has a loading state, an error with a "Try again" button, and an empty state. If the free server is asleep and takes more than four seconds, the page says plainly: "Waking up the server. The free host sleeps when nobody is using it and needs about a minute." If the browser blocks its storage, the app still works for the session. If the server rejects the login token, the person is signed out; a sleeping server does not sign anyone out.
+- **Money is always shown the same safe way** (whole cents turned into "$1,234.50"), and a number with a fraction of a cent is refused instead of displayed.
+- **Kept honest against the back end.** Tests read the web app's source and fail if it drifts from the API: if a project state has no words, if the demo people differ from the seed data, if the data shapes differ from what the API really sends, or if an environment variable is undocumented. I planted 13 such drifts on purpose and every one is caught.
+- **Real end-to-end check:** I started the actual API on a freshly built, seeded database and confirmed that a browser page at localhost:3000 is allowed to call it (including the permission check browsers do before sending a login token), the demo projects come back, and login works.
+- **Ready to ship:** the deployment file now also builds the web app as a static site, the automatic checks on GitHub now test both halves (and use the same Python version as everything else), and the README and guides explain how to run it.
+- 72 front-end tests and 1,550 back-end tests pass. I broke about 50 things in the front end on purpose; five weak tests were found and fixed, and everything is now caught.
+
+**What it does NOT do yet**
+Cards are not clickable yet: there is no project page, ledger, campaign or any other screen. Those come next, one per increment.
+
+**Progress:** 32 of ~45 tasks done or in review. Increment 33 of the 40 you asked for.
+
+**Needed from you:** BLK-01/02/03, PayPal sandbox keys, Gemini key.
+
+**Next increment:** the project page (stepper and "Money" box), the hub the other screens hang from.
+
+---
+
 ## Increment 32 · The Strategist finds its words, and every number is checked (T-47) · Mon Nov 9
 
 **What now exists**

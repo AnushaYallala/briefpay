@@ -19,6 +19,7 @@ Nothing here is automatic: it needs accounts and secrets only a human can create
    * `APP_BASE_URL` = the API's `https://...onrender.com` URL, `WEB_BASE_URL` = the web app's URL, `CORS_ORIGINS` = the web app's URL (comma-separated, no spaces)
    * `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `GEMINI_API_KEY`, `AI_MODEL`, `CLOUDINARY_URL`, optionally `GITHUB_TOKEN` (raises GitHub's rate limit for the repository checks)
    * leave `PAYPAL_WEBHOOK_ID` empty for the first deploy
+   * for the web service (`briefpay-web`): `NEXT_PUBLIC_API_BASE_URL` = the API URL plus `/api`, `NEXT_PUBLIC_PAYPAL_CLIENT_ID` (the sandbox client id: it is public by design), `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`. `NEXT_PUBLIC_DEMO_MODE` is already `true`
 6. **Webhook.** In the PayPal developer dashboard add a sandbox webhook to `https://<api>.onrender.com/api/webhooks/paypal` for: `PAYMENT.AUTHORIZATION.CREATED`, `PAYMENT.AUTHORIZATION.VOIDED`, `PAYMENT.CAPTURE.COMPLETED`, `PAYMENT.CAPTURE.DECLINED`, `PAYMENT.CAPTURE.PENDING`, `PAYMENT.CAPTURE.REFUNDED`, `PAYMENT.CAPTURE.REVERSED`, `PAYMENT.PAYOUTS-ITEM.*`, `PAYMENT.PAYOUTSBATCH.*`, `CHECKOUT.ORDER.APPROVED`. Copy the webhook id into `PAYPAL_WEBHOOK_ID` in Render and redeploy.
 7. **Load the demo data** (once): in the Render shell for the API run
    `python scripts/seed.py --paypal-email <the freelancer's sandbox email> --repo <sample site repo> --site <sample site URL> --commit-1 <sha> --commit-2 <sha>`

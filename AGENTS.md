@@ -58,11 +58,13 @@ cp ../.env.example .env                      # then fill in keys; never commit .
 # Gotchas for AI assistants: edit files with the Edit/Write tools, not with Python inside a shell heredoc when the text
 # contains backslash escapes (it corrupted a test file once). Known gaps and fixes: docs/GAPS_AND_FIXES.md.
 
-# frontend
-cd frontend && npm install && npm run dev   # http://localhost:3000
+# frontend (Node 22; a static Next.js export, client components only)
+cd frontend && npm install && npm run dev   # http://localhost:3000 (needs the API on :8000)
+cd frontend && npm run check                # typecheck + 72 tests + the static build into frontend/out
+cd frontend && npx vitest run -t "name"     # one test
 
-# seed demo data
-cd backend && python seed.py
+# seed demo data (needs `alembic upgrade head` first)
+cd backend && .venv/Scripts/python scripts/seed.py
 
 # webhooks locally
 cloudflared tunnel --url http://localhost:8000
