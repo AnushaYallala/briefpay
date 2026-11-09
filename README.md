@@ -4,7 +4,7 @@
 
 BriefPay was built for the PayPal AI hackathon. Everything runs on **PayPal sandbox money** and fictional people (the Velugu Cove demo). It is not a payments product and moves no real money.
 
-> **Honest status (see [docs/STATUS.md](docs/STATUS.md) for the live board):** the whole back end is built and tested (1,550 back-end tests at the time of writing, no network or keys needed). The web front end has only just been started (a home page listing projects, and sign-in, with 72 tests); the project screens, the hosted Render deployment and the demo video are **not built yet**. Three back-end pieces are blocked and described in [docs/GAPS_AND_FIXES.md](docs/GAPS_AND_FIXES.md) section 0. PayPal, Gemini and Cloudinary have only been exercised against faithful fakes so far, because no sandbox keys have been supplied.
+> **Honest status (see [docs/STATUS.md](docs/STATUS.md) for the live board):** the whole back end is built and tested (1,554 back-end tests at the time of writing, no network or keys needed). The web front end has been started: a home page listing projects, sign-in with a demo person switcher, and a project page with the progress stepper, campaign progress, people and the money box (124 front-end tests). The remaining screens (ledger, campaign, requirements, brief, plans, freelancer portal, verification report), the hosted Render deployment and the demo video are **not built yet**. Three back-end pieces are blocked and described in [docs/GAPS_AND_FIXES.md](docs/GAPS_AND_FIXES.md) section 0. PayPal, Gemini and Cloudinary have only been exercised against faithful fakes so far, because no sandbox keys have been supplied.
 
 ---
 
@@ -82,7 +82,7 @@ cp ../.env.example .env                                      # keys are optional
 .venv/Scripts/python -m pytest -q                            # the back-end tests, about a minute, no network
 ```
 
-The web app (Node 22; a static Next.js export, started: home page and sign-in so far):
+The web app (Node 22; a static Next.js export, started: home page, sign-in and the project page so far):
 
 ```bash
 cd frontend

@@ -6,7 +6,7 @@ import { watchSlow } from "./wake";
 
 export type Loaded<T> = { data: T | null; error: ApiError | null; loading: boolean; slow: boolean; reload: () => void };
 
-export function useApi<T>(path: string | null): Loaded<T> {
+export function useApi<T>(path: string | null, refreshKey?: unknown): Loaded<T> {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
   const [loading, setLoading] = useState<boolean>(path !== null);
@@ -30,7 +30,7 @@ export function useApi<T>(path: string | null): Loaded<T> {
         setSlow(false);
       });
     return () => ctl.abort();
-  }, [path, tick]);
+  }, [path, tick, refreshKey]);
 
   const reload = useCallback(() => setTick((t) => t + 1), []);
   return { data, error, loading, slow, reload };

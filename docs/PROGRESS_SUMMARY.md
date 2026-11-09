@@ -4,6 +4,28 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 34 · The project page (stepper and money box) · Mon Nov 9
+
+**What now exists**
+- **Click a project card and you land on its page.** The page shows the project's name and place, where it stands in plain words, and a progress strip with the eight stages of the journey (Requirements, Brief, Contract, Campaign, Build, Verify, Payout, Ledger): finished stages ticked, the current one highlighted. Underneath, one sentence says what happens next ("Pledges are open. A pledge is only a hold: nobody is charged unless the goal is reached before the deadline.", "The goal was missed. Every hold was released and nobody was charged.").
+- **What a visitor sees:** the campaign progress bar with the "only a hold" promise, the terms (budget, delivery time, whether a person approves the payment), and the people with their businesses and roles, plus a prompt to sign in. No contact details or PayPal addresses are ever shown, even to members.
+- **The Money box, for people on the project:** what is really in the project pool, what is only pledged (held, not charged) with its latest deadline, the contract price, any money plans in progress in plain words, a note if a payment is waiting for the builder to claim it, and a red warning if PayPal reported something different from our records. With nothing happening it says so honestly. A signed-in outsider is told the box is for members.
+- **Careful about who is asking.** The page waits until it knows who is signed in before asking for the project, and asks again when the demo person is switched, so switching from "visitor" to "Ravi" instantly adds the Money box.
+- **Safe links:** a project link that is missing, not a whole number, negative or absurdly long shows "No project selected" and asks the server nothing.
+- **Matches the back end by test:** more contract tests make sure every project state has a stage and an explanation, and that the page's data shapes equal what the API really sends (I even caught that a made-up field in the page's types would go unnoticed, and fixed the test).
+- 124 front-end tests and 1,554 back-end tests pass; the static site builds with the new page. I broke about 40 things on this screen on purpose; eight weak tests were found and fixed, and the rest were caught or provably harmless.
+
+**What it does NOT do yet**
+The stages in the strip are not clickable yet (the other screens do not exist), the Money box only reads (it does not yet ask PayPal for a fresh check), and there is no ledger, campaign, requirements or verification screen.
+
+**Progress:** 32 of ~45 tasks done or in review, with the web app now past its first screens. Increment 34 of the 40 you asked for.
+
+**Needed from you:** BLK-01/02/03, PayPal sandbox keys, Gemini key.
+
+**Next increment:** the public ledger as a table (AG Grid): every money and AI event, with running balance, filters, totals and CSV export.
+
+---
+
 ## Increment 33 · The web app begins (T-05) · Mon Nov 9
 
 **What now exists**

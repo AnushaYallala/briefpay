@@ -6,7 +6,7 @@ A running list of everything that is **missing, risky, unverified, or was found 
 - **Fixes** are problems that were found and already resolved, kept so the reasoning is not lost.
 - IDs are permanent. When a gap is closed, move it to Fixes (keep the ID) and say how.
 
-_Last updated: 2026-11-09, end of T-05._
+_Last updated: 2026-11-09, end of the project page._
 
 ---
 
@@ -127,10 +127,12 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | GAP-89 | Low | The number check reads digits only: a spelled-out figure ('one hundred dollars') in the model's text is not caught. | Acceptable for the demo; could add a small word-to-number pass later. |
 | GAP-90 | Low | Tone cannot be checked by code (pressure, guilt); only the prompt forbids it. | The lead reads each draft and copies it by hand; nothing is sent automatically. |
 | GAP-91 | Low | Nudge drafts are not checked for naming people outside the invitee list (code only checks the member ids). | The model is told not to; the lead reviews every draft. |
-| GAP-92 | Medium | The web app has only a home page and sign-in; project cards are not links and no other screen exists. | The next increments, in demo order. |
+| GAP-92 | Medium | The web app has a home page, sign-in and the project page; the ledger, campaign, requirements, brief, plans, freelancer and verification screens do not exist. The stepper's steps are not links. | The next increments, in demo order; each screen makes its step clickable. |
 | GAP-93 | Low | Front-end tests run in jsdom, not a real browser; no end-to-end (Playwright) test drives the built site against the API. | The smoke check was done by hand once; add a Playwright run if time allows. |
 | GAP-94 | Low | `next build` warns about an extra lockfile higher up the developer's disk. | Harmless; set `outputFileTracingRoot` if it ever matters. |
 | GAP-95 | Low | The persona switcher and sign-in are demo authentication (an email is enough). | Documented as sandbox only; real auth is out of scope. |
+| GAP-96 | Low | The Money box only reads; the 'check with PayPal now' button (`POST /money/refresh`) and the PayPal-match column are not wired in the UI. | With the ledger screen and money plans viewer. |
+| GAP-97 | Low | Dates are shown in UTC only. | Deliberate (same moment for everyone, stable tests); add a local-time toggle if it matters. |
 
 ---
 
@@ -188,6 +190,9 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | FIX-48 | T-47 | Mutation check found: the 24-hour draft window boundary, a sentence mixing a real and an invented number, drafts from a LATER report being reused, and the job result's wording field were untested; plus a redundant slice and a redundant dict comprehension. | Tests added; the two redundant lines removed. |
 | FIX-49 | T-05 | CI ran the back-end tests on Python 3.12 while development and Render use 3.13. | CI now uses 3.13 and a test pins CI's Python and Node versions. |
 | FIX-50 | T-05 | Front-end mutation check found 5 weak tests: storage that accepts nothing but reads fine, the login request carrying an old token, a slow earlier answer overwriting a newer one, a request not cancelled when the screen goes away, and 'Sign in' flashing while the account loads. A planted drift in the sign-out code list also slipped past the contract test. | Tests added for each; the contract test now compares the exact code sets. |
+| FIX-51 | project page | The type check in `test_frontend_contract.py` stopped at the first `};` and could not read `Base & {...}` types, and it only checked that real fields were declared, not that every declared field exists (a made-up `ssn` field in the Member type was not flagged). | Brace-matching parser; declared fields must equal the fields actually seen. |
+| FIX-52 | project page | The front-end mutation script crashed on printing a check mark (Windows code page) before reaching most mutants. | Run with `PYTHONIOENCODING=utf-8` and decode the subprocess output as UTF-8; remaining mutants rerun. |
+| FIX-53 | project page | Mutation check found 8 weak tests: the 'no money has moved' message while alerts or plans exist, role badge colours, the project's currency reaching the money box, and the person-switch reload, among others. | Tests added. |
 
 ---
 

@@ -28,10 +28,27 @@ def keys_of(text: str) -> set[str]:
     return set(re.findall(r"^  ([A-Z_]+): \{", text, re.M))
 
 
+def matching(text: str, open_at: int) -> int:
+    """Index of the `}` that closes the `{` at `open_at`."""
+    depth, i = 0, open_at
+    while True:
+        depth += (text[i] == "{") - (text[i] == "}")
+        if depth == 0:
+            return i
+        i += 1
+
+
+def body_of(type_source: str, name: str) -> str:
+    """The text inside the braces of `export type NAME = [Base &] { ... };`, written on one line or many."""
+    start = type_source.index("{", type_source.index(f"export type {name} = "))
+    return type_source[start + 1: matching(type_source, start)]
+
+
 def fields_of(type_source: str, name: str) -> set[str]:
-    """Field names of `export type NAME = { ... };`, whether it is written on one line or many."""
-    start = type_source.index(f"export type {name} = {{") + len(f"export type {name} = {{")
-    body = type_source[start: type_source.index("};", start)]
+    """Top-level field names of the type (fields of nested inline objects are not included)."""
+    body = body_of(type_source, name)
+    while (flat := re.sub(r"\{[^{}]*\}", "", body)) != body:
+        body = flat
     return set(re.findall(r"(\w+)\??:", body))
 
 
@@ -112,3 +129,54 @@ def test_the_web_app_is_a_static_export_with_client_components_only():
 @pytest.mark.parametrize("name", ["package-lock.json", "package.json", "tsconfig.json", "next.config.mjs"])
 def test_the_files_a_clean_checkout_needs_are_there(name):
     assert (REPO / "frontend" / name).is_file()
+
+
+def test_every_project_state_has_a_step_and_an_explanation_in_the_web_app():
+    steps = read("lib/steps.ts")
+    step_of = set(re.findall(r"\b([A-Z_]{3,}): (?:\d|null)\b", block(steps, "export const STEP_OF")))
+    what_next = keys_of_lines(block(steps, "export const WHAT_NEXT"))
+    assert step_of == set(PROJECT_TRANSITIONS) == what_next
+
+
+def keys_of_lines(text: str) -> set[str]:
+    return set(re.findall(r'^  ([A-Z_]+): "', text, re.M))
+
+
+def nested_fields(type_source: str, name: str, field: str) -> set[str]:
+    """Field names of an inline object type such as `holds: { count: number; ... }` inside `export type NAME`."""
+    body = body_of(type_source, name)
+    start = body.index("{", body.index(f"{field}: {{"))
+    return set(re.findall(r"(\w+)\??:", body[start + 1: matching(body, start)]))
+
+
+def test_the_project_page_types_match_a_real_member_and_visitor_response(client, seeded):  # noqa: F811
+    types = read("lib/types.ts")
+    pid = seeded["payout_ready_project_id"]
+    visitor = client.get(f"/api/projects/{pid}").json()
+    login = client.post("/api/auth/login", json={"email": sd.email("lakshmi"), "display_name": "Lakshmi"}).json()
+    lead = client.get(f"/api/projects/{pid}", headers={"Authorization": f"Bearer {login['token']}"}).json()
+    declared = fields_of(types, "ProjectDetail") | fields_of(types, "ProjectCard")
+    for view in (visitor, lead):
+        assert set(view) - {"transcript"} <= declared and (declared - {"transcript"}) <= set(view)
+    member_fields = fields_of(types, "Member")
+    seen = set().union(*[set(m) for m in visitor["members"] + lead["members"]])
+    assert seen == member_fields, (seen ^ member_fields)                       # every declared field really exists, and none is missing
+    assert {"id", "role", "display_name", "business_name", "business_type"} <= set(visitor["members"][0])
+    assert "email" not in visitor["members"][0] and "email" in lead["members"][0]          # visitors never get contact details
+    assert visitor["viewer"] is None and set(lead["viewer"]) == {"role", "member_id"}
+
+
+def test_the_money_box_type_matches_the_real_response(client, seeded):  # noqa: F811
+    types = read("lib/types.ts")
+    login = client.post("/api/auth/login", json={"email": sd.email("lakshmi"), "display_name": "Lakshmi"}).json()
+    got = client.get(f"/api/projects/{seeded['payout_ready_project_id']}/money", headers={"Authorization": f"Bearer {login['token']}"}).json()
+    assert set(got) == fields_of(types, "Money") | set()
+    assert set(got["holds"]) == nested_fields(types, "Money", "holds")
+    assert set(got["campaign"]) == nested_fields(types, "Money", "campaign")
+    plan = client.get(f"/api/projects/{seeded['payout_ready_project_id']}/money", headers={"Authorization": f"Bearer {login['token']}"}).json()["open_plans"]
+    assert isinstance(plan, list)
+
+
+def test_the_plan_words_in_the_money_box_cover_every_plan_kind():
+    kinds = set(re.findall(r"\b([A-Z_]{6,}): \"", block(read("components/MoneyBox.tsx"), "const PLAN_WORDS")))
+    assert kinds == {"CAPTURE_PLEDGES", "RELEASE_HOLDS", "FREELANCER_PAYOUT", "REFUND_CAPTURED"}

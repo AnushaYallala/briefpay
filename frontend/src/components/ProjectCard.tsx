@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Badge, PledgeProgress } from "@/components/ui";
 import { formatMoney } from "@/lib/money";
 import { campaignState, projectState } from "@/lib/states";
@@ -10,7 +11,7 @@ export function ProjectCardView({ p }: { p: ProjectCard }) {
     <li className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold">{p.title}</h2>
+          <h2 className="text-lg font-semibold"><Link href={`/project?id=${p.id}`} className="hover:text-sea-700 hover:underline">{p.title}</Link></h2>
           {p.location_label && <p className="text-sm text-gray-500">{p.location_label}</p>}
         </div>
         <Badge tone={s.tone}>{s.label}</Badge>
