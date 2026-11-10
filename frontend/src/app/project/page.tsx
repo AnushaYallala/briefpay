@@ -46,7 +46,7 @@ function Workspace({ id }: { id: number }) {
         {p.summary && <p className="mt-3 max-w-3xl text-sm text-slate-600 leading-relaxed">{p.summary}</p>}
 
         <div className="mt-6 border-t border-slate-100 pt-5">
-          <Stepper state={p.state} />
+          <Stepper state={p.state} projectId={p.id} />
         </div>
       </div>
 

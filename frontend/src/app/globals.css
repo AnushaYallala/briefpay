@@ -12,7 +12,7 @@
 body {
   font-family: var(--font-sans);
   @apply text-slate-800 antialiased;
-  background-color: #f8fafc;
+  background-color: #f1f5f9;
   min-height: 100vh;
 }
 
@@ -22,13 +22,13 @@ body {
 }
 .card-hover:hover {
   border-color: #cbd5e1;
-  box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.06), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 6px 16px -2px rgba(15, 23, 42, 0.08), 0 2px 6px -2px rgba(15, 23, 42, 0.04);
 }
 
 /* Crisp financial surfaces */
 .surface-card {
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.03);
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04);
 }
 

@@ -168,3 +168,115 @@ export type MatchResponse = {
   limited: boolean;
   all_match: boolean;
 };
+
+export type BADimension = {
+  dimension: string;
+  name: string;
+  coverage: number;
+  justification: string;
+  source_refs: string[];
+};
+
+export type BAGate = {
+  id: string;
+  name: string;
+  passed: boolean;
+  reason?: string;
+};
+
+export type BAQuestionAnswer = {
+  id: number;
+  member_id: number;
+  member_name: string;
+  answer_text: string;
+  selected_option: string | null;
+};
+
+export type BAQuestionItem = {
+  id: number;
+  round: number;
+  dimension: string;
+  dimension_name: string;
+  question: string;
+  rationale: string;
+  addressed_to: (number | "ALL")[];
+  suggested_options: string[] | null;
+  status: "OPEN" | "ANSWERED" | "SKIPPED";
+  answers: BAQuestionAnswer[];
+  can_answer: boolean;
+};
+
+export type BAHistoryItem = {
+  round: number;
+  total: number;
+  capped: boolean;
+  created_at: string;
+};
+
+export type BAResponse = {
+  session: {
+    id: number;
+    state: "ACTIVE" | "READY" | "MAX_ROUNDS";
+    round: number;
+    current_score: number;
+    target_score: number;
+    max_rounds: number;
+  } | null;
+  score: {
+    round: number;
+    total: number;
+    capped: boolean;
+    total_uncapped?: number;
+    dimensions: BADimension[];
+    gates: BAGate[];
+    conflicts: { topic: string; positions: { member_id: number; position: string }[]; resolved: boolean; resolution: string | null }[];
+    out_of_scope: string[];
+    injection_attempts: string[];
+    created_at: string;
+  } | null;
+  history: BAHistoryItem[];
+  questions: BAQuestionItem[];
+  can_run: boolean;
+  can_finalize: boolean;
+};
+
+export type BRDRequirementItem = {
+  code: string;
+  title: string;
+  description: string;
+  priority: "MUST" | "SHOULD" | "COULD";
+  weight: number;
+  requested_by: number[];
+  acceptance_criteria: { id: string; given: string; when: string; then: string; evidence: string[] }[];
+  source_refs: string[];
+};
+
+export type BRDApprovalItem = {
+  member_id: number;
+  member_name: string;
+  decision: "APPROVE" | "REJECT";
+  comment: string | null;
+  created_at: string;
+};
+
+export type BRDResponse = {
+  id: number;
+  version: number;
+  status: "DRAFT" | "LOCKED" | "APPROVED" | "REJECTED";
+  sha256: string;
+  score_at_generation: number;
+  content: {
+    title: string;
+    executive_summary: string;
+    business_goals: string[];
+    success_measures: string[];
+    requirements: BRDRequirementItem[];
+  };
+  markdown: string;
+  open_items: string[];
+  approvals: BRDApprovalItem[];
+  awaiting: { member_id: number; member_name: string }[];
+  created_at: string;
+  locked_at: string | null;
+  versions: { version: number; status: string; sha256: string }[];
+};
