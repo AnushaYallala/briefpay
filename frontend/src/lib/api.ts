@@ -61,6 +61,10 @@ export async function api<T = unknown>(path: string, opts: Options = {}): Promis
   return body as T;
 }
 
+export function apiGet<T = unknown>(path: string): Promise<T> {
+  return api<T>(path, { method: "GET" });
+}
+
 export function apiPost<T = unknown>(path: string, body?: unknown): Promise<T> {
   return api<T>(path, { method: "POST", body });
 }

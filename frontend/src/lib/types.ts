@@ -280,3 +280,89 @@ export type BRDResponse = {
   locked_at: string | null;
   versions: { version: number; status: string; sha256: string }[];
 };
+
+export type ContractResponse = {
+  id: number;
+  status: "OFFERED" | "SIGNED";
+  amount_cents: number;
+  currency: string;
+  delivery_days: number;
+  conditional: boolean;
+  terms_md: string;
+  terms_sha256: string;
+  brd_version: number;
+  brd_sha256: string;
+  freelancer_member_id: number;
+  signed_at: string | null;
+  effective_at: string | null;
+  freelancer_paypal_email?: string | null;
+};
+
+export type AutoCheckItem = {
+  id: number;
+  check_type: string;
+  target: string;
+  result: "PASS" | "FAIL" | "ERROR";
+  latency_ms: number;
+  details: Record<string, unknown>;
+  created_at: string;
+};
+
+export type EvidenceItem = {
+  id: number;
+  question_id: number;
+  kind: string;
+  image_id: number | null;
+  text: string | null;
+  url: string | null;
+  sha256: string;
+  created_at: string;
+};
+
+export type VerificationQuestionItem = {
+  id: number;
+  requirement_code: string;
+  criterion_id: string;
+  question: string;
+  expected_evidence: string[];
+  round: number;
+  status: "PENDING" | "ANSWERED" | "WAIVED";
+};
+
+export type VerificationReportItem = {
+  id: number;
+  overall: "VERIFIED" | "NEEDS_CHANGES" | "FAILED";
+  must_pass_pct: number;
+  should_pass_pct: number;
+  summary: string;
+  sha256: string;
+  details: Record<string, unknown>;
+  created_at: string;
+};
+
+export type SubmissionDetail = {
+  id: number;
+  contract_id: number;
+  attempt_no: number;
+  state: string;
+  repo_url: string;
+  commit_sha: string;
+  deployed_url: string;
+  notes: string | null;
+  created_at: string;
+  auto_checks: AutoCheckItem[];
+  auto_check_summary: { PASS: number; FAIL: number; ERROR: number };
+  questions: VerificationQuestionItem[];
+  evidence: EvidenceItem[];
+  report: VerificationReportItem | null;
+};
+
+export type SubmissionListItem = {
+  id: number;
+  attempt_no: number;
+  state: string;
+  commit_sha: string;
+  deployed_url: string;
+  created_at: string;
+};
+

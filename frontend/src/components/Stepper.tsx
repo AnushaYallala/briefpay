@@ -11,6 +11,10 @@ export function Stepper({ state, projectId }: { state: string; projectId?: numbe
     switch (name) {
       case "Requirements": return `/ba?id=${projectId}`;
       case "Brief": return `/brd?id=${projectId}`;
+      case "Contract": return `/contract?id=${projectId}`;
+      case "Campaign": return `/project?id=${projectId}`;
+      case "Build": return `/submit?id=${projectId}`;
+      case "Verify": return `/verify?id=${projectId}`;
       case "Payout": return `/plans?id=${projectId}`;
       case "Ledger": return `/ledger?id=${projectId}`;
       default: return `/project?id=${projectId}`;

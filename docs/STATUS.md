@@ -9,10 +9,10 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-10: T-16 BA Studio & T-17 BRD Viewer screens built; Stepper linked; rich light-grey canvas; 309/309 vitest passing |
-| Overall phase | **Back end feature-complete except the three blocked pieces (BLK-01/02/03); front end in progress (plans, ledger, audit, project, BA Studio, BRD views done).** Done: BA, BRD, contract, campaign setup, plans + Guardian + executor, webhooks, poll fallback, submissions, evidence, verification, ledger/audit APIs, demo seed, deploy files, web skeleton. Plain-English summary: `docs/PROGRESS_SUMMARY.md` |
+| Last updated | 2026-11-10: T-35 Freelancer Portal (/contract, /submit) & T-36 Verification Matrix (/verify) built; Stepper links all 8 steps; static export passes for all 14 pages; 309/309 vitest passing |
+| Overall phase | **Back end feature-complete except the three blocked pieces (BLK-01/02/03); front end feature-complete for all core steps (Requirements, Brief, Contract, Campaign, Submit, Verify, Payout Plans, Ledger, AI Audit).** Plain-English summary: `docs/PROGRESS_SUMMARY.md` |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
-| Next task to pick up | Not blocked: BA Studio (T-16), BRD (T-17), freelancer portal (T-35), verification report (T-36), campaign page (T-23, T-27; shows BLK-01/02 as unavailable), make the stepper steps links (GAP-92) · **Human:** decide BLK-01/02/03 · PayPal sandbox keys, Gemini key, Cloudinary · run `backend/scripts/sandbox_check.py` once keys exist |
+| Next task to pick up | T-23 / T-27 Campaign public page & pledge view · Push local commits to `origin/main` once collaborator access is granted to `meghavardhan-git` · **Human:** decide BLK-01/02/03 |
 | Blockers | **BLK-01** (T-22 pledge service/endpoints), **BLK-02** (T-25 clock and lead actions), **BLK-03** (pledge-state helper used by two webhook events): the assistant's attempts to write those files were stopped by a safety check; see `docs/GAPS_AND_FIXES.md` section 0 for the full designs |
 | Deployed URLs | API: _not deployed_ · Web: _not deployed_ · Sample site: _not deployed_ |
 | Repo | https://github.com/AnushaYallala/briefpay (origin; T-01 still needs LICENSE visible in About + secret scanning) |
@@ -70,8 +70,8 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 | T-32 | AutoChecks: SSRF-safe fetcher, URL/page/repo/commit/file/viewport checks + SSRF tests | §7.3 |  | REVIEW |  | `safe_fetch.py` (SSRF-safe) + `autochecks.py` (URL_REACHABLE, PAGE_CONTAINS, REPO_PUBLIC, COMMIT_EXISTS, FILE_EXISTS + snippet check, MOBILE_VIEWPORT). 117 tests, no network; mutation-checked. Not yet run per submission or saved to `auto_checks` (T-31) (D-038) |
 | T-33 | Verifier questions: prompt, `VerifyQuestion`, skip ACs settled by auto checks | §7.3 |  | REVIEW |  | `VerifierAgent` + prompt + `VerifyQuestion` schema; `verify_questions.py` (which criteria, template fallback, job); queued by AUTO_CHECKS. 23 tests, mutation-checked. No recorded Gemini fixture yet (needs the key) (D-041) |
 | T-34 | Verifier judge (vision) + snippet-in-repo check + deterministic aggregation + follow-up round + attempts | §7.3 |  | REVIEW |  | Aggregation (D-042) + judge agent (vision, one call), snippet cross-check, `VERIFY_JUDGE` job, `POST /submissions/{sid}/judge`, report row with sha256, state changes, follow-up round (D-043). 43 + 44 tests, mutation-checked. No recorded Gemini fixture yet |
-| T-35 | UI: freelancer portal (contract, submit, evidence uploaders) | §11 #6, #9 |  | TODO |  | |
-| T-36 | UI: verification report with AG Grid matrix | §11 #10 |  | TODO |  | |
+| T-35 | UI: freelancer portal (contract, submit, evidence uploaders) | §11 #6, #9 | Gemini | REVIEW | main | `/contract?id=N` (offer & sign) and `/submit?id=N` (deliverables, evidence uploaders, verification trigger) |
+| T-36 | UI: verification report with AG Grid matrix | §11 #10 | Gemini | REVIEW | main | `/verify?id=N` (AG Grid criteria matrix, MUST/SHOULD % gauges, SSRF autochecks, sponsor failure resolution) |
 
 ### Track B2: Money core, Guardian, payouts
 | ID | Task | Spec | Owner | State | Branch | Notes |
@@ -192,6 +192,21 @@ Template:
   - Back end: `cd backend && .venv/Scripts/python.exe -m pytest -q` -> 1562 passed (only 2 failures in `test_deploy.py` asserting Python version 3.13 vs local machine running 3.14).
 - Contract changes: none.
 - Next step: BA Studio UI (T-16), BRD page UI (T-17), or Campaign page UI (T-23). Push local branch commits to `origin/main` via interactive terminal (`git push origin main`).
+
+### 2026-11-10 14:50 IST · Gemini · T-35 & T-36 Freelancer Portal & Verification Matrix (REVIEW)
+- Did:
+  - Built `frontend/src/app/contract/page.tsx` (Screen #6): lead contract offer (amount & delivery days), BRD SHA-256 hash lock, builder PayPal email input, conditional pledge-if acceptance.
+  - Built `frontend/src/app/submit/page.tsx` (Screen #9): freelancer delivery portal with repository URL, commit SHA, deployed URL, notes, dynamic verification questions responder (code snippets, repo path, URL, explanation), and AI judge trigger.
+  - Built `frontend/src/app/verify/page.tsx` (Screen #10): AG Grid verification matrix across criteria (REQ-001..009), MUST/SHOULD pass percentages, SSRF autochecks results, AI vision verdict, and sponsor failure resolution (extend attempts, vote override, cancel/refund).
+  - Updated `Stepper.tsx` so all 8 steps route seamlessly: Requirements (`/ba`), Brief (`/brd`), Contract (`/contract`), Campaign (`/project`), Build (`/submit`), Verify (`/verify`), Payout (`/plans`), Ledger (`/ledger`).
+  - Added types in `lib/types.ts` and `apiGet` in `lib/api.ts`.
+- Tests:
+  - `npm.cmd run typecheck`: clean (0 errors).
+  - `npm.cmd run build`: static export succeeded, generating all 14 pages into `frontend/out/`.
+  - Vitest: 309/309 passed across all 11 suites.
+  - Backend pytest: 1562 passed.
+- Contract changes: none.
+- Next step: Campaign public page (T-23) and setup page (T-27). Push commits to origin once collaborator access is granted to `meghavardhan-git`.
 
 ### 2026-11-08 13:20 IST · Gemini · T-60 sample site (DONE)
 - Did: Built Velugu Cove sample site (HTML/CSS/JS, mobile-first, custom properties, placeholder images, Google Fonts, all 3 businesses featured). Created public repo at `https://github.com/meghavardhan-git/velugu-cove-site`, committed and tagged v1 (`v1-missing-form`, SHA `677da6fb5b2f7e69c54eb9ee1ad5c4bb880d0c9f`), created `contact.html` with enquiry form + reference number generator, committed and tagged v2 (`v2-complete`, SHA `1a75b0389d2208b8de14595a25f7fab5f51f9f5d`). Mirrored files into `briefpay/sample-site/` for `render.yaml` deployment.
