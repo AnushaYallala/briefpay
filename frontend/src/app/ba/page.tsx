@@ -15,6 +15,35 @@ import { useApi } from "@/lib/useApi";
 
 const said = (e: unknown) => (e instanceof ApiError ? e.message : "Something went wrong");
 
+const SAMPLE_TRANSCRIPT = `Velugu Cove Business Owners — Website Meeting
+Attendees: Lakshmi (Sea Breeze Homestay), Ravi (Ravi's Fish Kitchen), Meena (Cove Boat Tours)
+
+Lakshmi: Thanks for coming. So the idea is we put money together and get one website for Velugu Cove.
+Ravi: Yes. Tourists don't even know we exist. They go to the big beach two hours north.
+Meena: Right. When people search they find nothing about our cove.
+Lakshmi: I want guests to be able to see my rooms and contact me. Maybe even book.
+Ravi: For me, the menu and timings. And people always ask for directions, the road is confusing.
+Meena: I want the boat tours on there. Morning tour, sunset tour. And safety, people worry about safety.
+Lakshmi: Should we take payments on the website? Booking with advance?
+Meena: I don't want payments on the site. Too complicated. Just let them message us.
+Ravi: Hmm, I'm fine either way.
+Lakshmi: Okay, we can talk about that later.
+Ravi: Should it be in Telugu also? Many visitors are from Hyderabad and Bangalore.
+Meena: English for sure. Telugu would be nice.
+Lakshmi: Photos are important. The sunset here is beautiful.
+Ravi: I have some photos on my phone. Not great quality.
+Meena: How much will this cost?
+Lakshmi: I asked around, maybe four hundred dollars for a simple site. We can split it.
+Ravi: I can do one fifty.
+Meena: I can do one hundred.
+Lakshmi: Then I'll do one fifty. That makes four hundred.
+Ravi: When do we need it? Season starts next month.
+Lakshmi: As soon as possible. Most people will see it on their phones.
+Meena: And WhatsApp. Everyone uses WhatsApp. A button to message us.
+Ravi: Who will update the menu later? I can't do computer things.
+Lakshmi: We'll figure it out.
+Meena: Let's just find a good developer and see what they suggest.`;
+
 function RefChips({ refs, onPick }: { refs: string[]; onPick: (refs: string[]) => void }) {
   return (
     <span className="flex flex-wrap gap-1">
@@ -117,7 +146,19 @@ function Studio({ id }: { id: number }) {
           <h2 className="font-semibold">No transcript yet</h2>
           {isLead ? (
             <>
-              <p className="text-sm text-gray-600">Paste the meeting transcript. Each line gets a number the analyst can point at.</p>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm text-gray-600">Paste the meeting transcript. Each line gets a number the analyst can point at.</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSourceName("Velugu Cove Business Owners Meeting");
+                    setPaste(SAMPLE_TRANSCRIPT);
+                  }}
+                  className="rounded-lg border border-sea-200 bg-sea-50 px-2.5 py-1 text-xs font-semibold text-sea-800 hover:bg-sea-100 transition shadow-2xs"
+                >
+                  Paste Sample Meeting Transcript (Velugu Cove)
+                </button>
+              </div>
               <input aria-label="Where it came from" placeholder="Name (optional)" value={sourceName} onChange={(e) => setSourceName(e.target.value)} maxLength={120} className="w-full rounded border border-gray-300 p-2 text-sm" />
               <textarea aria-label="Transcript text" value={paste} onChange={(e) => setPaste(e.target.value)} rows={8} className="w-full rounded border border-gray-300 p-2 font-mono text-xs" />
               <button disabled={busy !== null || !canUpload(paste)} onClick={() => void act("upload", async () => { await api(`/projects/${id}/transcripts`, { method: "POST", body: { text: paste, source_name: sourceName.trim() } }); setPaste(""); reloadTr(); reloadBa(); })}

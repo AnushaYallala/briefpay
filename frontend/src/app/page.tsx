@@ -1,5 +1,7 @@
 "use client";
 import Link from "next/link";
+import { useState } from "react";
+import { CreateProjectModal } from "@/components/CreateProjectModal";
 import { ProjectCardView } from "@/components/ProjectCard";
 import { Empty, ErrorBox, Loading } from "@/components/ui";
 import type { ProjectCard } from "@/lib/types";
@@ -7,10 +9,12 @@ import { useApi } from "@/lib/useApi";
 
 export default function Home() {
   const { data, error, loading, slow, reload } = useApi<{ projects: ProjectCard[] }>("/projects");
+  const [modalOpen, setModalOpen] = useState(false);
+
   return (
     <div className="space-y-8">
       {/* High-impact Fintech Hero */}
-      <section className="relative rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
+      <section className="relative rounded-2xl border border-slate-200/90 bg-white/95 p-6 sm:p-8 shadow-xs backdrop-blur-xs">
         <div className="max-w-3xl space-y-4">
           <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700">
             <span className="h-2 w-2 rounded-full bg-emerald-500" />
@@ -24,6 +28,16 @@ export default function Home() {
           <p className="text-base sm:text-lg text-slate-600 leading-relaxed">
             Local businesses pool resources for shared projects with an all-or-nothing guarantee. Pledges are <strong>authorization holds</strong>, not charges: if the campaign falls short, every hold is released and nobody is charged. Delivered work is autonomously verified before payment.
           </p>
+
+          <div className="flex flex-wrap items-center gap-3 pt-1">
+            <button
+              type="button"
+              onClick={() => setModalOpen(true)}
+              className="inline-flex items-center gap-2 rounded-xl bg-sea-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-sea-800 transition shadow-sea-700/20"
+            >
+              <span>+ Start Community Initiative</span>
+            </button>
+          </div>
 
           <div className="grid grid-cols-2 gap-3 pt-2 sm:grid-cols-4">
             <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3">
@@ -48,17 +62,35 @@ export default function Home() {
 
       {/* Projects List */}
       <div>
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-xl font-bold tracking-tight text-slate-900">Community Projects</h2>
             <p className="text-xs text-slate-500">Browse shared initiatives and monitor live funding progress</p>
           </div>
+          <button
+            type="button"
+            onClick={() => setModalOpen(true)}
+            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition shadow-2xs"
+          >
+            + New Initiative
+          </button>
         </div>
 
         {loading && <Loading what="Loading projects" slow={slow} />}
         {error && <ErrorBox error={error} onRetry={reload} />}
         {!loading && !error && data && data.projects.length === 0 && (
-          <Empty title="No projects yet">No active projects found. Check back shortly or start a new community initiative.</Empty>
+          <div className="space-y-4">
+            <Empty title="No projects yet">No active projects found. Check back shortly or start a new community initiative.</Empty>
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => setModalOpen(true)}
+                className="inline-flex items-center gap-2 rounded-xl bg-sea-700 px-4 py-2 text-sm font-semibold text-white shadow-xs hover:bg-sea-800 transition"
+              >
+                + Start the First Initiative (Quick Setup)
+              </button>
+            </div>
+          </div>
         )}
         {!loading && !error && data && data.projects.length > 0 && (
           <ul className="grid gap-5 sm:grid-cols-2">
@@ -68,6 +100,14 @@ export default function Home() {
           </ul>
         )}
       </div>
+
+      {modalOpen && (
+        <CreateProjectModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          onCreated={() => reload()}
+        />
+      )}
     </div>
   );
 }

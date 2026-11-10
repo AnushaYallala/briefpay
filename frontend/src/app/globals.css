@@ -12,17 +12,23 @@
 body {
   font-family: var(--font-sans);
   @apply text-slate-800 antialiased;
-  background-color: #f1f5f9;
+  background-color: #f8fafc;
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(240, 253, 250, 0.6) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(241, 245, 249, 0.8) 0px, transparent 50%),
+    radial-gradient(at 50% 100%, rgba(248, 250, 252, 1) 0px, transparent 50%);
+  background-attachment: fixed;
   min-height: 100vh;
 }
 
 /* Polished Card Hover Transitions */
 .card-hover {
-  transition: all 0.15s ease-out;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .card-hover:hover {
   border-color: #cbd5e1;
-  box-shadow: 0 6px 16px -2px rgba(15, 23, 42, 0.08), 0 2px 6px -2px rgba(15, 23, 42, 0.04);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 25px -4px rgba(15, 23, 42, 0.06), 0 4px 6px -2px rgba(15, 23, 42, 0.02);
 }
 
 /* Crisp financial surfaces */
@@ -31,4 +37,12 @@ body {
   border: 1px solid #e2e8f0;
   box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04);
 }
+
+/* High-contrast dashboard container */
+.dashboard-panel {
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.03), 0 6px 16px -2px rgba(15, 23, 42, 0.02);
+}
+
 

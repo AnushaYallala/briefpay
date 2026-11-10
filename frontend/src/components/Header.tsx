@@ -12,10 +12,10 @@ export function PersonaSwitcher() {
   return (
     <label className="flex items-center gap-2 text-xs font-medium text-slate-600">
       <span className="sr-only">Switch demo person</span>
-      <span aria-hidden="true" className="hidden sm:inline text-slate-500">Active Persona:</span>
+      <span aria-hidden="true" className="hidden sm:inline text-slate-500 font-semibold">Stakeholder:</span>
       <div className="relative inline-block">
         <select
-          className="rounded-lg border border-slate-300 bg-white/90 px-2.5 py-1.5 text-xs font-medium text-slate-800 shadow-sm transition hover:border-slate-400 focus:border-sea-500 focus:outline-none focus:ring-2 focus:ring-sea-500/20"
+          className="rounded-lg border border-slate-300 bg-white/95 px-2.5 py-1.5 text-xs font-semibold text-slate-800 shadow-xs transition hover:border-slate-400 focus:border-sea-500 focus:outline-none focus:ring-2 focus:ring-sea-500/20"
           value={current}
           aria-label="Switch demo person"
           onChange={async (e) => {

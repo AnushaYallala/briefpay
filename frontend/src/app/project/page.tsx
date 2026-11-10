@@ -23,42 +23,82 @@ function Workspace({ id }: { id: number }) {
   const state = projectState(p.state);
   const c = p.campaign;
   const isMember = p.viewer !== null;
+
+  // Contextual primary CTA depending on project state
+  const nextActionCta = (() => {
+    switch (p.state) {
+      case "DRAFT":
+        return { label: "Open BA Requirements Studio", href: `/ba?id=${p.id}` };
+      case "READY_TO_CONTRACT":
+        return { label: "Review & Sign Contract", href: `/contract?id=${p.id}` };
+      case "BUILDING":
+        return { label: "Freelancer Submission Portal", href: `/submit?id=${p.id}` };
+      case "VERIFYING":
+        return { label: "View Verification Matrix", href: `/verify?id=${p.id}` };
+      case "VERIFIED":
+        return { label: "Authorize Payout in Payment Guardian", href: `/plans?id=${p.id}` };
+      case "PAID":
+        return { label: "View Public Immutable Ledger", href: `/ledger?id=${p.id}` };
+      default:
+        return null;
+    }
+  })();
+
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs">
-        <div className="mb-2">
-          <Link href="/" className="inline-flex items-center gap-1 text-xs font-semibold text-sea-700 hover:text-sea-800 transition">
+      {/* Executive Project Hub Header */}
+      <div className="rounded-2xl border border-slate-200/90 bg-white/95 p-6 shadow-xs backdrop-blur-xs">
+        <div className="mb-3">
+          <Link href="/" className="inline-flex items-center gap-1.5 text-xs font-semibold text-sea-700 hover:text-sea-800 transition">
             <span aria-hidden="true">&larr;</span> All projects
           </Link>
         </div>
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">{p.title}</h1>
+        
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">{p.title}</h1>
+              <Badge tone={state.tone}>{state.label}</Badge>
+            </div>
             {p.location_label && (
-              <p className="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500">
+              <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
                 <span>📍</span>
                 <span>{p.location_label}</span>
               </p>
             )}
           </div>
-          <Badge tone={state.tone}>{state.label}</Badge>
         </div>
+
         {p.summary && <p className="mt-3 max-w-3xl text-sm text-slate-600 leading-relaxed">{p.summary}</p>}
 
+        {/* Milestone Stepper Ribbon */}
         <div className="mt-6 border-t border-slate-100 pt-5">
           <Stepper state={p.state} projectId={p.id} />
         </div>
       </div>
 
-      <div className="rounded-xl border border-sea-200/80 bg-sea-50/50 p-4 shadow-xs">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="flex h-2 w-2 rounded-full bg-sea-600" />
-          <span className="text-xs font-bold uppercase tracking-wider text-sea-800">Current Phase & Next Action</span>
+      {/* Current Phase & Next Action Banner */}
+      <div className="rounded-xl border border-sea-200/80 bg-sea-50/70 p-4 shadow-xs flex flex-wrap items-center justify-between gap-3">
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-2">
+            <span className="flex h-2 w-2 rounded-full bg-sea-600 animate-pulse" />
+            <span className="text-xs font-bold uppercase tracking-wider text-sea-900">Current Phase &amp; Next Action</span>
+          </div>
+          <p className="text-sm font-medium text-sea-950 leading-relaxed" data-testid="what-next">{WHAT_NEXT[p.state] ?? ""}</p>
         </div>
-        <p className="text-sm font-medium text-sea-900 leading-relaxed" data-testid="what-next">{WHAT_NEXT[p.state] ?? ""}</p>
+        {nextActionCta && isMember && (
+          <Link
+            href={nextActionCta.href}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-sea-700 px-3.5 py-1.5 text-xs font-semibold text-white shadow-2xs hover:bg-sea-800 transition"
+          >
+            <span>{nextActionCta.label}</span>
+            <span aria-hidden="true">&rarr;</span>
+          </Link>
+        )}
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs sm:text-sm text-slate-600 shadow-xs flex flex-wrap items-center gap-2">
+      {/* Transparency Navigation Bar */}
+      <div className="rounded-xl border border-slate-200 bg-white/90 px-4 py-3 text-xs sm:text-sm text-slate-600 shadow-xs flex flex-wrap items-center gap-2">
         <span className="font-semibold text-slate-800">Transparency Records:</span>
         <Link href={`/ledger?id=${p.id}`} className="font-semibold text-sea-700 hover:text-sea-800 underline">Open the public ledger</Link>: every money and AI event, in order.
         {isMember && (
@@ -71,40 +111,69 @@ function Workspace({ id }: { id: number }) {
         )}
       </div>
 
+      {/* Main 2-Column Split Workspace */}
       <div className="grid gap-6 md:grid-cols-3">
+        {/* Left Column: Campaign, Terms, and Milestone Links */}
         <div className="space-y-6 md:col-span-2">
-          <section aria-label="Campaign" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-            <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-3">
-              <h2 className="font-bold text-slate-900">Campaign</h2>
+          {/* Campaign Section */}
+          <section aria-label="Campaign" className="rounded-2xl border border-slate-200/90 bg-white/95 p-5 sm:p-6 shadow-xs">
+            <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+              <div>
+                <h2 className="font-bold text-slate-900">Campaign</h2>
+                <p className="text-xs text-slate-500">Pledge-If collective funding pool</p>
+              </div>
               {c && (
-                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  Round {c.number}: <span className="text-sea-700 font-bold">{campaignState(c.state).label}</span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-sea-50 px-2.5 py-0.5 text-xs font-semibold text-sea-700 ring-1 ring-inset ring-sea-600/20">
+                  Round {c.number}: <span className="font-bold">{campaignState(c.state).label}</span>
                 </span>
               )}
             </div>
+
             {c ? (
-              <div className="space-y-2">
+              <div className="space-y-4">
                 <p className="sr-only">Round {c.number}: {campaignState(c.state).label}</p>
-                <PledgeProgress pledgedCents={c.pledged_cents} goalCents={c.goal_cents} count={c.pledge_count} open={c.state === "OPEN"} />
+                <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-4">
+                  <PledgeProgress pledgedCents={c.pledged_cents} goalCents={c.goal_cents} count={c.pledge_count} open={c.state === "OPEN"} />
+                </div>
+                <div className="flex items-center gap-2 text-xs text-slate-500">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  <span>Pledge-If Guarantee: Holds are released immediately if the goal is missed. Nobody is charged.</span>
+                </div>
               </div>
             ) : (
               <Empty title="No campaign yet">The campaign starts after the brief is approved and the builder has signed.</Empty>
             )}
           </section>
 
-          <section aria-label="Terms" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs text-sm">
-            <h2 className="font-bold text-slate-900 mb-4 border-b border-slate-100 pb-3">Terms</h2>
-            <dl className="grid grid-cols-2 gap-y-3">
-              <dt className="text-xs font-semibold uppercase tracking-wider text-slate-500">Budget</dt>
-              <dd className="font-bold text-slate-900">{formatMoney(p.budget_cents, p.currency)}</dd>
-              <dt className="text-xs font-semibold uppercase tracking-wider text-slate-500">Delivery time</dt>
-              <dd className="font-medium text-slate-800">{p.delivery_days ? `${p.delivery_days} days` : "not set"}</dd>
-              <dt className="text-xs font-semibold uppercase tracking-wider text-slate-500">Payment to the builder</dt>
-              <dd className="font-medium text-slate-800">{p.payout_release_policy === "HUMAN" ? "Approved by a person" : "Released automatically when the safety checks allow"}</dd>
+          {/* Terms Section */}
+          <section aria-label="Terms" className="rounded-2xl border border-slate-200/90 bg-white/95 p-5 sm:p-6 shadow-xs text-sm">
+            <div className="mb-4 border-b border-slate-100 pb-3">
+              <h2 className="font-bold text-slate-900">Terms</h2>
+              <p className="text-xs text-slate-500">Agreed commercial contract terms and payout criteria</p>
+            </div>
+            
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5">
+                <dt className="text-xs font-semibold uppercase tracking-wider text-slate-500">Budget</dt>
+                <dd className="mt-1 text-lg font-bold text-slate-900">{formatMoney(p.budget_cents, p.currency)}</dd>
+              </div>
+
+              <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5">
+                <dt className="text-xs font-semibold uppercase tracking-wider text-slate-500">Delivery time</dt>
+                <dd className="mt-1 text-lg font-semibold text-slate-800">{p.delivery_days ? `${p.delivery_days} days` : "not set"}</dd>
+              </div>
+
+              <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 sm:col-span-2">
+                <dt className="text-xs font-semibold uppercase tracking-wider text-slate-500">Payment to the builder</dt>
+                <dd className="mt-1 text-sm font-medium text-slate-800">
+                  {p.payout_release_policy === "HUMAN" ? "Approved by a person" : "Released automatically when the safety checks allow"}
+                </dd>
+              </div>
             </dl>
           </section>
         </div>
 
+        {/* Right Column: Financial Vault and Stakeholder List */}
         <div className="space-y-6">
           {isMember ? (
             <MoneyBox projectId={p.id} currency={p.currency} />
@@ -120,6 +189,7 @@ function Workspace({ id }: { id: number }) {
               )}
             </section>
           )}
+
           <MembersPanel members={p.members} viewerId={p.viewer?.member_id ?? null} />
         </div>
       </div>
