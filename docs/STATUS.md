@@ -35,7 +35,7 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 | T-03 | **Human:** free accounts, **no credit card anywhere**: Aiven free PostgreSQL (CA cert), Cloudinary free plan, Gemini key (AI Studio, no billing), GitHub fine-grained token, Render Hobby workspace | §5.5, §14.3 |  | TODO |  | Note Cloudinary credits + Gemini RPM/RPD in §4 |
 | T-04 | Backend skeleton: FastAPI, config, SQLAlchemy models for **all §6.2 tables**, Alembic initial migration, `/api/healthz` | §6, §10 | Claude | DONE | t-04-backend-foundation | 32 tables, migration 0001, 4 tests pass. SQLite default for local dev; set `DATABASE_URL` for Postgres |
 | T-05 | Frontend skeleton: Next.js static export, Tailwind, query-param routes, API client with Bearer token, login + `/auth/me`, persona switcher, wake-up screen | §5.2, §11, §14.4, §14.5 |  | REVIEW |  | `frontend/`: Next.js static export, Tailwind, API client with Bearer token, auth context, sign-in, demo persona switcher, home page, **project workspace page** (stepper, campaign progress, terms, people, Money box; D-050, D-051), loading / error / empty / waking-up states. 124 tests, mutation-checked; builds |
-| T-06 | LLM adapter (`GeminiModel`, `ReplayModel`), `agent_runs` logging, in-process DB job runner + `GET /jobs/{id}` | §7.0 | Claude | DONE | t-06-llm-adapter-jobs | LLMAdapter + GeminiBackend + ReplayBackend (record on miss), agent_runs logging, DB job runner with retry/backoff + `GET /api/jobs/{id}`. 24 tests. **A-4 still open**: no real Gemini call made yet (needs key + model name) |
+| T-06 | LLM adapter (`GeminiModel`, `ReplayModel`), `agent_runs` logging, in-process DB job runner + `GET /jobs/{id}` | §7.0 | Claude / Gemini | DONE | main | LLMAdapter + GeminiBackend + ReplayBackend (record on miss), agent_runs logging, DB job runner with retry/backoff + `GET /api/jobs/{id}`. Multi-model routing pool (`gemini-3.5-flash-lite`, `gemini-3.1-flash-lite`, `gemini-2.5-flash`, `gemini-3.5-flash`, `gemini-2.5-pro`) with automated 429 quota fallback. A-4 verified live with real Gemini API call. |
 | T-07 | `ProjectService` + `CampaignService` state machines (+ illegal-transition tests); `LedgerService` (append-only, gapless seq, POOL bucket) | §6.1, §6.3 | Claude | DONE | t-40-settlement-state-ledger | Project + campaign state machines (every illegal pair tested), append-only gapless POOL ledger, pool can't go negative. LedgerService has no bond/bonus types (D-020) |
 | T-08 | Configure the **APIMatic Context Plugin** (MCP) in every AI coding tool used; add exact setup steps to AGENTS.md §6; claim free APIMatic subscription | §9.7 |  | TODO |  | Before T-20 |
 
@@ -159,6 +159,17 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-10 14:30 IST · Gemini · T-06 Gemini multi-model routing & live API verification (DONE)
+- Did:
+  - Configured `GEMINI_API_KEY` in `backend/.env` (gitignored).
+  - Implemented multi-model routing pool in `GeminiBackend` with automated fallback: `gemini-3.5-flash-lite` (primary, 15 RPM / 500 RPD), `gemini-3.1-flash-lite` (15 RPM / 500 RPD), `gemini-2.5-flash` (5 RPM / 20 RPD), `gemini-3.5-flash`, `gemini-2.5-pro`.
+  - Automatically catches 429 quota exhaustion or model unavailability and transparently routes to the next model in the pool, logging the actual model used in `agent_runs` for the AI audit trail.
+  - Verified live model execution with real API call returning structured JSON. Closes Open Item A-4.
+  - Added unit test `test_gemini_fallback_routes_on_quota_error` in `test_llm_adapter.py`.
+- Tests: `pytest backend/tests/test_llm_adapter.py` -> 18/18 passed.
+- Contract changes: none.
+- Next step: Contract screen (T-30/T-35) and Freelancer Submission portal. Push commits to `origin/main` after Anusha adds `meghavardhan-git` as collaborator.
 
 ### 2026-11-10 14:15 IST · Gemini · T-16 BA Studio & T-17 BRD Viewer screens (REVIEW)
 - Did:
