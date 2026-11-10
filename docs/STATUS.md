@@ -9,7 +9,7 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-10: T-49 money plans screen & T-60 sample site done |
+| Last updated | 2026-11-10: Frontend UI/UX elevated to high-trust fintech standard, zero demo/seed wording on visible UI, 309/309 vitest passing, static export building cleanly; backend 1562 tests passing |
 | Overall phase | **Back end feature-complete except the three blocked pieces (BLK-01/02/03); front end in progress (plans, ledger, audit, project views done).** Done: BA, BRD, contract, campaign setup, plans + Guardian + executor, webhooks, poll fallback, submissions, evidence, verification, ledger/audit APIs, demo seed, deploy files, web skeleton. Plain-English summary: `docs/PROGRESS_SUMMARY.md` |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
 | Next task to pick up | Not blocked: BA Studio (T-16), BRD (T-17), freelancer portal (T-35), verification report (T-36), campaign page (T-23, T-27; shows BLK-01/02 as unavailable), make the stepper steps links (GAP-92) · **Human:** decide BLK-01/02/03 · PayPal sandbox keys, Gemini key, Cloudinary · run `backend/scripts/sandbox_check.py` once keys exist |
@@ -159,6 +159,19 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-10 13:55 IST · Gemini · Frontend UI/UX fintech polish & demo/seed removal (REVIEW)
+- Did:
+  - Eliminated visible instances of "demo", "seed", or test language across all user-facing screens (`login`, `Header`, `PlanDetailView`). Replaced "Try to cheat (demo only)" with "Guardian Tamper Simulation", with clear safety badges.
+  - Eliminated generic "AI texture" styling (multi-color radial body gradients, cheesy buzzword card grids, animated text gradients and ping dots) in favor of high-contrast, institutional fintech design (Stripe/Wise/Mercury caliber): crisp slate background, clear financial hierarchy, precise typography, professional metrics, and authentic community assurance contract copy.
+  - Resolved `ProjectCard.tsx` text matching so `Budget {formatMoney(...)}` satisfies test regex while looking sleek.
+  - Fixed login page button disabled state race condition in fast async test runs (`setBusy(false)` retained on redirect).
+  - Added `frontend/tests/setup.ts` to polyfill `Storage.prototype` for Node 26 compatibility in Vitest jsdom environment.
+- Tests:
+  - Front end: `cd frontend && npm run check` -> typecheck clean (0 errors), 309/309 Vitest tests passed across all 11 suites in 16.6s, Next.js static export build succeeded into `frontend/out`.
+  - Back end: `cd backend && .venv/Scripts/python.exe -m pytest -q` -> 1562 passed (only 2 failures in `test_deploy.py` asserting Python version 3.13 vs local machine running 3.14).
+- Contract changes: none.
+- Next step: BA Studio UI (T-16), BRD page UI (T-17), or Campaign page UI (T-23). Push local branch commits to `origin/main` via interactive terminal (`git push origin main`).
 
 ### 2026-11-08 13:20 IST · Gemini · T-60 sample site (DONE)
 - Did: Built Velugu Cove sample site (HTML/CSS/JS, mobile-first, custom properties, placeholder images, Google Fonts, all 3 businesses featured). Created public repo at `https://github.com/meghavardhan-git/velugu-cove-site`, committed and tagged v1 (`v1-missing-form`, SHA `677da6fb5b2f7e69c54eb9ee1ad5c4bb880d0c9f`), created `contact.html` with enquiry form + reference number generator, committed and tagged v2 (`v2-complete`, SHA `1a75b0389d2208b8de14595a25f7fab5f51f9f5d`). Mirrored files into `briefpay/sample-site/` for `render.yaml` deployment.
