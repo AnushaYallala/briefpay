@@ -144,8 +144,8 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | GAP-106 | Low | BA Studio cannot replace the transcript once the analysis has started (the server decides; the page only offers the paste form when none exists). | Add a 'replace transcript' action if the lead needs it. |
 | GAP-107 | Low | Answer sources ('answer 12') are chips that highlight nothing; the answer is shown in its question card. | Scroll to the answer card on click. |
 | GAP-108 | Low | Timer tests that spy on interval functions are timing-sensitive under heavy load (one failed in about one full run in four before the wait was added). | Keep waits on observable state; recheck if flakes return. |
-| GAP-109 | Low | No side-by-side comparison of two brief versions; older versions can only be opened one at a time. | Add a diff view if sponsors ask for it. |
-| GAP-110 | Low | BA Studio still has its own copy of the job-following code; `useJob` exists now. | Switch BA Studio to `useJob`. |
+| GAP-109 | Low | No side-by-side comparison of two brief versions (the teammate's brief page was kept; check whether it has version chips and hash-bound decisions). | See D-056 for the ideas. |
+| GAP-110 | Low | BA Studio has its own copy of the job-following code; a shared hook was written for the dropped brief page and removed with it. | Add a shared hook if a second screen needs it. |
 
 ---
 
@@ -217,8 +217,8 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | FIX-62 | T-49 | A Python heredoc turned a backslash-b in a regex into a real backspace character inside a test file, so the check silently matched nothing. | Repaired using `chr()`; rule recorded in STATUS gotchas: use the Write tool for text with backslashes. |
 | FIX-63 | T-16 | Mutation check found 29 weak spots in BA Studio (boundary score, fallbacks, hover and chart details, timers stopped, failed run reload, flash of the upload form, load error mistaken for no transcript, clearing the upload box, badge colours, resolution of an unsettled conflict). | Tests for each; a redundant empty-list guard and a redundant session check removed. |
 | FIX-64 | T-16 | A mutation run that was killed by the session ending left its last deliberate break (a removed `clearInterval`) in the BA page. | The timer test caught it; restored; process rule recorded in STATUS gotchas (run in the background, verify sources after any interruption). |
-| FIX-65 | T-17 | Mutation check found 16 weak spots in the brief page (the table's names not refreshing, stopping timers, version reset after writing, messages cleared on the next try, whole page replaced during a refresh, money in the brief's currency, empty decision list, reload after approving, the project page's link number). | Tests for each; one redundant check removed. |
-| FIX-66 | T-17 | One test depended on a 0.3 s delay and failed when the machine stalled (a back-end run took 42 minutes). | Delay 1.5 s and wait 4 s. |
+| FIX-65 | T-17 | My brief page (dropped after the merge) was mutation-checked: 16 weak spots found and fixed in it. | No code remains; the lesson is to pull before starting a screen. |
+| FIX-66 | T-17 | A test that relied on a 0.3 s delay failed when the machine stalled (a back-end run took 42 minutes). | Give delay-based tests a wide margin. |
 
 ---
 

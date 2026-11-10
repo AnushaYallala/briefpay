@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact Us — Velugu Cove</title>
+  <meta name="description" content="Get in touch with the Velugu Cove community. Send us an enquiry about homestays, dining, boat tours, or anything else.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* ---- Contact page specific styles ---- */
+    .contact-section {
+      padding: var(--gap-xl) 0;
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--gap-lg);
+      align-items: start;
+    }
+
+    @media (max-width: 768px) {
+      .contact-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .contact-info {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: var(--gap-lg);
+      box-shadow: var(--shadow);
+    }
+
+    .contact-info h3 {
+      color: var(--ocean-dark);
+      margin-bottom: var(--gap);
+    }
+
+    .contact-info p {
+      margin-bottom: 0.75rem;
+      color: var(--text-light);
+    }
+
+    .contact-info .info-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .contact-info .info-item .icon {
+      font-size: 1.3rem;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .enquiry-form {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: var(--gap-lg);
+      box-shadow: var(--shadow);
+    }
+
+    .enquiry-form h3 {
+      color: var(--ocean-dark);
+      margin-bottom: var(--gap);
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+      color: var(--text);
+      font-size: 0.95rem;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-family: 'Open Sans', sans-serif;
+      font-size: 1rem;
+      color: var(--text);
+      transition: border-color var(--transition);
+      background: var(--sand-light);
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--ocean);
+      background: var(--white);
+    }
+
+    .form-group textarea {
+      resize: vertical;
+      min-height: 120px;
+    }
+
+    .form-group select {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23555' stroke-width='2' fill='none'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 1rem center;
+      padding-right: 2.5rem;
+    }
+
+    .form-group .required {
+      color: var(--sunset);
+    }
+
+    .submit-btn {
+      display: inline-block;
+      background: var(--ocean);
+      color: var(--white);
+      padding: 0.85rem 2.5rem;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background var(--transition), transform var(--transition);
+      width: 100%;
+      text-align: center;
+    }
+
+    .submit-btn:hover {
+      background: var(--ocean-dark);
+      transform: translateY(-1px);
+    }
+
+    .submit-btn:active {
+      transform: translateY(0);
+    }
+
+    /* Success message */
+    .success-message {
+      display: none;
+      background: linear-gradient(135deg, #d4edda, #c3e6cb);
+      border: 2px solid #28a745;
+      border-radius: var(--radius);
+      padding: var(--gap-lg);
+      text-align: center;
+    }
+
+    .success-message.visible {
+      display: block;
+    }
+
+    .success-message .success-icon {
+      font-size: 3rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .success-message h3 {
+      color: #155724;
+      margin-bottom: 0.5rem;
+    }
+
+    .success-message p {
+      color: #155724;
+      margin-bottom: 0.5rem;
+    }
+
+    .success-message .ref-number {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--ocean-dark);
+      background: var(--white);
+      display: inline-block;
+      padding: 0.5rem 1.5rem;
+      border-radius: 8px;
+      margin: 0.75rem 0;
+      letter-spacing: 1px;
+    }
+
+    .success-message .back-link {
+      display: inline-block;
+      margin-top: 1rem;
+      color: var(--ocean);
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .success-message .back-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===== Header ===== -->
+  <header class="site-header">
+    <div class="container nav-wrap">
+      <a href="index.html" class="logo">Velugu <span>Cove</span></a>
+      <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="nav-links" id="nav-links">
+        <a href="index.html">Home</a>
+        <a href="stay.html">Stay</a>
+        <a href="eat.html">Eat</a>
+        <a href="tours.html">Tours</a>
+        <a href="getting-there.html">Getting There</a>
+        <a href="contact.html">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ===== Page Header ===== -->
+  <section class="page-hero" style="background: linear-gradient(135deg, var(--ocean), var(--ocean-dark));">
+    <div class="container">
+      <h1>Contact Us</h1>
+      <p>Have a question or want to plan your visit? We'd love to hear from you!</p>
+    </div>
+  </section>
+
+  <!-- ===== Contact Section ===== -->
+  <section class="contact-section">
+    <div class="container">
+      <div class="contact-grid">
+
+        <!-- Left: Contact Info -->
+        <div class="contact-info">
+          <h3>📍 How to Reach Us</h3>
+
+          <div class="info-item">
+            <span class="icon">🏡</span>
+            <div>
+              <strong>Sea Breeze Homestay (Lakshmi)</strong>
+              <p>For room bookings and homestay enquiries<br>
+              📞 +91 98765 43210<br>
+              💬 <a href="https://wa.me/919876543210" style="color: var(--ocean);">WhatsApp Lakshmi</a></p>
+            </div>
+          </div>
+
+          <div class="info-item">
+            <span class="icon">🍽️</span>
+            <div>
+              <strong>Ravi's Fish Kitchen (Ravi)</strong>
+              <p>For group reservations and catering<br>
+              📞 +91 98765 43211</p>
+            </div>
+          </div>
+
+          <div class="info-item">
+            <span class="icon">⛵</span>
+            <div>
+              <strong>Cove Boat Tours (Meena)</strong>
+              <p>For tour bookings and group rates<br>
+              📞 +91 98765 43212<br>
+              💬 <a href="https://wa.me/919876543212" style="color: var(--ocean);">WhatsApp Meena</a></p>
+            </div>
+          </div>
+
+          <hr style="margin: 1.5rem 0; border: none; border-top: 1px solid #eee;">
+
+          <div class="info-item">
+            <span class="icon">✉️</span>
+            <div>
+              <strong>General Enquiries</strong>
+              <p>hello@velugucove.in</p>
+            </div>
+          </div>
+
+          <div class="info-item">
+            <span class="icon">📍</span>
+            <div>
+              <strong>Location</strong>
+              <p>Velugu Cove, Andhra Pradesh, India<br>
+              Near Visakhapatnam (Vizag)</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Enquiry Form -->
+        <div id="form-container">
+          <div class="enquiry-form" id="enquiry-form-card">
+            <h3>📝 Send an Enquiry</h3>
+            <p style="color: var(--text-light); margin-bottom: 1.25rem;">Fill out the form below and we'll get back to you within 24 hours.</p>
+
+            <form id="enquiry-form" novalidate>
+              <div class="form-group">
+                <label for="name">Your Name <span class="required">*</span></label>
+                <input type="text" id="name" name="name" placeholder="e.g. Priya Sharma" required>
+              </div>
+
+              <div class="form-group">
+                <label for="contact">Phone or Email <span class="required">*</span></label>
+                <input type="text" id="contact" name="contact" placeholder="e.g. +91 99999 00000 or priya@email.com" required>
+              </div>
+
+              <div class="form-group">
+                <label for="interest">I'm Interested In <span class="required">*</span></label>
+                <select id="interest" name="interest" required>
+                  <option value="" disabled selected>Select your interest…</option>
+                  <option value="stay">🏡 Staying at Sea Breeze Homestay</option>
+                  <option value="eat">🍽️ Dining at Ravi's Fish Kitchen</option>
+                  <option value="tour">⛵ Boat Tours with Meena</option>
+                  <option value="visit">🏖️ General Visit / All of the Above</option>
+                  <option value="other">💬 Something Else</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="message">Your Message <span class="required">*</span></label>
+                <textarea id="message" name="message" placeholder="Tell us about your plans — dates, group size, any special requests…" required></textarea>
+              </div>
+
+              <button type="submit" class="submit-btn">Send Enquiry</button>
+            </form>
+          </div>
+
+          <!-- Success Message (hidden by default) -->
+          <div class="success-message" id="success-message">
+            <div class="success-icon">✅</div>
+            <h3>Enquiry Sent Successfully!</h3>
+            <p>Thank you for your interest in Velugu Cove. We'll get back to you within 24 hours.</p>
+            <p>Your reference number:</p>
+            <div class="ref-number" id="ref-number">VC-000000</div>
+            <p style="font-size: 0.9rem; color: #555;">Please save this number for your records.</p>
+            <a href="index.html" class="back-link">← Back to Home</a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Footer ===== -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <h4>Velugu Cove</h4>
+          <p>A tiny coastal village where three families welcome you with open arms, fresh food, and the best sunsets you'll ever see.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Quick Links</h4>
+          <ul>
+            <li><a href="stay.html">Sea Breeze Homestay</a></li>
+            <li><a href="eat.html">Ravi's Fish Kitchen</a></li>
+            <li><a href="tours.html">Cove Boat Tours</a></li>
+            <li><a href="getting-there.html">Getting There</a></li>
+            <li><a href="contact.html">Contact Us</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Get in Touch</h4>
+          <p>📍 Velugu Cove, Andhra Pradesh, India</p>
+          <p>📞 +91 98765 43210</p>
+          <p>✉️ hello@velugucove.in</p>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 Velugu Cove Tourism. All rights reserved. Made with ❤️ by Arjun.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+  <script>
+    // ===== Enquiry Form Handler =====
+    (function () {
+      const form = document.getElementById('enquiry-form');
+      const formCard = document.getElementById('enquiry-form-card');
+      const successMsg = document.getElementById('success-message');
+      const refEl = document.getElementById('ref-number');
+
+      if (!form) return;
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        // Basic validation
+        const name = document.getElementById('name').value.trim();
+        const contact = document.getElementById('contact').value.trim();
+        const interest = document.getElementById('interest').value;
+        const message = document.getElementById('message').value.trim();
+
+        if (!name || !contact || !interest || !message) {
+          alert('Please fill in all required fields.');
+          return;
+        }
+
+        // Generate a reference number: VC-XXXXXX
+        const refNum = 'VC-' + String(Math.floor(100000 + Math.random() * 900000));
+        refEl.textContent = refNum;
+
+        // Hide form, show success
+        formCard.style.display = 'none';
+        successMsg.classList.add('visible');
+
+        // Scroll to the success message
+        successMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+    })();
+  </script>
+</body>
+</html>

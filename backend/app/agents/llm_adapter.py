@@ -121,14 +121,24 @@ class ReplayBackend:
 
 
 class GeminiBackend:
-    """Gemini via google-genai with structured JSON output. Free tier only; never enable billing (D-012)."""
+    """Gemini via google-genai with structured JSON output and model routing fallback. Free tier only; never enable billing (D-012)."""
 
     provider = "gemini"
+    DEFAULT_FALLBACKS = (
+        "gemini-3.5-flash-lite",
+        "gemini-3.1-flash-lite",
+        "gemini-2.5-flash",
+        "gemini-3.5-flash",
+        "gemini-2.5-pro",
+    )
 
-    def __init__(self, api_key: str, model: str, client=None):
+    def __init__(self, api_key: str, model: str, client=None, fallback_models: tuple[str, ...] | None = None):
         if not model:
             raise AgentError("AI_MODEL is not set (verify the current Gemini Flash model name; A-4)")
         self.model = model
+        self.fallback_models = fallback_models if fallback_models is not None else tuple(
+            m for m in self.DEFAULT_FALLBACKS if m != model
+        )
         if client is not None:
             self._client = client
         else:
@@ -144,27 +154,39 @@ class GeminiBackend:
             else types.Part.from_bytes(data=p.data, mime_type=p.mime)
             for p in parts
         ]
-        try:
-            resp = self._client.models.generate_content(
-                model=self.model,
-                contents=contents,
-                config=types.GenerateContentConfig(
-                    system_instruction=system, temperature=temperature,
-                    response_mime_type="application/json", response_schema=schema,
-                ),
-            )
-            data = json.loads(resp.text)
-        except json.JSONDecodeError as e:
-            # Not valid JSON at all: surface as a dict the schema check will reject (and retry once)
-            return RawResult(data={"__invalid_json__": str(e)})
-        except Exception as e:  # network, quota, safety block, ...
-            raise AgentError(f"gemini call failed: {type(e).__name__}: {e}") from e
-        usage = getattr(resp, "usage_metadata", None)
-        return RawResult(
-            data=data, provider=self.provider, model=self.model,
-            input_tokens=getattr(usage, "prompt_token_count", None),
-            output_tokens=getattr(usage, "candidates_token_count", None),
-        )
+
+        models_to_try = [self.model] + [m for m in self.fallback_models if m != self.model]
+        last_error = None
+
+        for candidate_model in models_to_try:
+            try:
+                resp = self._client.models.generate_content(
+                    model=candidate_model,
+                    contents=contents,
+                    config=types.GenerateContentConfig(
+                        system_instruction=system, temperature=temperature,
+                        response_mime_type="application/json", response_schema=schema,
+                    ),
+                )
+                data = json.loads(resp.text)
+                usage = getattr(resp, "usage_metadata", None)
+                return RawResult(
+                    data=data, provider=self.provider, model=candidate_model,
+                    input_tokens=getattr(usage, "prompt_token_count", None),
+                    output_tokens=getattr(usage, "candidates_token_count", None),
+                )
+            except json.JSONDecodeError as e:
+                # Not valid JSON at all: surface as a dict the schema check will reject (and retry once)
+                return RawResult(data={"__invalid_json__": str(e)})
+            except Exception as e:
+                last_error = e
+                err_str = str(e).lower()
+                is_recoverable = any(k in err_str for k in ("429", "quota", "resource_exhausted", "rate", "limit", "not_found", "not found"))
+                if not is_recoverable and len(models_to_try) == 1:
+                    break
+                continue
+
+        raise AgentError(f"gemini call failed across models: {type(last_error).__name__}: {last_error}") from last_error
 
 
 # ---------- adapter ----------

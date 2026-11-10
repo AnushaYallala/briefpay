@@ -190,6 +190,31 @@ def test_gemini_api_failure_becomes_agent_error(factory):
         call(LLMAdapter(GeminiBackend("k", "m", client=FakeClient(exc=ConnectionError("down"))), factory))
 
 
+def test_gemini_fallback_routes_on_quota_error(factory):
+    class RoutingClient:
+        def __init__(self):
+            self.models = SimpleNamespace(generate_content=self._gen)
+            self.attempted = []
+
+        def _gen(self, **kw):
+            self.attempted.append(kw["model"])
+            if kw["model"] == "gemini-primary":
+                raise RuntimeError("429 ResourceExhausted: rate limit exceeded")
+            return SimpleNamespace(
+                text='{"score": 88, "note": "routed"}',
+                usage_metadata=SimpleNamespace(prompt_token_count=5, candidates_token_count=6),
+            )
+
+    rc = RoutingClient()
+    backend = GeminiBackend("k", "gemini-primary", client=rc, fallback_models=("gemini-backup",))
+    adapter = LLMAdapter(backend, factory)
+    res = adapter.generate_json(system="s", parts=[TextPart("t")], schema=Out, agent="BA_SCORE", project_id=1, prompt_version="v1")
+    assert res.score == 88
+    assert rc.attempted == ["gemini-primary", "gemini-backup"]
+    run = runs(factory)[-1]
+    assert run.model == "gemini-backup"
+
+
 def test_gemini_requires_a_model_name():
     with pytest.raises(AgentError):
         GeminiBackend("k", "", client=object())

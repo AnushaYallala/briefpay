@@ -353,7 +353,7 @@ def test_a_missing_transcript_answers_with_the_code_the_studio_looks_for(t, clie
     assert "NO_TRANSCRIPT" in read("app/ba/page.tsx")
 
 
-def test_the_brd_types_match_real_responses_and_the_words_cover_every_state(client, seeded):  # noqa: F811
+def test_the_brd_types_match_the_real_public_and_member_responses(client, seeded):  # noqa: F811
     types = read("lib/types.ts")
     pid = seeded["payout_ready_project_id"]
     for headers in (None, auth_header(client)):
@@ -370,15 +370,6 @@ def test_the_brd_types_match_real_responses_and_the_words_cover_every_state(clie
         assert all(set(a) == {"member_id", "member_name"} for a in got["awaiting"])
         assert got["content"]["stakeholders"] and all(set(s) == nested_item_fields(types, "BrdContent", "stakeholders") for s in got["content"]["stakeholders"])
     assert client.get(f"/api/projects/{pid + 99}/brd").status_code == 404
-    from app.schemas.brd import EvidenceType
-    from typing import get_args
-    brd_ts = read("lib/brd.ts")
-    assert set(re.findall(r'\b([A-Z_]{4,}): "', block(brd_ts, "export const EVIDENCE_WORDS"))) == set(get_args(EvidenceType))
-    assert keys_of(block(brd_ts, "export const BRD_STATES")) == {"DRAFT", "PENDING_APPROVAL", "APPROVED", "SUPERSEDED"}
-    assert re.search(r"BRD_REFRESH_MS = 10000;", brd_ts)
-    from app.schemas.brd import AutoCheckHint
-    hint_types = set(get_args(AutoCheckHint.model_fields["type"].annotation))
-    assert set(re.findall(r'case "([A-Z_]+)":', brd_ts)) == hint_types
 
 
 def nested_item_fields(type_source: str, name: str, field: str) -> set[str]:

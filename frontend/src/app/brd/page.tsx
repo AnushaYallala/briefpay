@@ -1,237 +1,279 @@
 "use client";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
-import { RequirementDialog } from "@/components/RequirementDialog";
-import { RequirementsGrid } from "@/components/RequirementsGrid";
+import { Suspense, useState, useMemo } from "react";
+import { AllCommunityModule, ModuleRegistry, type ColDef } from "ag-grid-community";
+import { AgGridReact } from "ag-grid-react";
 import { Badge, Empty, ErrorBox, Loading } from "@/components/ui";
-import { API_BASE, api, ApiError } from "@/lib/api";
+import { apiPost } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { BRD_REFRESH_MS, approvedCount, brdState, markdownUrl, mayDecide, mayGenerate, nameOf, progressText, rejectReady, shortHash } from "@/lib/brd";
-import { formatMoney } from "@/lib/money";
-import { roleOn } from "@/lib/plans";
-import { formatDateTime } from "@/lib/time";
-import type { BrdDecisionResult, BrdRequirement, BrdView, ProjectDetail } from "@/lib/types";
+import type { BRDResponse, BRDRequirementItem, ProjectDetail } from "@/lib/types";
 import { useApi } from "@/lib/useApi";
-import { useJob } from "@/lib/useJob";
 
-const said = (e: unknown) => (e instanceof ApiError ? e.message : "Something went wrong");
+ModuleRegistry.registerModules([AllCommunityModule]);
 
-function List({ title, items }: { title: string; items: string[] }) {
-  if (items.length === 0) return null;
-  return <section aria-label={title}><h3 className="font-medium">{title}</h3><ul className="list-disc pl-5 text-sm text-gray-700">{items.map((x, i) => <li key={i}>{x}</li>)}</ul></section>;
-}
-
-function Brief({ id }: { id: number }) {
+function BRDView({ id }: { id: number }) {
   const auth = useAuth();
-  const [version, setVersion] = useState<number | null>(null);
-  const brd = useApi<BrdView>(auth.status === "loading" ? null : `/projects/${id}/brd${version === null ? "" : `?version=${version}`}`, auth.user?.id ?? null);
-  const pr = useApi<ProjectDetail>(auth.status === "loading" ? null : `/projects/${id}`, auth.user?.id ?? null);
-  const [open, setOpen] = useState<BrdRequirement | null>(null);
-  const [search, setSearch] = useState("");
-  const [comment, setComment] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
   const [busy, setBusy] = useState<string | null>(null);
-  const [problem, setProblem] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
-  const [job, setJob] = useState<number | null>(null);
-  const { reload: reloadBrd } = brd;
-  const { reload: reloadPr } = pr;
-  const waiting = brd.data?.status === "PENDING_APPROVAL";
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [comment, setComment] = useState("");
+  const [selectedReq, setSelectedReq] = useState<BRDRequirementItem | null>(null);
 
-  useEffect(() => {                                   // a document waiting for decisions keeps asking for news while the tab is visible
-    if (!waiting) return;
-    const t = setInterval(() => document.visibilityState === "visible" && reloadBrd(), BRD_REFRESH_MS);
-    return () => clearInterval(t);
-  }, [waiting, reloadBrd]);
-
-  const jobDone = useCallback(() => { setJob(null); setVersion(null); reloadBrd(); reloadPr(); }, [reloadBrd, reloadPr]);
-  const jobFailed = useCallback((m: string) => { setJob(null); setProblem(`The brief could not be written. ${m}`); }, []);
-  useJob(job, jobDone, jobFailed);
-
-  const names = useMemo(() => Object.fromEntries((pr.data?.members ?? []).map((m) => [m.id, m.display_name])) as Record<number, string>, [pr.data]);
-  const close = useCallback(() => setOpen(null), []);
-
-  if (auth.status === "loading") return <Loading what="Checking who you are" />;
-  const role = roleOn(auth.memberships, id);
-  const projectState = pr.data?.state ?? "";
-  const none = brd.error?.code === "NO_BRD";
-
-  async function act(name: string, fn: () => Promise<void>) {
-    setBusy(name);
-    setProblem(null);
-    setMessage(null);
-    try { await fn(); } catch (e) {
-      setProblem(said(e));
-      if (e instanceof ApiError && e.code === "HASH_MISMATCH") reloadBrd();       // the document changed under the reader: show the new one
-    } finally { setBusy(null); }
-  }
-
-  const header = (
-    <div>
-      <Link href={`/project?id=${id}`} className="text-sm text-sea-700 hover:underline">Back to the project</Link>
-      <h1 className="mt-1 text-2xl font-bold">The brief</h1>
-      <p className="text-sm text-gray-600">What will be built, in plain words, and exactly how each part will be checked. Sponsors approve one exact version; once all approve it is locked.</p>
-    </div>
-  );
-  const generate = mayGenerate(role, projectState) && (
-    <button disabled={busy !== null || job !== null} onClick={() => void act("generate", async () => { const r = await api<{ job_id: number }>(`/projects/${id}/brd/generate`, { method: "POST" }); setJob(r.job_id); })}
-            className="rounded bg-sea-600 px-3 py-1.5 text-sm text-white hover:bg-sea-700 disabled:opacity-60">{none ? "Write the brief" : "Write a new version"}</button>
+  const { data: project } = useApi<ProjectDetail>(auth.status === "loading" ? null : `/projects/${id}`, auth.user?.id ?? null);
+  const { data: brd, error, loading, slow, reload } = useApi<BRDResponse>(
+    auth.status === "loading" ? null : `/projects/${id}/brd`,
+    `${auth.user?.id ?? "anon"}-${refreshKey}`
   );
 
-  if (brd.loading && !brd.data) return <Loading what="Loading the brief" slow={brd.slow} />;
-  if (none) {
-    return (
-      <div className="space-y-4">
-        {header}
-        {problem && <p role="alert" className="rounded bg-red-50 p-2 text-sm text-red-800">{problem}</p>}
-        {job !== null && <p role="status" className="rounded bg-sea-50 p-2 text-sm text-sea-700">The brief is being written. This takes a short while.</p>}
-        <Empty title="No brief has been written yet">The business analyst has to reach the target score first; then the lead writes the brief here.</Empty>
-        {generate}
-      </div>
-    );
+  async function submitDecision(decision: "APPROVE" | "REJECT") {
+    if (!brd) return;
+    setBusy(decision);
+    setActionError(null);
+    try {
+      await apiPost(`/projects/${id}/brd/${brd.version}/decision`, {
+        decision,
+        brd_sha256: brd.sha256,
+        comment: comment.trim() || null,
+      });
+      setComment("");
+      setRefreshKey((k) => k + 1);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Could not submit decision");
+    } finally {
+      setBusy(null);
+    }
   }
-  if (brd.error && !brd.data) return <ErrorBox error={brd.error} onRetry={reloadBrd} />;
-  if (!brd.data) return null;
 
-  const b = brd.data;
-  const c = b.content;
-  const st = brdState(b.status);
-  const approved = approvedCount(b.approvals);
-  const required = approved + b.awaiting.length;
-  const decide = mayDecide(role, b.status, projectState);
-  const mine = auth.user ? b.approvals.find((a) => a.member_name === auth.user?.display_name) : undefined;
+  const columns = useMemo<ColDef<BRDRequirementItem>[]>(() => [
+    { field: "code", headerName: "Code", width: 110, pinned: "left", sort: "asc" },
+    { field: "title", headerName: "Requirement Title", flex: 1, minWidth: 200 },
+    {
+      field: "priority",
+      headerName: "Priority",
+      width: 110,
+      cellClass: (p) =>
+        p.value === "MUST" ? "font-bold text-red-700" : p.value === "SHOULD" ? "font-semibold text-sea-700" : "text-slate-500",
+    },
+    {
+      headerName: "Criteria",
+      width: 100,
+      valueGetter: (p) => `${p.data?.acceptance_criteria?.length ?? 0} ACs`,
+    },
+    { field: "weight", headerName: "Weight", width: 90 },
+  ], []);
+
+  if (auth.status === "loading" || loading) return <Loading what="Loading BRD" slow={slow} />;
+  if (error) return <ErrorBox error={error} onRetry={reload} />;
+  if (!brd) return null;
+
+  const userMembership = project?.members?.find((m) => m.email === auth.user?.email);
+  const isSponsor = userMembership?.role === "LEAD" || userMembership?.role === "SPONSOR";
+  const userDecision = brd.approvals.find((a) => a.member_id === userMembership?.id);
+  const canDecide = isSponsor && brd.status !== "LOCKED" && !userDecision;
 
   return (
-    <div className="space-y-5">
-      {header}
-      {brd.error && <p role="alert" className="rounded bg-amber-50 p-2 text-sm text-amber-800">Could not refresh just now ({brd.error.message}). Showing the last version we have.</p>}
-      {problem && <p role="alert" className="rounded bg-red-50 p-2 text-sm text-red-800">{problem}</p>}
-      {message && <p role="status" className="rounded bg-sea-50 p-2 text-sm text-sea-700">{message}</p>}
-      {job !== null && <p role="status" className="rounded bg-sea-50 p-2 text-sm text-sea-700">The brief is being written. This takes a short while.</p>}
-
-      <section aria-label="Version" className="space-y-2 rounded-xl border border-gray-200 bg-white p-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-xl font-semibold" data-testid="title">{c.title || "Untitled brief"} · version {b.version}</h2>
-          <Badge tone={st.tone}>{st.label}</Badge>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs">
+        <div className="mb-2">
+          <Link href={`/project?id=${id}`} className="inline-flex items-center gap-1 text-xs font-semibold text-sea-700 hover:text-sea-800 transition">
+            <span aria-hidden="true">&larr;</span> Back to Project Workspace
+          </Link>
         </div>
-        <p className="text-sm text-gray-600">{st.hint}</p>
-        <p className="text-xs text-gray-500">
-          Fingerprint <span className="font-mono" title={b.sha256}>{shortHash(b.sha256)}</span>: a decision counts only for this exact text.
-          {b.score_at_generation !== null ? ` Written when the analysis scored ${b.score_at_generation}.` : ""}
-          {b.locked_at ? ` Locked ${formatDateTime(b.locked_at)}.` : ""}
-        </p>
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          {b.versions.length > 1 && b.versions.map((v) => (
-            <button key={v.version} aria-pressed={v.version === b.version} onClick={() => setVersion(v.version)}
-                    className={`rounded-full border px-3 py-1 ${v.version === b.version ? "border-sea-600 bg-sea-600 text-white" : "border-gray-300 bg-white text-gray-700"}`}>Version {v.version}</button>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
+              Business Requirements Document (BRD)
+            </h1>
+            <p className="mt-1 text-xs text-slate-500">
+              Cryptographically locked specification · Hash-bound unanimous approval required
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+              Version {brd.version}
+            </span>
+            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+              Score: {brd.score_at_generation}/100
+            </span>
+            <Badge tone={brd.status === "APPROVED" || brd.status === "LOCKED" ? "green" : "teal"}>
+              {brd.status}
+            </Badge>
+          </div>
+        </div>
+
+        {/* SHA-256 fingerprint pill & download button */}
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3 text-xs">
+          <div className="flex items-center gap-2 text-slate-500">
+            <span className="font-semibold text-slate-700">SHA-256 Fingerprint:</span>
+            <code className="rounded bg-slate-100 px-2 py-0.5 font-mono text-[11px] text-slate-800">
+              {brd.sha256}
+            </code>
+          </div>
+          <a
+            href={`/api/projects/${id}/brd/${brd.version}.md`}
+            download={`BRD-v${brd.version}.md`}
+            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition"
+          >
+            Download Markdown (.md)
+          </a>
+        </div>
+      </div>
+
+      {actionError && (
+        <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-900">
+          {actionError}
+        </div>
+      )}
+
+      {/* Sponsor Approvals Grid */}
+      <section aria-label="Approvals" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+        <h2 className="text-sm font-bold text-slate-900 mb-3 border-b border-slate-100 pb-2">
+          Sponsor Approval Status
+        </h2>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {brd.approvals.map((a) => (
+            <div key={a.member_id} className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-slate-900">{a.member_name}</span>
+                <span className={`font-semibold ${a.decision === "APPROVE" ? "text-emerald-700" : "text-red-700"}`}>
+                  ✓ {a.decision}
+                </span>
+              </div>
+              {a.comment && <p className="mt-1 text-slate-600 italic">"{a.comment}"</p>}
+            </div>
           ))}
-          <a href={markdownUrl(API_BASE, id, b.version)} className="text-sea-700 underline">Download as text</a>
-          {generate}
+          {brd.awaiting.map((m) => (
+            <div key={m.member_id} className="rounded-xl border border-amber-200 bg-amber-50/50 p-3 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-slate-900">{m.member_name}</span>
+                <span className="font-semibold text-amber-700">⏳ Awaiting Decision</span>
+              </div>
+            </div>
+          ))}
         </div>
-      </section>
 
-      <section aria-label="Summary" className="space-y-3 rounded-xl border border-gray-200 bg-white p-4">
-        <p className="text-gray-800">{c.executive_summary}</p>
-        <List title="Goals" items={c.business_goals} />
-        <List title="How we will know it worked" items={c.success_measures} />
-        <div><h3 className="font-medium">Who it is for</h3><p className="text-sm text-gray-700">{c.audience}</p></div>
-      </section>
-
-      {c.stakeholders.length > 0 && (
-        <section aria-label="Stakeholders" className="rounded-xl border border-gray-200 bg-white p-4">
-          <h2 className="mb-2 font-semibold">What each sponsor needs</h2>
-          <ul className="space-y-2 text-sm">
-            {c.stakeholders.map((s) => (
-              <li key={s.member_id}><strong>{nameOf(names, s.member_id)}</strong>{s.business_name ? ` (${s.business_name})` : ""}
-                <ul className="list-disc pl-5 text-gray-700">{s.needs.map((n, i) => <li key={i}>{n}</li>)}</ul></li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      <section aria-label="Pages" className="rounded-xl border border-gray-200 bg-white p-4">
-        <h2 className="mb-2 font-semibold">The pages</h2>
-        <table className="w-full text-sm"><tbody>
-          {c.sitemap.map((s) => <tr key={s.path} className="border-t border-gray-100"><td className="w-40 py-1 font-mono">{s.path}</td><td className="py-1 text-gray-700">{s.purpose}</td></tr>)}
-        </tbody></table>
-      </section>
-
-      <section aria-label="Requirements" className="space-y-2 rounded-xl border border-gray-200 bg-white p-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-semibold">Requirements ({c.requirements.length})</h2>
-          <input aria-label="Search the requirements" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} className="rounded border border-gray-300 px-3 py-1.5 text-sm" />
-        </div>
-        <RequirementsGrid requirements={c.requirements} names={names} quickFilter={search} onOpen={setOpen} />
-      </section>
-
-      <section aria-label="Details" className="grid gap-4 rounded-xl border border-gray-200 bg-white p-4 md:grid-cols-2">
-        <List title="Non-functional needs" items={c.non_functional} />
-        <List title="Out of scope" items={c.out_of_scope} />
-        <div>
-          <h3 className="font-medium">Terms</h3>
-          <dl className="grid grid-cols-2 gap-y-1 text-sm">
-            <dt className="text-gray-500">Budget</dt><dd>{formatMoney(c.constraints.budget_cents, c.constraints.currency)}</dd>
-            <dt className="text-gray-500">Delivery time</dt><dd>{c.constraints.delivery_days ? `${c.constraints.delivery_days} days` : "not set"}</dd>
-            <dt className="text-gray-500">Hosting</dt><dd>{c.constraints.hosting ?? "not set"}</dd>
-            <dt className="text-gray-500">Domain</dt><dd>{c.constraints.domain ?? "not set"}</dd>
-          </dl>
-        </div>
-        {c.content_responsibilities.length > 0 && (
-          <section aria-label="Content to provide"><h3 className="font-medium">Who provides what</h3>
-            <ul className="list-disc pl-5 text-sm text-gray-700">{c.content_responsibilities.map((r, i) => <li key={i}>{r.item}: {nameOf(names, r.owner_member_id)}{r.due ? `, by ${r.due}` : ""}</li>)}</ul></section>
-        )}
-        {c.glossary.length > 0 && (
-          <section aria-label="Glossary"><h3 className="font-medium">Words used</h3>
-            <dl className="text-sm">{c.glossary.map((g) => <div key={g.term}><dt className="inline font-medium">{g.term}: </dt><dd className="inline text-gray-700">{g.definition}</dd></div>)}</dl></section>
-        )}
-      </section>
-
-      {b.open_items.length > 0 && (
-        <section aria-label="Open items" className="rounded-xl border border-amber-300 bg-amber-50 p-4">
-          <h2 className="font-semibold text-amber-900">Still open</h2>
-          <ul className="list-disc pl-5 text-sm text-amber-900">{b.open_items.map((x, i) => <li key={i}>{x}</li>)}</ul>
-        </section>
-      )}
-
-      <section aria-label="Approvals" className="space-y-3 rounded-xl border border-gray-200 bg-white p-4">
-        <h2 className="font-semibold">Sponsor decisions</h2>
-        <p className="text-sm text-gray-700" data-testid="progress">{progressText(approved, required)}</p>
-        {b.approvals.length > 0 && (
-          <ul className="space-y-1 text-sm" aria-label="Decisions">
-            {b.approvals.map((a) => (
-              <li key={a.member_id} data-decision={a.decision}>
-                <Badge tone={a.decision === "APPROVE" ? "green" : "red"}>{a.decision === "APPROVE" ? "Approved" : "Asked for changes"}</Badge> {a.member_name ?? "Someone"}
-                {a.comment ? `: “${a.comment}”` : ""} <span className="text-xs text-gray-500">{formatDateTime(a.created_at)}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-        {b.awaiting.length > 0 && <p className="text-sm text-gray-600" data-testid="awaiting">Still to decide: {b.awaiting.map((w) => w.member_name ?? "someone").join(", ")}.</p>}
-        {decide && (
-          <div className="space-y-2">
-            {mine && <p className="text-sm text-gray-600" data-testid="mine">You {mine.decision === "APPROVE" ? "approved" : "asked for changes to"} this version. You can change your mind while it is open.</p>}
-            <textarea aria-label="Your comment" value={comment} onChange={(e) => setComment(e.target.value)} maxLength={2000} rows={3} placeholder="Comment (needed if you ask for changes)" className="w-full rounded border border-gray-300 p-2 text-sm" />
-            <div className="flex flex-wrap items-center gap-2">
-              <button disabled={busy !== null} onClick={() => void act("approve", async () => {
-                const r = await api<BrdDecisionResult>(`/projects/${id}/brd/${b.version}/decision`, { method: "POST", body: { decision: "APPROVE", brd_sha256: b.sha256, comment: comment.trim() || undefined } });
-                setComment("");
-                setMessage(r.locked ? "Every sponsor approved. The brief is locked and the contract comes next." : `Your approval is recorded. ${progressText(r.approved, r.required)}.`);
-                reloadBrd(); reloadPr();
-              })} className="rounded bg-green-700 px-3 py-1.5 text-sm text-white hover:bg-green-800 disabled:opacity-60">{busy === "approve" ? "Approving..." : "Approve this version"}</button>
-              <button disabled={busy !== null || !rejectReady(comment)} onClick={() => void act("reject", async () => {
-                await api<BrdDecisionResult>(`/projects/${id}/brd/${b.version}/decision`, { method: "POST", body: { decision: "REJECT", brd_sha256: b.sha256, comment: comment.trim() } });
-                setComment("");
-                setMessage("Your request for changes is recorded. The analyst will ask how the brief should change.");
-                reloadBrd(); reloadPr();
-              })} className="rounded border border-red-300 bg-white px-3 py-1.5 text-sm text-red-800 hover:bg-red-50 disabled:opacity-50">{busy === "reject" ? "Sending..." : "Ask for changes"}</button>
-              {!rejectReady(comment) && <span className="text-xs text-gray-500" data-testid="why-not-reject">To ask for changes, say what should change.</span>}
+        {/* Decision form if current user is an awaiting sponsor */}
+        {canDecide && (
+          <div className="mt-4 border-t border-slate-100 pt-4">
+            <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2">
+              Sign Your Hash-Bound Approval
+            </h3>
+            <p className="text-xs text-slate-500 mb-3">
+              By approving, your signature is cryptographically bound to the exact document fingerprint above.
+            </p>
+            <div className="space-y-3">
+              <input
+                type="text"
+                placeholder="Optional sign-off comment or feedback..."
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:border-sea-500 focus:outline-none"
+              />
+              <div className="flex gap-2">
+                <button
+                  disabled={busy !== null}
+                  onClick={() => void submitDecision("APPROVE")}
+                  className="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 px-4 py-2 text-xs font-bold text-white shadow-sm hover:from-emerald-700 hover:to-teal-800 disabled:opacity-60 transition"
+                >
+                  {busy === "APPROVE" ? "Submitting..." : "✓ Approve BRD"}
+                </button>
+                <button
+                  disabled={busy !== null}
+                  onClick={() => void submitDecision("REJECT")}
+                  className="rounded-xl border border-red-300 bg-red-50 px-4 py-2 text-xs font-bold text-red-700 hover:bg-red-100 disabled:opacity-60 transition"
+                >
+                  {busy === "REJECT" ? "Submitting..." : "Reject (Reopen BA)"}
+                </button>
+              </div>
             </div>
           </div>
         )}
-        {!decide && b.status === "PENDING_APPROVAL" && <p className="text-sm text-gray-600" data-testid="not-yours">Only the lead and the sponsors decide on the brief.</p>}
       </section>
 
-      {open && <RequirementDialog req={open} names={names} onClose={close} />}
+      {/* Executive Summary */}
+      <section aria-label="Executive Summary" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+        <h2 className="text-sm font-bold text-slate-900 mb-2">{brd.content.title}</h2>
+        <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-4">{brd.content.executive_summary}</p>
+
+        <div className="grid gap-4 sm:grid-cols-2 border-t border-slate-100 pt-3">
+          <div>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Business Goals</h3>
+            <ul className="list-disc pl-5 space-y-1 text-xs text-slate-700">
+              {brd.content.business_goals.map((g, i) => (
+                <li key={i}>{g}</li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Success Measures</h3>
+            <ul className="list-disc pl-5 space-y-1 text-xs text-slate-700">
+              {brd.content.success_measures.map((m, i) => (
+                <li key={i}>{m}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* Requirements Table (AG Grid) */}
+      <section aria-label="Requirements Matrix" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+        <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
+          <div>
+            <h2 className="text-base font-bold text-slate-900">Requirements Matrix</h2>
+            <p className="text-xs text-slate-500">Click any row to inspect acceptance criteria and evidence requirements</p>
+          </div>
+          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+            {brd.content.requirements.length} Requirements
+          </span>
+        </div>
+
+        <div className="ag-theme-quartz rounded-xl overflow-hidden border border-slate-200" style={{ height: "320px", width: "100%" }}>
+          <AgGridReact
+            rowData={brd.content.requirements}
+            columnDefs={columns}
+            rowSelection="single"
+            onRowClicked={(e) => setSelectedReq(e.data ?? null)}
+            animateRows
+          />
+        </div>
+
+        {/* Selected Requirement Detail Accordion */}
+        {selectedReq && (
+          <div className="mt-4 rounded-xl border border-sea-200 bg-sea-50/40 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-xs font-bold text-sea-700 bg-sea-100 px-2 py-0.5 rounded">
+                  {selectedReq.code}
+                </span>
+                <h3 className="text-sm font-bold text-slate-900">{selectedReq.title}</h3>
+              </div>
+              <span className={`text-xs font-bold ${selectedReq.priority === "MUST" ? "text-red-700" : "text-sea-700"}`}>
+                Priority: {selectedReq.priority}
+              </span>
+            </div>
+            <p className="text-xs text-slate-700 leading-relaxed">{selectedReq.description}</p>
+
+            <div className="border-t border-sea-200/60 pt-2 space-y-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                Acceptance Criteria ({selectedReq.acceptance_criteria.length}):
+              </span>
+              {selectedReq.acceptance_criteria.map((ac) => (
+                <div key={ac.id} className="rounded-lg bg-white p-3 border border-slate-200 text-xs space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono font-bold text-slate-700">{ac.id}</span>
+                    <span className="text-[10px] text-slate-500">Evidence: {ac.evidence.join(", ")}</span>
+                  </div>
+                  <p className="text-slate-800">
+                    <strong>Given</strong> {ac.given} <strong>When</strong> {ac.when} <strong>Then</strong> {ac.then}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
     </div>
   );
 }
@@ -239,10 +281,20 @@ function Brief({ id }: { id: number }) {
 function FromQuery() {
   const raw = useSearchParams().get("id");
   const id = raw !== null && /^\d{1,9}$/.test(raw) ? Number(raw) : null;
-  if (id === null) return <Empty title="No project selected">Open the brief from a <Link href="/" className="text-sea-700 underline">project</Link>.</Empty>;
-  return <Brief id={id} />;
+  if (id === null) {
+    return (
+      <Empty title="No project selected">
+        Open a project from <Link href="/" className="text-sea-700 underline">the project list</Link>.
+      </Empty>
+    );
+  }
+  return <BRDView id={id} />;
 }
 
-export default function BrdPage() {
-  return <Suspense fallback={<Loading what="Loading" />}><FromQuery /></Suspense>;
+export default function BRDPage() {
+  return (
+    <Suspense fallback={<Loading what="Loading BRD" />}>
+      <FromQuery />
+    </Suspense>
+  );
 }

@@ -7,6 +7,7 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     globals: true,
+    setupFiles: ["tests/setup.ts"],
     include: ["tests/**/*.test.{ts,tsx}"],
     restoreMocks: true,
     env: { NEXT_PUBLIC_DEMO_MODE: "true", NEXT_PUBLIC_API_BASE_URL: "http://api.test/api" },

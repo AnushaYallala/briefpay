@@ -1,0 +1,579 @@
+/* ============================================================
+   Velugu Cove — Style Sheet
+   Warm, beachy, mobile-first responsive design
+   Fonts: Poppins (headings) · Open Sans (body)
+   ============================================================ */
+
+/* ---------- CSS Custom Properties ---------- */
+:root {
+  /* palette */
+  --sand-light:   #fdf6ec;
+  --sand:         #f5e6c8;
+  --sand-dark:    #d4a96a;
+  --ocean:        #1b8a9e;
+  --ocean-dark:   #126b7a;
+  --ocean-light:  #a8dce6;
+  --sunset:       #e8734a;
+  --sunset-light: #f4a57b;
+  --coral:        #ff6b6b;
+  --text:         #2c2c2c;
+  --text-light:   #555;
+  --white:        #ffffff;
+  --overlay:      rgba(0, 0, 0, 0.45);
+
+  /* spacing */
+  --gap:    1rem;
+  --gap-lg: 2rem;
+  --gap-xl: 3rem;
+
+  /* misc */
+  --radius: 12px;
+  --shadow: 0 4px 20px rgba(0,0,0,0.08);
+  --transition: 0.3s ease;
+}
+
+/* ---------- Reset & Base ---------- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Open Sans', sans-serif;
+  color: var(--text);
+  background: var(--sand-light);
+  line-height: 1.7;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+h1, h2, h3, h4 {
+  font-family: 'Poppins', sans-serif;
+  line-height: 1.3;
+  color: var(--ocean-dark);
+}
+
+a { color: var(--ocean); text-decoration: none; transition: color var(--transition); }
+a:hover { color: var(--sunset); }
+
+img { max-width: 100%; display: block; }
+
+ul { list-style: none; }
+
+/* ---------- Utility ---------- */
+.container {
+  width: 90%;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.section {
+  padding: var(--gap-xl) 0;
+}
+
+.section-title {
+  text-align: center;
+  font-size: 1.8rem;
+  margin-bottom: var(--gap-lg);
+  position: relative;
+}
+.section-title::after {
+  content: '';
+  display: block;
+  width: 60px;
+  height: 4px;
+  background: var(--sunset);
+  margin: 0.5rem auto 0;
+  border-radius: 2px;
+}
+
+.btn {
+  display: inline-block;
+  padding: 0.75rem 1.8rem;
+  border-radius: 30px;
+  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.95rem;
+  transition: all var(--transition);
+  cursor: pointer;
+  border: none;
+}
+.btn-primary {
+  background: var(--ocean);
+  color: var(--white);
+}
+.btn-primary:hover {
+  background: var(--ocean-dark);
+  color: var(--white);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(27,138,158,0.35);
+}
+.btn-secondary {
+  background: var(--sunset);
+  color: var(--white);
+}
+.btn-secondary:hover {
+  background: #d4623c;
+  color: var(--white);
+  transform: translateY(-2px);
+}
+
+/* ---------- Header / Nav ---------- */
+.site-header {
+  background: var(--white);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+.nav-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.8rem 0;
+}
+.logo {
+  font-family: 'Poppins', sans-serif;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--ocean-dark);
+}
+.logo span { color: var(--sunset); }
+
+.nav-links {
+  display: flex;
+  gap: 1.5rem;
+}
+.nav-links a {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text);
+  position: relative;
+  padding: 0.25rem 0;
+}
+.nav-links a::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0;
+  width: 0; height: 2px;
+  background: var(--sunset);
+  transition: width var(--transition);
+}
+.nav-links a:hover::after,
+.nav-links a.active::after { width: 100%; }
+.nav-links a:hover { color: var(--ocean); }
+.nav-links a.active { color: var(--ocean); }
+
+/* hamburger */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+}
+.hamburger span {
+  display: block;
+  width: 26px;
+  height: 3px;
+  background: var(--ocean-dark);
+  border-radius: 2px;
+  transition: all var(--transition);
+}
+
+/* ---------- Hero ---------- */
+.hero {
+  position: relative;
+  min-height: 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  overflow: hidden;
+}
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #1b8a9e 0%, #a8dce6 40%, #f5e6c8 70%, #e8734a 100%);
+  z-index: 0;
+}
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: var(--overlay);
+  z-index: 1;
+}
+.hero-content {
+  position: relative;
+  z-index: 2;
+  color: var(--white);
+  padding: var(--gap-lg);
+}
+.hero h1 {
+  font-size: 2.8rem;
+  color: var(--white);
+  margin-bottom: 0.5rem;
+  text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+}
+.hero p {
+  font-size: 1.15rem;
+  max-width: 560px;
+  margin: 0 auto var(--gap-lg);
+  opacity: 0.95;
+}
+.hero .btn { margin: 0 0.4rem; }
+
+/* ---------- Card Grid ---------- */
+.card-grid {
+  display: grid;
+  gap: var(--gap-lg);
+}
+.card {
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+}
+.card-img {
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 4rem;
+}
+.card-body {
+  padding: 1.2rem 1.4rem 1.5rem;
+}
+.card-body h3 {
+  font-size: 1.2rem;
+  margin-bottom: 0.4rem;
+}
+.card-body p {
+  font-size: 0.92rem;
+  color: var(--text-light);
+  margin-bottom: 1rem;
+}
+
+/* ---------- Page Hero (inner pages) ---------- */
+.page-hero {
+  padding: var(--gap-xl) 0;
+  text-align: center;
+  color: var(--white);
+  position: relative;
+}
+.page-hero h1 {
+  font-size: 2.2rem;
+  color: var(--white);
+  text-shadow: 1px 1px 6px rgba(0,0,0,0.3);
+}
+.page-hero p {
+  max-width: 600px;
+  margin: 0.6rem auto 0;
+  opacity: 0.9;
+}
+
+/* page-specific hero gradients */
+.hero-stay   { background: linear-gradient(135deg, #1b8a9e, #a8dce6 60%, #f5e6c8); }
+.hero-eat    { background: linear-gradient(135deg, #e8734a, #f4a57b 50%, #f5e6c8); }
+.hero-tours  { background: linear-gradient(135deg, #126b7a, #1b8a9e 50%, #a8dce6); }
+.hero-directions { background: linear-gradient(135deg, #d4a96a, #f5e6c8 50%, #a8dce6); }
+
+/* ---------- Content Sections (inner pages) ---------- */
+.content-block {
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: var(--gap-lg);
+  margin-bottom: var(--gap-lg);
+}
+.content-block h2 {
+  font-size: 1.4rem;
+  margin-bottom: 0.8rem;
+}
+.content-block h3 {
+  font-size: 1.15rem;
+  margin-bottom: 0.5rem;
+  color: var(--sunset);
+}
+
+/* placeholder images */
+.placeholder-img {
+  border-radius: var(--radius);
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  margin-bottom: var(--gap);
+}
+
+/* photo grid */
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--gap);
+  margin-bottom: var(--gap-lg);
+}
+.photo-grid .placeholder-img {
+  height: 150px;
+  margin-bottom: 0;
+}
+
+/* info list */
+.info-list {
+  margin: var(--gap) 0;
+}
+.info-list li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--sand);
+  font-size: 0.95rem;
+}
+.info-list li:last-child { border-bottom: none; }
+.info-list li strong {
+  color: var(--ocean-dark);
+  min-width: 120px;
+  display: inline-block;
+}
+
+/* menu table */
+.menu-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: var(--gap) 0;
+}
+.menu-table th,
+.menu-table td {
+  padding: 0.7rem 0.8rem;
+  text-align: left;
+  font-size: 0.92rem;
+}
+.menu-table th {
+  background: var(--ocean);
+  color: var(--white);
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+}
+.menu-table tr:nth-child(even) {
+  background: var(--sand-light);
+}
+.menu-table tr:hover {
+  background: var(--ocean-light);
+}
+
+/* tour cards */
+.tour-card {
+  background: var(--sand-light);
+  border-radius: var(--radius);
+  padding: 1.4rem;
+  margin-bottom: var(--gap);
+  border-left: 4px solid var(--ocean);
+}
+.tour-card h3 { margin-bottom: 0.4rem; }
+.tour-card .tour-meta {
+  font-size: 0.85rem;
+  color: var(--text-light);
+  margin-bottom: 0.5rem;
+}
+
+/* safety box */
+.safety-box {
+  background: #fff3cd;
+  border-left: 4px solid #ffc107;
+  border-radius: var(--radius);
+  padding: 1.2rem 1.4rem;
+  margin-top: var(--gap-lg);
+}
+.safety-box h3 {
+  color: #856404;
+  margin-bottom: 0.4rem;
+}
+.safety-box p {
+  font-size: 0.92rem;
+  color: #856404;
+}
+
+/* directions */
+.direction-step {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: var(--gap);
+  align-items: flex-start;
+}
+.direction-step .step-icon {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--ocean);
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+}
+.direction-step .step-text h3 {
+  font-size: 1rem;
+  color: var(--ocean-dark);
+}
+.direction-step .step-text p {
+  font-size: 0.9rem;
+  color: var(--text-light);
+}
+
+.map-embed {
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-top: var(--gap-lg);
+  box-shadow: var(--shadow);
+}
+.map-placeholder {
+  height: 300px;
+  background: linear-gradient(135deg, #a8dce6, #1b8a9e);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  color: var(--white);
+  font-size: 1.1rem;
+}
+.map-placeholder span {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+}
+
+/* CTA strip */
+.cta-strip {
+  text-align: center;
+  padding: var(--gap-xl) 0;
+  background: linear-gradient(135deg, var(--ocean), var(--ocean-dark));
+  color: var(--white);
+}
+.cta-strip h2 {
+  color: var(--white);
+  margin-bottom: 0.6rem;
+}
+.cta-strip p {
+  margin-bottom: var(--gap);
+  opacity: 0.9;
+}
+.cta-strip .btn-secondary {
+  background: var(--white);
+  color: var(--ocean-dark);
+}
+.cta-strip .btn-secondary:hover {
+  background: var(--sand);
+  color: var(--ocean-dark);
+}
+
+/* ---------- Why Visit ---------- */
+.why-grid {
+  display: grid;
+  gap: var(--gap-lg);
+  text-align: center;
+}
+.why-item {
+  padding: var(--gap);
+}
+.why-item .icon {
+  font-size: 2.4rem;
+  margin-bottom: 0.6rem;
+}
+.why-item h3 {
+  font-size: 1.05rem;
+  margin-bottom: 0.4rem;
+}
+.why-item p {
+  font-size: 0.9rem;
+  color: var(--text-light);
+}
+
+/* ---------- Footer ---------- */
+.site-footer {
+  background: var(--ocean-dark);
+  color: rgba(255,255,255,0.85);
+  padding: var(--gap-xl) 0 var(--gap);
+  margin-top: auto;
+}
+.footer-grid {
+  display: grid;
+  gap: var(--gap-lg);
+  margin-bottom: var(--gap-lg);
+}
+.footer-col h4 {
+  font-size: 1rem;
+  color: var(--white);
+  margin-bottom: 0.6rem;
+}
+.footer-col p,
+.footer-col a {
+  font-size: 0.88rem;
+  color: rgba(255,255,255,0.75);
+  line-height: 1.9;
+}
+.footer-col a:hover { color: var(--sunset-light); }
+.footer-col ul li { line-height: 2; }
+
+.footer-bottom {
+  border-top: 1px solid rgba(255,255,255,0.15);
+  padding-top: var(--gap);
+  text-align: center;
+  font-size: 0.82rem;
+  opacity: 0.7;
+}
+
+/* ---------- Responsive ---------- */
+
+/* Small phones */
+@media (max-width: 480px) {
+  .hero h1 { font-size: 1.8rem; }
+  .page-hero h1 { font-size: 1.6rem; }
+}
+
+/* Tablet breakpoint */
+@media (max-width: 768px) {
+  .hamburger { display: flex; }
+
+  .nav-links {
+    display: none;
+    flex-direction: column;
+    position: absolute;
+    top: 100%;
+    left: 0; right: 0;
+    background: var(--white);
+    padding: 1rem 5%;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    gap: 0;
+  }
+  .nav-links.open { display: flex; }
+  .nav-links a {
+    padding: 0.7rem 0;
+    border-bottom: 1px solid var(--sand);
+  }
+  .nav-links a:last-child { border-bottom: none; }
+
+  .hero h1 { font-size: 2rem; }
+  .hero p  { font-size: 1rem; }
+}
+
+/* Single-column cards on mobile */
+@media (min-width: 500px) {
+  .card-grid { grid-template-columns: repeat(2, 1fr); }
+  .why-grid  { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (min-width: 768px) {
+  .card-grid { grid-template-columns: repeat(3, 1fr); }
+  .why-grid  { grid-template-columns: repeat(4, 1fr); }
+  .footer-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (min-width: 960px) {
+  .hero h1 { font-size: 3.2rem; }
+}
