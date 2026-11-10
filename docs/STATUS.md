@@ -9,10 +9,10 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-10 by Claude: T-49 money plans screen done |
+| Last updated | 2026-11-10 by Claude: T-16 BA Studio done |
 | Overall phase | **Back end feature-complete except the three blocked pieces (BLK-01/02/03); front end just started (home page and sign-in).** Done: BA, BRD, contract, campaign setup, plans + Guardian + executor, webhooks, poll fallback, submissions, evidence, verification, ledger/audit APIs, demo seed, deploy files, web skeleton. Plain-English summary: `docs/PROGRESS_SUMMARY.md` |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
-| Next task to pick up | Not blocked: BA Studio (T-16), BRD (T-17), freelancer portal (T-35), verification report (T-36), campaign page (T-23, T-27; shows BLK-01/02 as unavailable), make the stepper steps links (GAP-92) · **Human:** decide BLK-01/02/03 · PayPal sandbox keys, Gemini key, Cloudinary · run `backend/scripts/sandbox_check.py` once keys exist |
+| Next task to pick up | Not blocked: BRD page (T-17: AG Grid requirements, lock, approvals), freelancer portal (T-35), verification report (T-36), campaign page (T-23, T-27; shows BLK-01/02 as unavailable), make the stepper steps links (GAP-92) · **Human:** decide BLK-01/02/03 · PayPal sandbox keys, Gemini key, Cloudinary · run `backend/scripts/sandbox_check.py` once keys exist |
 | Blockers | **BLK-01** (T-22 pledge service/endpoints), **BLK-02** (T-25 clock and lead actions), **BLK-03** (pledge-state helper used by two webhook events): the assistant's attempts to write those files were stopped by a safety check; see `docs/GAPS_AND_FIXES.md` section 0 for the full designs |
 | Deployed URLs | API: _not deployed_ · Web: _not deployed_ · Sample site: _not deployed_ |
 | Repo | https://github.com/AnushaYallala/briefpay (origin; T-01 still needs LICENSE visible in About + secret scanning) |
@@ -48,7 +48,7 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 | T-13 | BA questions: prompt, `BAQuestionsOutput`, answer/skip endpoints, rounds, MAX_ROUNDS + finalize | §7.1 | Claude | DONE | t-13-ba-questions | Question agent + code-side filtering, rounds, answer/skip/finalize, run/view endpoints, `BA_RUN` job, rate limit. 83 tests; mutation-checked (11/11). Whole 58->79->93 scene passes over HTTP. No real Gemini call yet (D-028) |
 | T-14 | BRD generator: prompt, `BRDContent`, REQ codes, Jinja Markdown, sha256 | §7.2 | Claude | DONE | t-14-brd-generator | Schemas, prompt `brd-gen-v1`, `BRDGenerator`, code-side assembly, Jinja renderer with escaping, sha256, `BRD_GENERATE` job, generate/read/download endpoints. 75 tests; mutation-checked (15/15 after one added test). Approvals are T-15. No real Gemini call yet (D-029) |
 | T-15 | BRD approvals (hash-bound, unanimous), reject → new BA round + version bump | §7.2 | Claude | DONE | t-15-brd-approvals | Hash-bound unanimous decisions, lock + ledger + CONTRACTING, rejection reopens BA with a question for ALL, withdraw-by-reject, stale/foreign hash refused. 16 tests; mutation-checked (all caught after 2 added tests). (D-030) |
-| T-16 | UI: BA Studio | §11 #4 |  | TODO |  | |
+| T-16 | UI: BA Studio | §11 #4 |  | REVIEW |  | `/ba?id=N`: BA Studio: score gauge + history, gates, 10 dimension bars, conflicts, requirements, questions with answering and skip, transcript panel with source highlights and paste upload, run/finalize with job polling (D-055). 8 + 45 + 16 tests, mutation-checked |
 | T-17 | UI: BRD page (AG Grid requirements, approve/reject, download) | §11 #5 |  | TODO |  | |
 
 ### Track B1: Pledge-If (campaigns, holds, webhooks)
@@ -159,6 +159,13 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-10 · Claude · T-16 BA Studio (REVIEW)
+- Did: `frontend/src/app/ba/page.tsx`, `components/ScoreGauge.tsx`, `QuestionCard.tsx`, `TranscriptPanel.tsx`, `lib/ba.ts` (states, source references, marks, grouping, chart points), types for the BA view, scores, questions, transcript and job status; the project page links to it for members. Committed straight to `main`.
+- Tests: back end `cd backend && .venv/Scripts/python.exe -m pytest -q` -> 1566 passed (2 new contract tests: a real BA round read through the API, every field of the view, score, dimension, gate, requirement, conflict, history, question, answer, transcript and job; state lists and timings; the missing-transcript code); front end `cd frontend && npm run check` -> typecheck clean, 378 tests, build includes `/ba`. Mutation-checked: 139 breakages; first run 29 survivors (3 equivalent or redundant: two pieces of code removed, a case-folding mutant and a defensive flag left; the rest test gaps) -> tests added -> rerun of every survivor: all caught.
+- Contract changes: D-055 (no SPEC changes).
+- Next step: the BRD page (T-17): requirements in AG Grid, the version/hash lock, approvals by sponsors; read `backend/app/routers/brd.py` first.
+- Gotchas: (1) **A mutation script that is killed (timeout, session end) leaves its last mutant in the file**: run it with nohup in the background, and after any interruption check the source against the originals (grep the patterns) and run the whole suite before going on; this happened once here (a `clearInterval` was left removed; the timer test caught it). (2) Fake-timer tests that click a button which starts a request must first wait for something the response causes (e.g. the "analyst is working" note) before advancing the clock. (3) Tests that spy on `setInterval` should wait for the interval to exist (`waitFor`) before reading its id; the first version failed about one full run in four under load.
 
 ### 2026-11-10 · Claude · T-49 money plans screen (REVIEW)
 - Did: `frontend/src/app/plans/page.tsx`, `components/PlanDetailView.tsx`, `GuardianPanel.tsx`, `StepsGrid.tsx`, `lib/plans.ts` (words, tones, approval rules, tamper list), types for plans, steps, reviews and rules; the money box links to the plans (and each open plan) and now takes its plan words from `lib/plans.ts`; `tests/switch.tsx` is a test-only person switcher. Committed straight to `main`.

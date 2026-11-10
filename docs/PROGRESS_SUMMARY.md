@@ -4,6 +4,27 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 38 · BA Studio (T-16) · Tue Nov 10
+
+**What now exists**
+- **BA Studio page.** People on a project open "Open BA Studio". It shows how complete the requirements are, as a big score out of 100 with the 90 line marked (the brief can be written once it gets there), the state in plain words, and a small chart of the score after each round.
+- **Why that score.** Five must-have checks as green or red chips (budget and deadline stated, every must-have has a way to prove it, no sponsor conflict left, something is out of scope, every sponsor's needs captured). Ten areas, each with a bar, marks earned, the analyst's reason, and a note if it was marked down for citing nothing. A red check that holds the score at 89 says so.
+- **Proof in the meeting.** Click a source such as "lines 3 to 5" and those lines light up in the numbered transcript beside it. Requirements found, who asked for each, where sponsors disagree (by name) and what is out of scope are listed. If someone hid orders to the AI in the text, the page says it was ignored.
+- **The conversation.** The analyst's questions are grouped by round and say who they are for and why. A sponsor sees suggested answers to tap and a box; the lead can skip. Answers show with names.
+- **Driving it.** The lead starts or reruns the analysis (the page follows the job until it finishes, or shows why it failed), pastes the transcript if there is none, and, after the round limit, accepts the gaps with a second confirming click. The page refreshes by itself every 8 seconds.
+- 378 front-end tests and 1,566 back-end tests pass. About 140 deliberate breakages: 29 slipped through the first time (mostly untested colours, hover texts, boundary scores and timers being stopped); all are now caught. One mutation run was cut off by the session ending and left a deliberate break in the code; the tests caught it and I restored it before going on.
+
+**What it does NOT do yet**
+It cannot replace a transcript after the analysis has begun, and the answer sources only show as labels. Not yet tried in a real browser.
+
+**Progress:** 36 of ~45 tasks done or in review. Increment 38 of the 45 you asked for.
+
+**Needed from you:** BLK-01/02/03, PayPal sandbox keys, Gemini key.
+
+**Next increment:** the BRD page (T-17): the written brief, its requirements table and the sponsors' approvals.
+
+---
+
 ## Increment 37 · The money plans screen (T-49) · Tue Nov 10
 
 **What now exists**

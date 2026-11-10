@@ -6,7 +6,7 @@ A running list of everything that is **missing, risky, unverified, or was found 
 - **Fixes** are problems that were found and already resolved, kept so the reasoning is not lost.
 - IDs are permanent. When a gap is closed, move it to Fixes (keep the ID) and say how.
 
-_Last updated: 2026-11-10, end of T-49._
+_Last updated: 2026-11-10, end of T-16._
 
 ---
 
@@ -141,6 +141,9 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | GAP-103 | Low | The plan screen has no view for renewing holds (`REAUTH_PLEDGES` plans); they are not built by the back end yet. | Add words when the back end builds them. |
 | GAP-104 | Low | The plan list shows all plans in one list with no filter; fine for the demo's few plans. | Add chips if projects get many plans. |
 | GAP-105 | Low | Tamper-test results are shown but not remembered after leaving the page (the server stores them as simulated reviews). | Show past simulations if wanted. |
+| GAP-106 | Low | BA Studio cannot replace the transcript once the analysis has started (the server decides; the page only offers the paste form when none exists). | Add a 'replace transcript' action if the lead needs it. |
+| GAP-107 | Low | Answer sources ('answer 12') are chips that highlight nothing; the answer is shown in its question card. | Scroll to the answer card on click. |
+| GAP-108 | Low | Timer tests that spy on interval functions are timing-sensitive under heavy load (one failed in about one full run in four before the wait was added). | Keep waits on observable state; recheck if flakes return. |
 
 ---
 
@@ -210,6 +213,8 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | FIX-60 | T-49 | GAP-96: the money screen never asked PayPal to check (`POST /money/refresh` unused). | The plan screen has 'Ask PayPal now' for running plans; GAP-96 closed. |
 | FIX-61 | T-49 | Mutation check found 33 weak spots (tones, hover texts, error column, pinned column, double-click protection, fingerprint source, user switch, project in URLs, chosen-plan style). | Tests for each; five unnecessary pieces of code removed (reset effect, two id checks, an unused quick filter on the steps grid, a null branch). |
 | FIX-62 | T-49 | A Python heredoc turned a backslash-b in a regex into a real backspace character inside a test file, so the check silently matched nothing. | Repaired using `chr()`; rule recorded in STATUS gotchas: use the Write tool for text with backslashes. |
+| FIX-63 | T-16 | Mutation check found 29 weak spots in BA Studio (boundary score, fallbacks, hover and chart details, timers stopped, failed run reload, flash of the upload form, load error mistaken for no transcript, clearing the upload box, badge colours, resolution of an unsettled conflict). | Tests for each; a redundant empty-list guard and a redundant session check removed. |
+| FIX-64 | T-16 | A mutation run that was killed by the session ending left its last deliberate break (a removed `clearInterval`) in the BA page. | The timer test caught it; restored; process rule recorded in STATUS gotchas (run in the background, verify sources after any interruption). |
 
 ---
 

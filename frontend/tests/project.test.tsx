@@ -330,11 +330,13 @@ describe("ledger link", () => {
     wrapped(<ProjectPage />);
     await screen.findByRole("link", { name: "Open the public ledger" });
     expect(screen.queryByRole("link", { name: "Open the AI audit trail" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Open BA Studio" })).toBeNull();
     cleanup();
     setToken("tok");
     mockFetch({ "GET /auth/me": { body: me }, "GET /projects/1": { body: detail({ viewer: { role: "LEAD", member_id: 1 } }) } });
     wrapped(<ProjectPage />);
     const link = await screen.findByRole("link", { name: "Open the AI audit trail" });
     expect(link.getAttribute("href")).toBe("/audit?id=1");
+    expect(screen.getByRole("link", { name: "Open BA Studio" }).getAttribute("href")).toBe("/ba?id=1");
   });
 });

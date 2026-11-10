@@ -77,6 +77,73 @@ export type LedgerRow = {
   meta: Record<string, unknown>;
 };
 
+export type BaDimension = {
+  dimension: string;
+  name: string;
+  weight: number;
+  coverage_claimed: number;
+  coverage_effective: number;
+  downgraded: boolean;
+  justification: string;
+  source_refs: string[];
+};
+export type BaGate = { id: string; title: string; passed: boolean; detail: string };
+export type BaRequirement = {
+  temp_id: string;
+  title: string;
+  description: string;
+  priority: string;
+  requested_by: number[];
+  acceptance_criteria: string[];
+  source_refs: string[];
+};
+export type BaConflict = { topic: string; positions: { member_id: number; position: string }[]; resolved: boolean; resolution: string | null };
+export type BaScore = {
+  round: number;
+  total: number;
+  capped: boolean;
+  total_uncapped: number | null;
+  dimensions: BaDimension[];
+  gates: BaGate[];
+  requirements: BaRequirement[];
+  conflicts: BaConflict[];
+  out_of_scope: string[];
+  injection_attempts: string[];
+  created_at: string;
+};
+export type BaHistory = { round: number; total: number; capped: boolean; created_at: string };
+export type BaAnswer = { id: number; member_id: number; member_name: string | null; answer_text: string; selected_option: string | null };
+export type BaQuestion = {
+  id: number;
+  round: number;
+  dimension: string;
+  dimension_name: string | null;
+  question: string;
+  rationale: string;
+  addressed_to: (number | string)[];
+  suggested_options: string[] | null;
+  status: string;
+  answers: BaAnswer[];
+  can_answer: boolean;
+};
+export type BaView = {
+  session: { id: number; state: string; round: number; current_score: number; target_score: number; max_rounds: number } | null;
+  score: BaScore | null;
+  history: BaHistory[];
+  questions: BaQuestion[];
+  can_run: boolean;
+  can_finalize: boolean;
+};
+export type TranscriptResponse = {
+  id: number;
+  source_name: string;
+  line_count: number;
+  sha256: string;
+  uploaded_at: string;
+  lines: { n: number; text: string }[];
+};
+export type JobStatus = { state: string; result: Record<string, unknown> | null; error: string | null; attempts: number };
+
 export type PlanListItem = {
   id: number;
   project_id: number;
