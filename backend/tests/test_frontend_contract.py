@@ -305,3 +305,49 @@ def test_plan_refresh_is_gentle_and_the_plan_kinds_have_words():
     from app.services.guardian_rules import APPLICABLE
     kinds = set(re.findall(r'\b([A-Z_]{6,}): "', block(plans_ts, "export const PLAN_WORDS")))
     assert kinds == set(APPLICABLE) - {"REAUTH_PLEDGES"}                    # reauthorisation plans are not built yet
+
+
+from tests.test_ba_api import t  # noqa: E402,F401  (a team with a transcript, to read real BA responses)
+
+
+def test_the_ba_studio_types_match_real_responses_and_the_words_cover_every_state(t, client):  # noqa: F811
+    from tests.ba_factory import R0, conflict, question, questions
+    types = read("lib/types.ts")
+    t.script(t.out(R0, conflicts=[conflict()], injection=["ignore the rules"]), questions(question(to=(t.ids[0],))))
+    assert t.post_run().status_code == 202
+    t.run_job()
+    first = t.ba(t.lakshmi)["questions"][0]
+    assert client.post(f"/api/ba/questions/{first['id']}/answers", headers=t.lakshmi, json={"answer_text": "Enquiry form only"}).status_code == 201
+    view = t.ba(t.lakshmi)
+    assert set(view) == fields_of(types, "BaView")
+    assert set(view["session"]) == nested_fields(types, "BaView", "session")
+    score = view["score"]
+    assert set(score) == fields_of(types, "BaScore")
+    assert score["dimensions"] and all(set(d) == fields_of(types, "BaDimension") for d in score["dimensions"])
+    assert score["gates"] and all(set(g) == fields_of(types, "BaGate") for g in score["gates"])
+    assert score["requirements"] and all(set(r) == fields_of(types, "BaRequirement") for r in score["requirements"])
+    assert score["conflicts"] and all(set(c) == fields_of(types, "BaConflict") for c in score["conflicts"])
+    assert score["injection_attempts"] and all(isinstance(x, str) for x in score["injection_attempts"]) and all(isinstance(x, str) for x in score["out_of_scope"])
+    assert view["history"] and all(set(h) == fields_of(types, "BaHistory") for h in view["history"])
+    q = view["questions"][0]
+    assert set(q) == fields_of(types, "BaQuestion") and q["answers"] and all(set(a) == fields_of(types, "BaAnswer") for a in q["answers"])
+    transcript = client.get(f"/api/projects/{t.pid}/transcript", headers=t.lakshmi).json()
+    assert set(transcript) == fields_of(types, "TranscriptResponse") and set(transcript["lines"][0]) == {"n", "text"}
+    from app.models import Job
+    from sqlalchemy import select
+    job = t.db.scalars(select(Job).order_by(Job.id.desc())).first()
+    assert set(client.get(f"/api/jobs/{job.id}").json()) == fields_of(types, "JobStatus")
+    missing = client.get(f"/api/projects/{t.pid + 99}/transcript", headers=t.lakshmi)
+    assert missing.status_code in (403, 404)
+
+    ba_ts = read("lib/ba.ts")
+    assert keys_of(block(ba_ts, "export const SESSION_STATES")) == {"ACTIVE", "READY", "MAX_ROUNDS", "FINALIZED", "BRD_GENERATED"}
+    assert keys_of(block(ba_ts, "export const QUESTION_STATES")) == {"OPEN", "ANSWERED", "SKIPPED"}
+    assert re.search(r"BA_REFRESH_MS = 8000;", ba_ts) and re.search(r"JOB_POLL_MS = 2000;", ba_ts)
+
+
+def test_a_missing_transcript_answers_with_the_code_the_studio_looks_for(t, client):  # noqa: F811
+    other = client.post("/api/projects", headers=t.lakshmi, json={"title": "No meeting yet", "budget_cents": 10000, "delivery_days": 3}).json()["id"]
+    r = client.get(f"/api/projects/{other}/transcript", headers=t.lakshmi)
+    assert r.status_code == 404 and r.json()["error"]["code"] == "NO_TRANSCRIPT"
+    assert "NO_TRANSCRIPT" in read("app/ba/page.tsx")

@@ -64,6 +64,8 @@ function Workspace({ id }: { id: number }) {
         {isMember && (
           <>
             <span className="text-slate-300">|</span>
+            <Link href={`/ba?id=${p.id}`} className="font-semibold text-sea-700 hover:text-sea-800 underline">Open BA Studio</Link>: the requirements analysis.
+            <span className="text-slate-300">|</span>
             <Link href={`/audit?id=${p.id}`} className="font-semibold text-sea-700 hover:text-sea-800 underline">Open the AI audit trail</Link>: every call to an AI helper.
           </>
         )}

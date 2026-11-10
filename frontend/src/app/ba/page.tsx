@@ -1,413 +1,225 @@
 "use client";
 import Link from "next/link";
-import { useSearchParams, useRouter } from "next/navigation";
-import { Suspense, useState, type FormEvent } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { QuestionCard } from "@/components/QuestionCard";
+import { ScoreGauge } from "@/components/ScoreGauge";
+import { TranscriptPanel } from "@/components/TranscriptPanel";
 import { Badge, Empty, ErrorBox, Loading } from "@/components/ui";
-import { apiPost } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import type { BAResponse, BAQuestionItem, ProjectDetail } from "@/lib/types";
+import { BA_REFRESH_MS, JOB_POLL_MS, canUpload, groupQuestions, percent, points, refLines, refWords } from "@/lib/ba";
+import { roleOn } from "@/lib/plans";
+import type { BaView, JobStatus, ProjectDetail, TranscriptResponse } from "@/lib/types";
 import { useApi } from "@/lib/useApi";
 
-function BAStudioView({ id }: { id: number }) {
+const said = (e: unknown) => (e instanceof ApiError ? e.message : "Something went wrong");
+
+function RefChips({ refs, onPick }: { refs: string[]; onPick: (refs: string[]) => void }) {
+  return (
+    <span className="flex flex-wrap gap-1">
+      {refs.map((r) => <button key={r} onClick={() => onPick([r])} className="rounded bg-yellow-50 px-1.5 py-0.5 text-xs text-yellow-900 hover:bg-yellow-100">{refWords(r)}</button>)}
+    </span>
+  );
+}
+
+function Studio({ id }: { id: number }) {
   const auth = useAuth();
-  const router = useRouter();
-  const [refreshKey, setRefreshKey] = useState(0);
+  const authed = auth.status === "authed";
+  const ba = useApi<BaView>(authed ? `/projects/${id}/ba` : null, auth.user?.id ?? null);
+  const tr = useApi<TranscriptResponse>(authed ? `/projects/${id}/transcript` : null, auth.user?.id ?? null);
+  const pr = useApi<ProjectDetail>(authed ? `/projects/${id}` : null, auth.user?.id ?? null);
+  const [highlight, setHighlight] = useState<Set<number>>(new Set());
+  const [job, setJob] = useState<number | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
-  const [selectedOptions, setSelectedOptions] = useState<Record<number, string>>({});
-  const [customAnswers, setCustomAnswers] = useState<Record<number, string>>({});
-  const [showTranscript, setShowTranscript] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [paste, setPaste] = useState("");
+  const [sourceName, setSourceName] = useState("");
+  const { reload: reloadBa } = ba;
+  const { reload: reloadTr } = tr;
 
-  const { data: project } = useApi<ProjectDetail>(auth.status === "loading" ? null : `/projects/${id}`, auth.user?.id ?? null);
-  const { data: ba, error, loading, slow, reload } = useApi<BAResponse>(
-    auth.status === "loading" ? null : `/projects/${id}/ba`,
-    `${auth.user?.id ?? "anon"}-${refreshKey}`
-  );
-  const { data: transcriptData } = useApi<{ transcript: { source_name: string; lines: { line_no: number; text: string }[] } }>(
-    showTranscript ? `/projects/${id}/transcript` : null
-  );
+  useEffect(() => {                                   // live refresh while the page is visible
+    const t = setInterval(() => document.visibilityState === "visible" && reloadBa(), BA_REFRESH_MS);
+    return () => clearInterval(t);
+  }, [reloadBa]);
 
-  async function runRound() {
-    setBusy("run");
-    setActionError(null);
-    try {
-      const res = await apiPost<{ job_id: number }>(`/projects/${id}/ba/run`, {});
-      // Wait for job to process
-      let done = false;
-      for (let i = 0; i < 20; i++) {
-        await new Promise((r) => setTimeout(r, 1000));
-        const job = await fetch(`/api/jobs/${res.job_id}`).then((r) => r.json());
-        if (job.state === "DONE") {
-          done = true;
-          break;
-        }
-        if (job.state === "FAILED") {
-          throw new Error(job.error ?? "BA run failed");
-        }
+  useEffect(() => {                                   // a run we started: ask about it until it ends
+    if (job === null) return;
+    let alive = true;
+    const t = setInterval(async () => {
+      try {
+        const j = await api<JobStatus>(`/jobs/${job}`);
+        if (!alive) return;
+        if (j.state === "DONE") { setJob(null); reloadBa(); }
+        else if (j.state === "FAILED") { setJob(null); setProblem(j.error ? `The analysis failed: ${j.error}` : "The analysis failed."); reloadBa(); }
+      } catch (e) {
+        if (alive) { setJob(null); setProblem(said(e)); }
       }
-      setRefreshKey((k) => k + 1);
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Failed to run BA round");
-    } finally {
-      setBusy(null);
-    }
+    }, JOB_POLL_MS);
+    return () => { alive = false; clearInterval(t); };
+  }, [job, reloadBa]);
+
+  const names = useMemo(() => Object.fromEntries((pr.data?.members ?? []).map((m) => [m.id, m.display_name])) as Record<number, string>, [pr.data]);
+  const changed = useCallback(() => { reloadBa(); }, [reloadBa]);
+
+  if (auth.status === "loading") return <Loading what="Checking who you are" />;
+  if (!authed) return <Empty title="Sign in to open BA Studio">Only the people on a project can see it. <Link href="/login" className="text-sea-700 underline">Sign in</Link>.</Empty>;
+  if (ba.loading && !ba.data) return <Loading what="Loading BA Studio" slow={ba.slow} />;
+  if (ba.error && !ba.data) return <ErrorBox error={ba.error} onRetry={reloadBa} />;
+  if (!ba.data) return null;
+
+  const view = ba.data;
+  const role = roleOn(auth.memberships, id);
+  const isLead = role === "LEAD";
+  const noTranscript = tr.error?.code === "NO_TRANSCRIPT";
+  const transcript = tr.data;
+  const score = view.score;
+  const open = view.questions.filter((q) => q.status === "OPEN");
+
+  async function act(name: string, fn: () => Promise<void>) {
+    setBusy(name);
+    setProblem(null);
+    try { await fn(); } catch (e) { setProblem(said(e)); } finally { setBusy(null); }
   }
-
-  async function generateBRD() {
-    setBusy("generate");
-    setActionError(null);
-    try {
-      await apiPost<{ job_id: number }>(`/projects/${id}/brd/generate`, {});
-      router.push(`/brd?id=${id}`);
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Failed to generate BRD");
-      setBusy(null);
-    }
-  }
-
-  async function submitAnswer(q: BAQuestionItem) {
-    const text = customAnswers[q.id]?.trim() || selectedOptions[q.id];
-    if (!text) return;
-    setBusy(`answer-${q.id}`);
-    setActionError(null);
-    try {
-      await apiPost(`/ba/questions/${q.id}/answers`, {
-        answer_text: text,
-        selected_option: selectedOptions[q.id] || null,
-      });
-      setCustomAnswers((prev) => ({ ...prev, [q.id]: "" }));
-      setRefreshKey((k) => k + 1);
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Could not submit answer");
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function skipQuestion(qId: number) {
-    setBusy(`skip-${qId}`);
-    setActionError(null);
-    try {
-      await apiPost(`/ba/questions/${qId}/skip`, {});
-      setRefreshKey((k) => k + 1);
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Could not skip question");
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  if (auth.status === "loading" || loading) return <Loading what="Loading BA Studio" slow={slow} />;
-  if (error) return <ErrorBox error={error} onRetry={reload} />;
-  if (!ba) return null;
-
-  const session = ba.session;
-  const score = ba.score;
-  const currentScore = session?.current_score ?? score?.total ?? 0;
-  const targetScore = session?.target_score ?? 90;
-  const isReady = currentScore >= targetScore || session?.state === "READY";
 
   return (
-    <div className="space-y-6">
-      {/* Navigation Header */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs">
-        <div className="mb-2">
-          <Link href={`/project?id=${id}`} className="inline-flex items-center gap-1 text-xs font-semibold text-sea-700 hover:text-sea-800 transition">
-            <span aria-hidden="true">&larr;</span> Back to Project Workspace
-          </Link>
-        </div>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
-              BA Requirements Studio
-            </h1>
-            <p className="mt-1 text-xs text-slate-500">
-              Autonomous Business Analyst turning stakeholder meetings into verifiable specifications
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            {session && (
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                Round {session.round + 1} of {session.max_rounds}
-              </span>
-            )}
-            <Badge tone={isReady ? "green" : "blue"}>
-              {isReady ? "Ready (≥90 Scored)" : "Clarification Needed"}
-            </Badge>
-          </div>
-        </div>
-
-        {actionError && (
-          <div role="alert" className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-900">
-            {actionError}
-          </div>
-        )}
-
-        {/* Primary Action Controls */}
-        <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-4">
-          {isReady ? (
-            <button
-              disabled={busy !== null}
-              onClick={() => void generateBRD()}
-              className="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 px-5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:from-emerald-700 hover:to-teal-800 disabled:opacity-60"
-            >
-              {busy === "generate" ? "Generating BRD..." : "✓ Generate Business Requirements Document (BRD)"}
-            </button>
-          ) : ba.can_run ? (
-            <button
-              disabled={busy !== null}
-              onClick={() => void runRound()}
-              className="rounded-xl bg-gradient-to-r from-sea-600 to-sea-700 px-5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:from-sea-700 hover:to-sea-800 disabled:opacity-60"
-            >
-              {busy === "run" ? "Analyzing Requirements..." : "Analyze & Run Next BA Round"}
-            </button>
-          ) : null}
-
-          <button
-            onClick={() => setShowTranscript((v) => !v)}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition"
-          >
-            {showTranscript ? "Hide Meeting Transcript" : "View Source Transcript"}
-          </button>
-        </div>
+    <div className="space-y-5">
+      <div>
+        <Link href={`/project?id=${id}`} className="text-sm text-sea-700 hover:underline">Back to the project</Link>
+        <h1 className="mt-1 text-2xl font-bold">BA Studio</h1>
+        <p className="text-sm text-gray-600">The business analyst reads the meeting, scores how complete the requirements are, and asks the sponsors what is missing. The AI only judges and asks; fixed rules do the scoring.</p>
       </div>
 
-      {/* Transcript Viewer Accordion */}
-      {showTranscript && (
-        <section aria-label="Meeting Transcript" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-          <h2 className="text-sm font-bold text-slate-900 mb-3">
-            Source Meeting Transcript: {transcriptData?.transcript.source_name ?? "transcript.txt"}
-          </h2>
-          <div className="max-h-72 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50/70 p-4 font-mono text-xs text-slate-700 space-y-1">
-            {transcriptData?.transcript.lines ? (
-              transcriptData.transcript.lines.map((l) => (
-                <div key={l.line_no} className="flex gap-4">
-                  <span className="w-8 text-right text-slate-400 select-none">{l.line_no}</span>
-                  <span>{l.text}</span>
-                </div>
-              ))
-            ) : (
-              <p className="text-slate-500 font-sans">Loading transcript lines...</p>
-            )}
-          </div>
+      {ba.error && <p role="alert" className="rounded bg-amber-50 p-2 text-sm text-amber-800">Could not refresh just now ({ba.error.message}). Showing the last news we have.</p>}
+      {problem && <p role="alert" className="rounded bg-red-50 p-2 text-sm text-red-800">{problem}</p>}
+      {job !== null && <p role="status" className="rounded bg-sea-50 p-2 text-sm text-sea-700">The analyst is working. This takes a short while.</p>}
+
+      <div className="flex flex-wrap items-center gap-3">
+        {view.can_run && (
+          <button disabled={busy !== null || job !== null} onClick={() => void act("run", async () => { const r = await api<{ job_id: number }>(`/projects/${id}/ba/run`, { method: "POST" }); setJob(r.job_id); })}
+                  className="rounded bg-sea-600 px-3 py-1.5 text-sm text-white hover:bg-sea-700 disabled:opacity-60">{view.session === null ? "Start the analysis" : "Run the analysis again"}</button>
+        )}
+        {view.can_finalize && !confirming && <button onClick={() => setConfirming(true)} className="rounded border border-amber-400 bg-amber-50 px-3 py-1.5 text-sm text-amber-900">Accept the gaps and move on</button>}
+        {view.can_finalize && confirming && (
+          <span className="flex items-center gap-2 text-sm">
+            <span>The brief will be written with what is known. Missing details become gaps.</span>
+            <button disabled={busy !== null} onClick={() => void act("finalize", async () => { await api(`/projects/${id}/ba/finalize`, { method: "POST" }); setConfirming(false); reloadBa(); })} className="rounded bg-amber-600 px-3 py-1.5 text-white disabled:opacity-60">Yes, accept the gaps</button>
+            <button onClick={() => setConfirming(false)} className="underline">Not yet</button>
+          </span>
+        )}
+        <button onClick={reloadBa} className="rounded border border-gray-300 bg-white px-3 py-1.5 text-sm hover:bg-gray-50">Refresh</button>
+      </div>
+      {isLead && !view.can_run && open.length > 0 && <p className="text-sm text-gray-600" data-testid="why-not-run">Answer or skip the open questions first. The next round starts by itself.</p>}
+
+      {noTranscript && (
+        <section aria-label="Upload the transcript" className="space-y-2 rounded-xl border border-dashed border-gray-300 p-4">
+          <h2 className="font-semibold">No transcript yet</h2>
+          {isLead ? (
+            <>
+              <p className="text-sm text-gray-600">Paste the meeting transcript. Each line gets a number the analyst can point at.</p>
+              <input aria-label="Where it came from" placeholder="Name (optional)" value={sourceName} onChange={(e) => setSourceName(e.target.value)} maxLength={120} className="w-full rounded border border-gray-300 p-2 text-sm" />
+              <textarea aria-label="Transcript text" value={paste} onChange={(e) => setPaste(e.target.value)} rows={8} className="w-full rounded border border-gray-300 p-2 font-mono text-xs" />
+              <button disabled={busy !== null || !canUpload(paste)} onClick={() => void act("upload", async () => { await api(`/projects/${id}/transcripts`, { method: "POST", body: { text: paste, source_name: sourceName.trim() } }); setPaste(""); reloadTr(); reloadBa(); })}
+                      className="rounded bg-sea-600 px-3 py-1.5 text-sm text-white hover:bg-sea-700 disabled:opacity-50">{busy === "upload" ? "Uploading..." : "Upload the transcript"}</button>
+            </>
+          ) : <p className="text-sm text-gray-600">The lead has not uploaded the meeting transcript yet.</p>}
         </section>
       )}
 
-      {/* Score Gauge & Gates Banner */}
-      <div className="grid gap-6 md:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              <span>BRD Quality Score</span>
-              <span>Target: 90/100</span>
-            </div>
-            <div className="mt-4 flex items-baseline gap-2">
-              <span className={`text-5xl font-black tracking-tight ${isReady ? "text-emerald-600" : "text-sea-600"}`}>
-                {currentScore}
-              </span>
-              <span className="text-sm font-bold text-slate-400">/ 100</span>
-            </div>
-            <p className="mt-2 text-xs text-slate-500 leading-relaxed">
-              {isReady
-                ? "Quality threshold reached! All core gates passed. You can now generate the binding BRD."
-                : `Score is ${currentScore}/100. Answer the clarification questions below to reach the ≥90 requirement.`}
-            </p>
-          </div>
+      {view.session === null ? (
+        !noTranscript && <Empty title="The analysis has not started">{isLead ? "Press “Start the analysis” above." : "The lead starts it when the transcript is ready."}</Empty>
+      ) : (
+        <div className="grid gap-5 lg:grid-cols-5">
+          <div className="space-y-5 lg:col-span-3">
+            <ScoreGauge view={view} />
 
-          {/* History Sparkline */}
-          {ba.history.length > 0 && (
-            <div className="mt-4 border-t border-slate-100 pt-3">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Score History:</span>
-              <div className="mt-1 flex items-center gap-2 text-xs font-semibold">
-                {ba.history.map((h, i) => (
-                  <span key={h.round} className="inline-flex items-center gap-1">
-                    <span className="rounded bg-slate-100 px-2 py-0.5 text-slate-700">R{h.round}: {h.total}</span>
-                    {i < ba.history.length - 1 && <span className="text-slate-300">&rarr;</span>}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+            {score && (
+              <>
+                <section aria-label="Checks" className="rounded-xl border border-gray-200 bg-white p-4">
+                  <h2 className="mb-2 font-semibold">Must-have checks</h2>
+                  <ul className="flex flex-wrap gap-2" aria-label="Gates">
+                    {score.gates.map((g) => (
+                      <li key={g.id} data-gate={g.id} data-passed={g.passed ? "yes" : "no"} title={g.detail}
+                          className={`rounded-lg border px-2 py-1 text-sm ${g.passed ? "border-green-300 bg-green-50 text-green-900" : "border-red-300 bg-red-50 text-red-900"}`}>
+                        <span aria-label={g.passed ? "Passed" : "Not met"}>{g.passed ? "✓" : "✗"}</span> {g.title}<span className="block text-xs opacity-80">{g.detail}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
 
-        {/* Gate Checks */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs md:col-span-2">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
-            Core Readiness Gates (Must All Pass)
-          </h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {score?.gates ? (
-              score.gates.map((g) => (
-                <div key={g.id} className={`rounded-xl border p-3 ${g.passed ? "border-emerald-200 bg-emerald-50/60" : "border-amber-200 bg-amber-50/60"}`}>
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-[11px] font-bold text-slate-600">{g.id}</span>
-                    <span className={`text-xs font-bold ${g.passed ? "text-emerald-700" : "text-amber-700"}`}>
-                      {g.passed ? "✓ PASS" : "PENDING"}
-                    </span>
-                  </div>
-                  <p className="mt-1 text-xs font-semibold text-slate-800 line-clamp-1">{g.name}</p>
-                </div>
-              ))
-            ) : (
-              <p className="text-xs text-slate-500 col-span-4">No gate data available yet.</p>
+                <section aria-label="Dimensions" className="rounded-xl border border-gray-200 bg-white p-4">
+                  <h2 className="mb-2 font-semibold">How complete each area is</h2>
+                  <ul className="space-y-3">
+                    {score.dimensions.map((d) => (
+                      <li key={d.dimension} data-dimension={d.dimension}>
+                        <div className="flex justify-between text-sm"><span className="font-medium">{d.name}</span><span className="text-gray-600">{points(d)} of {d.weight}</span></div>
+                        <div className="mt-1 h-2 w-full rounded-full bg-gray-200"><div className="h-full rounded-full bg-sea-500" style={{ width: `${percent(d.coverage_effective)}%` }} data-testid={`bar-${d.dimension}`} /></div>
+                        <p className="mt-1 text-sm text-gray-600">{d.justification}</p>
+                        {d.downgraded && <p className="text-xs text-amber-700">No evidence was cited for this, so it was marked one level lower.</p>}
+                        {d.source_refs.length > 0 && <RefChips refs={d.source_refs} onPick={(r) => setHighlight(refLines(r))} />}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+
+                {score.conflicts.length > 0 && (
+                  <section aria-label="Conflicts" className="rounded-xl border border-gray-200 bg-white p-4">
+                    <h2 className="mb-2 font-semibold">Where sponsors disagree</h2>
+                    <ul className="space-y-2 text-sm">
+                      {score.conflicts.map((c, i) => (
+                        <li key={i} data-resolved={c.resolved ? "yes" : "no"} className="rounded border border-gray-200 p-2">
+                          <p className="flex items-center justify-between gap-2 font-medium">{c.topic}<Badge tone={c.resolved ? "green" : "red"}>{c.resolved ? "Settled" : "Open"}</Badge></p>
+                          <ul className="mt-1 list-disc pl-5 text-gray-700">{c.positions.map((p, j) => <li key={j}>{names[p.member_id] ?? "Someone"}: {p.position}</li>)}</ul>
+                          {c.resolved && c.resolution && <p className="mt-1 text-green-800">Settled: {c.resolution}</p>}
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
+
+                <section aria-label="Requirements found" className="rounded-xl border border-gray-200 bg-white p-4">
+                  <h2 className="mb-2 font-semibold">Requirements found so far ({score.requirements.length})</h2>
+                  {score.requirements.length === 0 ? <p className="text-sm text-gray-600">None yet.</p> : (
+                    <ul className="space-y-2 text-sm">
+                      {score.requirements.map((r) => (
+                        <li key={r.temp_id} className="rounded border border-gray-200 p-2">
+                          <p className="flex items-center justify-between gap-2 font-medium">{r.title}<Badge tone={r.priority === "MUST" ? "red" : r.priority === "SHOULD" ? "amber" : "grey"}>{r.priority}</Badge></p>
+                          <p className="text-gray-600">{r.description}</p>
+                          <p className="text-xs text-gray-500">Asked for by {r.requested_by.map((m) => names[m] ?? "someone").join(", ") || "nobody yet"} · {r.acceptance_criteria.length} check{r.acceptance_criteria.length === 1 ? "" : "s"} to prove it</p>
+                          {r.source_refs.length > 0 && <RefChips refs={r.source_refs} onPick={(x) => setHighlight(refLines(x))} />}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {score.out_of_scope.length > 0 && (
+                    <div className="mt-3 text-sm"><h3 className="font-medium">Out of scope</h3><ul className="list-disc pl-5 text-gray-700">{score.out_of_scope.map((o, i) => <li key={i}>{o}</li>)}</ul></div>
+                  )}
+                  {score.injection_attempts.length > 0 && (
+                    <p role="note" className="mt-3 rounded bg-amber-50 p-2 text-sm text-amber-800" data-testid="injection">
+                      Some text in the transcript or answers tried to give the AI orders ({score.injection_attempts.length} time{score.injection_attempts.length === 1 ? "" : "s"}). It was ignored.
+                    </p>
+                  )}
+                </section>
+              </>
             )}
+
+            <section aria-label="Questions" className="space-y-3">
+              <h2 className="font-semibold">Questions from the analyst</h2>
+              {view.questions.length === 0 ? <p className="text-sm text-gray-600">No questions yet.</p> : groupQuestions(view.questions).map((g) => (
+                <div key={g.round} className="space-y-2">
+                  <h3 className="text-xs uppercase tracking-wide text-gray-500">Round {g.round}</h3>
+                  {g.questions.map((q) => <QuestionCard key={q.id} q={q} names={names} isLead={isLead} onChanged={changed} />)}
+                </div>
+              ))}
+            </section>
           </div>
 
-          {/* Conflicts Card if any */}
-          {score?.conflicts && score.conflicts.length > 0 && (
-            <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/70 p-3.5 text-xs">
-              <span className="font-bold text-amber-900 uppercase tracking-wide">Stakeholder Conflicts:</span>
-              <ul className="mt-1 space-y-1 text-amber-800">
-                {score.conflicts.map((c, i) => (
-                  <li key={i}>
-                    <strong>{c.topic}:</strong> {c.resolved ? `Resolved (${c.resolution})` : "Unresolved — clarification needed"}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* 10 Dimension Coverage Bars */}
-      <section aria-label="Dimension Coverage" className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs">
-        <h2 className="text-sm font-bold text-slate-900 mb-4 border-b border-slate-100 pb-3">
-          10-Dimension Evaluation Breakdown
-        </h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          {score?.dimensions.map((d) => {
-            const pct = Math.round(d.coverage * 100);
-            return (
-              <div key={d.dimension} className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 space-y-2">
-                <div className="flex items-center justify-between text-xs font-semibold">
-                  <span className="text-slate-800">{d.dimension}: {d.name}</span>
-                  <span className={`font-mono font-bold ${pct >= 75 ? "text-emerald-700" : pct >= 50 ? "text-sea-700" : "text-amber-700"}`}>
-                    {pct}%
-                  </span>
-                </div>
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
-                  <div
-                    className={`h-full transition-all ${pct >= 75 ? "bg-emerald-500" : pct >= 50 ? "bg-sea-500" : "bg-amber-500"}`}
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-                <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">{d.justification}</p>
-                {d.source_refs.length > 0 && (
-                  <div className="flex flex-wrap gap-1 pt-1">
-                    {d.source_refs.map((ref, idx) => (
-                      <span key={idx} className="rounded bg-slate-200/80 px-1.5 py-0.5 text-[10px] font-mono text-slate-700">
-                        {ref}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Clarification Questions */}
-      <section aria-label="Clarification Questions" className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs">
-        <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
-          <div>
-            <h2 className="text-base font-bold text-slate-900">Clarification Questions</h2>
-            <p className="text-xs text-slate-500">Addressed to specific project members to close requirements gaps</p>
+          <div className="lg:col-span-2">
+            {transcript ? <TranscriptPanel transcript={transcript} highlight={highlight} /> : tr.loading ? <Loading what="Loading the transcript" /> : null}
           </div>
-          <span className="text-xs font-semibold text-slate-600">
-            {ba.questions.filter((q) => q.status === "OPEN").length} Open
-          </span>
         </div>
-
-        {ba.questions.length === 0 ? (
-          <Empty title="No questions pending">All required details are clarified or ready for review.</Empty>
-        ) : (
-          <div className="space-y-4">
-            {ba.questions.map((q) => (
-              <div key={q.id} className={`rounded-xl border p-4 transition ${q.status === "OPEN" ? "border-slate-300 bg-white" : "border-slate-100 bg-slate-50/50"}`}>
-                <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="rounded bg-sea-50 px-2 py-0.5 text-xs font-bold text-sea-700">
-                      {q.dimension_name || q.dimension}
-                    </span>
-                    <span className="text-xs text-slate-500">Round {q.round + 1}</span>
-                  </div>
-                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${q.status === "OPEN" ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"}`}>
-                    {q.status}
-                  </span>
-                </div>
-
-                <h3 className="text-sm font-bold text-slate-900">{q.question}</h3>
-                <p className="mt-1 text-xs text-slate-500 leading-relaxed">Rationale: {q.rationale}</p>
-
-                {/* Answers already provided */}
-                {q.answers.length > 0 && (
-                  <div className="mt-3 space-y-1.5 border-t border-slate-100 pt-2.5">
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Answers:</span>
-                    {q.answers.map((a) => (
-                      <div key={a.id} className="rounded-lg bg-slate-50 p-2.5 text-xs">
-                        <span className="font-bold text-slate-800">{a.member_name}: </span>
-                        <span className="text-slate-700">{a.answer_text}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Answer form if authorized */}
-                {q.can_answer && (
-                  <div className="mt-4 border-t border-slate-100 pt-3 space-y-3">
-                    <span className="text-xs font-bold text-slate-700">Your Response:</span>
-
-                    {/* Suggested option chips */}
-                    {q.suggested_options && q.suggested_options.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {q.suggested_options.map((opt) => (
-                          <button
-                            key={opt}
-                            type="button"
-                            onClick={() => setSelectedOptions((prev) => ({ ...prev, [q.id]: opt }))}
-                            className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
-                              selectedOptions[q.id] === opt
-                                ? "border-sea-600 bg-sea-50 text-sea-800"
-                                : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
-                            }`}
-                          >
-                            {opt}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="Type answer or select above..."
-                        value={customAnswers[q.id] ?? selectedOptions[q.id] ?? ""}
-                        onChange={(e) => setCustomAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))}
-                        className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:border-sea-500 focus:outline-none"
-                      />
-                      <button
-                        disabled={busy !== null}
-                        onClick={() => void submitAnswer(q)}
-                        className="rounded-xl bg-sea-600 px-4 py-2 text-xs font-bold text-white hover:bg-sea-700 disabled:opacity-60 transition"
-                      >
-                        {busy === `answer-${q.id}` ? "Saving..." : "Submit Answer"}
-                      </button>
-                      <button
-                        disabled={busy !== null}
-                        onClick={() => void skipQuestion(q.id)}
-                        className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-60 transition"
-                      >
-                        Skip
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
+      )}
     </div>
   );
 }
@@ -415,20 +227,10 @@ function BAStudioView({ id }: { id: number }) {
 function FromQuery() {
   const raw = useSearchParams().get("id");
   const id = raw !== null && /^\d{1,9}$/.test(raw) ? Number(raw) : null;
-  if (id === null) {
-    return (
-      <Empty title="No project selected">
-        Open a project from <Link href="/" className="text-sea-700 underline">the project list</Link>.
-      </Empty>
-    );
-  }
-  return <BAStudioView id={id} />;
+  if (id === null) return <Empty title="No project selected">Open BA Studio from a <Link href="/" className="text-sea-700 underline">project</Link>.</Empty>;
+  return <Studio id={id} />;
 }
 
-export default function BAPage() {
-  return (
-    <Suspense fallback={<Loading what="Loading BA Studio" />}>
-      <FromQuery />
-    </Suspense>
-  );
+export default function BaPage() {
+  return <Suspense fallback={<Loading what="Loading" />}><FromQuery /></Suspense>;
 }

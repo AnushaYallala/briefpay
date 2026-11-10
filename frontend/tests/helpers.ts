@@ -62,6 +62,35 @@ export const planDetail = (over: Record<string, unknown> = {}) => ({
   ...planItem(), inputs: {}, steps: [step()], reviews: [], approvals: [], ...over,
 }) as import("@/lib/types").PlanDetail;
 
+export const baDim = (over: Record<string, unknown> = {}) => ({
+  dimension: "D1", name: "Business goals & success measures", weight: 12, coverage_claimed: 0.5, coverage_effective: 0.5, downgraded: false,
+  justification: "Goals are clear, no measure yet", source_refs: ["L3-L5"], ...over,
+}) as import("@/lib/types").BaDimension;
+
+export const baScore = (over: Record<string, unknown> = {}) => ({
+  round: 0, total: 58, capped: false, total_uncapped: 58,
+  dimensions: [baDim(), baDim({ dimension: "D5", name: "Functional requirements", weight: 15, coverage_effective: 0.75, coverage_claimed: 1, downgraded: true, justification: "Pages listed", source_refs: ["L7", "answer:12"] })],
+  gates: [{ id: "GT-1", title: "Budget and delivery deadline are stated", passed: true, detail: "both stated" }, { id: "GT-3", title: "No unresolved conflict between sponsors", passed: false, detail: "1 open conflict" }],
+  requirements: [{ temp_id: "R1", title: "Welcome page", description: "A home page.", priority: "MUST", requested_by: [1, 2], acceptance_criteria: ["Given a visitor, when they open /, then it loads"], source_refs: ["L3"] }],
+  conflicts: [{ topic: "Booking online or enquiry only", positions: [{ member_id: 1, position: "wants booking" }, { member_id: 2, position: "no payments" }], resolved: false, resolution: null }],
+  out_of_scope: ["Online payments"], injection_attempts: [], created_at: "2026-11-10T12:00:00", ...over,
+}) as import("@/lib/types").BaScore;
+
+export const baQuestion = (over: Record<string, unknown> = {}) => ({
+  id: 1, round: 0, dimension: "D5", dimension_name: "Functional requirements", question: "Should visitors book online?", rationale: "The sponsors disagree.",
+  addressed_to: [1, 2], suggested_options: ["Enquiry form only", "Online booking"], status: "OPEN", answers: [], can_answer: true, ...over,
+}) as import("@/lib/types").BaQuestion;
+
+export const baView = (over: Record<string, unknown> = {}) => ({
+  session: { id: 1, state: "ACTIVE", round: 0, current_score: 58, target_score: 90, max_rounds: 5 }, score: baScore(),
+  history: [{ round: 0, total: 58, capped: false, created_at: "2026-11-10T12:00:00" }], questions: [baQuestion()], can_run: false, can_finalize: false, ...over,
+}) as import("@/lib/types").BaView;
+
+export const transcript = (n = 10) => ({
+  id: 1, source_name: "meeting.txt", line_count: n, sha256: "x", uploaded_at: "2026-11-10T11:00:00",
+  lines: Array.from({ length: n }, (_, i) => ({ n: i + 1, text: `Speaker ${(i % 3) + 1}: line ${i + 1}` })),
+});
+
 export const ledger = (rows: import("@/lib/types").LedgerRow[], over: Record<string, unknown> = {}) => ({
   project_id: 1, public: false, rows, totals: { pool_in_cents: 0, pool_out_cents: 0, pool_balance_cents: 0, rows: rows.length }, ...over,
 });
