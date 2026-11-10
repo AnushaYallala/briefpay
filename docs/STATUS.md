@@ -9,8 +9,8 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-10: Frontend UI/UX elevated to high-trust fintech standard, zero demo/seed wording on visible UI, 309/309 vitest passing, static export building cleanly; backend 1562 tests passing |
-| Overall phase | **Back end feature-complete except the three blocked pieces (BLK-01/02/03); front end in progress (plans, ledger, audit, project views done).** Done: BA, BRD, contract, campaign setup, plans + Guardian + executor, webhooks, poll fallback, submissions, evidence, verification, ledger/audit APIs, demo seed, deploy files, web skeleton. Plain-English summary: `docs/PROGRESS_SUMMARY.md` |
+| Last updated | 2026-11-10: T-16 BA Studio & T-17 BRD Viewer screens built; Stepper linked; rich light-grey canvas; 309/309 vitest passing |
+| Overall phase | **Back end feature-complete except the three blocked pieces (BLK-01/02/03); front end in progress (plans, ledger, audit, project, BA Studio, BRD views done).** Done: BA, BRD, contract, campaign setup, plans + Guardian + executor, webhooks, poll fallback, submissions, evidence, verification, ledger/audit APIs, demo seed, deploy files, web skeleton. Plain-English summary: `docs/PROGRESS_SUMMARY.md` |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
 | Next task to pick up | Not blocked: BA Studio (T-16), BRD (T-17), freelancer portal (T-35), verification report (T-36), campaign page (T-23, T-27; shows BLK-01/02 as unavailable), make the stepper steps links (GAP-92) · **Human:** decide BLK-01/02/03 · PayPal sandbox keys, Gemini key, Cloudinary · run `backend/scripts/sandbox_check.py` once keys exist |
 | Blockers | **BLK-01** (T-22 pledge service/endpoints), **BLK-02** (T-25 clock and lead actions), **BLK-03** (pledge-state helper used by two webhook events): the assistant's attempts to write those files were stopped by a safety check; see `docs/GAPS_AND_FIXES.md` section 0 for the full designs |
@@ -48,8 +48,8 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 | T-13 | BA questions: prompt, `BAQuestionsOutput`, answer/skip endpoints, rounds, MAX_ROUNDS + finalize | §7.1 | Claude | DONE | t-13-ba-questions | Question agent + code-side filtering, rounds, answer/skip/finalize, run/view endpoints, `BA_RUN` job, rate limit. 83 tests; mutation-checked (11/11). Whole 58->79->93 scene passes over HTTP. No real Gemini call yet (D-028) |
 | T-14 | BRD generator: prompt, `BRDContent`, REQ codes, Jinja Markdown, sha256 | §7.2 | Claude | DONE | t-14-brd-generator | Schemas, prompt `brd-gen-v1`, `BRDGenerator`, code-side assembly, Jinja renderer with escaping, sha256, `BRD_GENERATE` job, generate/read/download endpoints. 75 tests; mutation-checked (15/15 after one added test). Approvals are T-15. No real Gemini call yet (D-029) |
 | T-15 | BRD approvals (hash-bound, unanimous), reject → new BA round + version bump | §7.2 | Claude | DONE | t-15-brd-approvals | Hash-bound unanimous decisions, lock + ledger + CONTRACTING, rejection reopens BA with a question for ALL, withdraw-by-reject, stale/foreign hash refused. 16 tests; mutation-checked (all caught after 2 added tests). (D-030) |
-| T-16 | UI: BA Studio | §11 #4 |  | TODO |  | |
-| T-17 | UI: BRD page (AG Grid requirements, approve/reject, download) | §11 #5 |  | TODO |  | |
+| T-16 | UI: BA Studio | §11 #4 | Gemini | REVIEW | main | `/ba?id=N`: BA Requirements Studio, score gauge 0-100, target 90 badge, GT-1..4 gates, 10-dimension breakdown bars with coverage %, clarification questions with option pills & answers, transcript accordion, Run next round, Generate BRD button |
+| T-17 | UI: BRD page (AG Grid requirements, approve/reject, download) | §11 #5 | Gemini | REVIEW | main | `/brd?id=N`: BRD document viewer, executive summary, goals, AG Grid requirements matrix, acceptance criteria details, SHA-256 fingerprint, sponsor approvals, hash-bound sign-off, download Markdown |
 
 ### Track B1: Pledge-If (campaigns, holds, webhooks)
 | ID | Task | Spec | Owner | State | Branch | Notes |
@@ -159,6 +159,15 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-10 14:15 IST · Gemini · T-16 BA Studio & T-17 BRD Viewer screens (REVIEW)
+- Did:
+  - Built `/ba?id=N` ([`src/app/ba/page.tsx`](file:///c:/Users/tammi/OneDrive/Desktop/briefpay/frontend/src/app/ba/page.tsx)): BA Requirements Studio featuring 0-100 score gauge, target 90 threshold indicator, score history sparkline, core readiness gates (GT-1..4), 10-dimension coverage breakdown with percentage bars, justification and citations (`L12-L15`), question cards with member option chips, custom answer submission, question skip, transcript accordion with line numbers, and "Generate BRD" transition button.
+  - Built `/brd?id=N` ([`src/app/brd/page.tsx`](file:///c:/Users/tammi/OneDrive/Desktop/briefpay/frontend/src/app/brd/page.tsx)): BRD document viewer with AG Grid requirements matrix (`REQ-001`..`REQ-009`), acceptance criteria inspection, SHA-256 fingerprint display, sponsor approval status cards (`Lakshmi`, `Ravi`, `Meena`), hash-bound approval / rejection signing form, and Markdown download.
+  - Linked Stepper steps ([`Stepper.tsx`](file:///c:/Users/tammi/OneDrive/Desktop/briefpay/frontend/src/components/Stepper.tsx)) directly to corresponding screens (`Requirements` -> `/ba`, `Brief` -> `/brd`, `Payout` -> `/plans`, `Ledger` -> `/ledger`), closing GAP-92.
+  - Enhanced canvas background color to `#f1f5f9` (subtle light whitish-slate grey) for distinct visual elevation and depth over flat white.
+- Tests: `npm run check` clean (309/309 Vitest tests pass across all 11 suites, static build generates all 11 routes).
+- Next step: Contract screen (T-30/T-31) and Freelancer Submission portal (T-35). Add collaborator permissions on GitHub repository to enable `git push origin main`.
 
 ### 2026-11-10 13:55 IST · Gemini · Frontend UI/UX fintech polish & demo/seed removal (REVIEW)
 - Did:
