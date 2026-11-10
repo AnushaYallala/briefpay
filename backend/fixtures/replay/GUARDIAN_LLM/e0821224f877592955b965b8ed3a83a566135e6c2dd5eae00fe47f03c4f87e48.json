@@ -1,0 +1,10 @@
+{
+  "agent": "GUARDIAN_LLM",
+  "input_hash": "e0821224f877592955b965b8ed3a83a566135e6c2dd5eae00fe47f03c4f87e48",
+  "output": {
+    "explanation_for_sponsors": "The campaign successfully reached its funding goal and the freelancer's work verification passed all automated checks without any issues. No suspicious patterns were detected in the pledges or the payout process.",
+    "findings": [],
+    "risk_level": "low"
+  },
+  "prompt_version": "guardian-llm-v1"
+}
