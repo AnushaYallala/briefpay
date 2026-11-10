@@ -5,6 +5,7 @@ Jobs survive restarts: anything left RUNNING when the process starts is re-queue
 """
 import asyncio
 import logging
+import time
 from datetime import datetime, timedelta, timezone
 from typing import Callable
 
@@ -101,13 +102,27 @@ def run_one(session_factory: Callable[[], Session]) -> bool:
 class JobRunner:
     """Polls the table from FastAPI's lifespan. Handlers are sync, so each runs in a worker thread."""
 
-    def __init__(self, session_factory: Callable[[], Session], poll_seconds: float = 1.0):
+    def __init__(self, session_factory: Callable[[], Session], poll_seconds: float = 1.0,
+                 periodic: list[tuple[float, Callable[[], object]]] | None = None):
         self.session_factory = session_factory
         self.poll_seconds = poll_seconds
+        self.periodic = periodic or []             # (every N seconds, function): small recurring chores while the server is awake
+        self._last: dict[int, float] = {}
         self._task: asyncio.Task | None = None
+
+    async def _run_due_periodic(self) -> None:
+        now = time.monotonic()
+        for i, (every, fn) in enumerate(self.periodic):
+            if now - self._last.setdefault(i, now) >= every:
+                self._last[i] = now
+                try:
+                    await asyncio.to_thread(fn)
+                except Exception:  # noqa: BLE001  a failing chore must never stop the runner
+                    log.exception("periodic task %s failed", getattr(fn, "__name__", i))
 
     async def _loop(self) -> None:
         while True:
+            await self._run_due_periodic()
             try:
                 did_work = await asyncio.to_thread(run_one, self.session_factory)
             except Exception:  # noqa: BLE001

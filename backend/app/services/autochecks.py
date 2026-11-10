@@ -13,9 +13,9 @@ from urllib.parse import quote, urlsplit
 from app.services.safe_fetch import FetchBlocked, FetchFailed, SafeFetcher
 
 GITHUB_API = "https://api.github.com"
-REPO_URL = re.compile(r"^https://github\.com/([A-Za-z0-9](?:[A-Za-z0-9-]{0,38}))/([A-Za-z0-9._-]{1,100}?)(?:\.git)?/?$")
-SHA = re.compile(r"^[0-9a-fA-F]{7,40}$")
-PATH_OK = re.compile(r"^[A-Za-z0-9._@+ /-]{1,200}$")
+REPO_URL = re.compile(r"^https://github\.com/([A-Za-z0-9](?:[A-Za-z0-9-]{0,38}))/([A-Za-z0-9._-]{1,100}?)(?:\.git)?/?\Z")
+SHA = re.compile(r"^[0-9a-fA-F]{7,40}\Z")
+PATH_OK = re.compile(r"^[A-Za-z0-9._@+ /-]{1,200}\Z")
 VIEWPORT = re.compile(r"<meta\b[^>]*\bname\s*=\s*[\"']viewport[\"'][^>]*>", re.I)
 
 

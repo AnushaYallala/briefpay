@@ -167,6 +167,10 @@ class PayPalClient:
         c = self._read(self._sdk.payments.get_captured_payment, {"capture_id": capture_id})
         return None if c is None else PayPalObject(_status(c), value_to_cents(c.amount.value), c.amount.currency_code)
 
+    def get_refund(self, refund_id: str) -> PayPalObject | None:
+        r = self._read(self._sdk.payments.get_refund, {"refund_id": refund_id})
+        return None if r is None else PayPalObject(_status(r), value_to_cents(r.amount.value), r.amount.currency_code)
+
     def platform_balance_cents(self) -> int | None:
         """USD balance of the platform account (G-08). None if Transaction Search is not enabled for the app."""
         try:

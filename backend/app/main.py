@@ -4,20 +4,27 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app import startup_checks
 from app.config import get_settings
 from app.db import SessionLocal
-from app.routers import auth, ba, brd, campaigns, contract, health, jobs, ledger, plans, projects, strategist, submissions, webhooks
-from app.services import job_handlers, paypal_client  # noqa: F401  (job_handlers registers the job handlers)
+from app.routers import auth, ba, brd, campaigns, contract, health, images, jobs, ledger, plans, projects, strategist, submissions, verification, webhooks
+from app.services import job_handlers, paypal_client, poll  # noqa: F401  (job_handlers registers the job handlers)
 from app.services.jobs import JobRunner
 
 settings = get_settings()
 
 
+def build_runner(s, session_factory) -> JobRunner:
+    """The job runner plus its recurring chores: the poll fallback for PayPal steps whose webhook never came."""
+    return JobRunner(session_factory, periodic=[(s.poll_interval_seconds, lambda: poll.run_periodic(session_factory))])
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    startup_checks.enforce(settings)       # production refuses to start with an unsafe configuration (T-61)
     # With PAYPAL_CLIENT_ID/SECRET set the real client replaces the fail-safe placeholders; without them money never moves.
     paypal_client.configure_from_settings(settings)
-    runner = JobRunner(SessionLocal)
+    runner = build_runner(settings, SessionLocal)
     runner.start()
     try:
         yield
@@ -43,5 +50,5 @@ async def http_error(_request, exc: HTTPException) -> JSONResponse:
                         status_code=exc.status_code)
 
 
-for r in (health.router, auth.router, jobs.router, projects.router, ba.router, brd.router, contract.router, campaigns.router, strategist.router, webhooks.router, plans.router, ledger.router, submissions.router):
+for r in (health.router, auth.router, jobs.router, projects.router, ba.router, brd.router, contract.router, campaigns.router, strategist.router, webhooks.router, plans.router, ledger.router, submissions.router, images.router, verification.router):
     app.include_router(r, prefix="/api")

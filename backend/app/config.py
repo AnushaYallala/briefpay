@@ -26,6 +26,9 @@ class Settings(BaseSettings):
 
     image_provider: str = "local"
     cloudinary_url: str = ""
+    local_images_dir: str = "./local_images"
+    image_max_bytes: int = 5_000_000
+    image_url_ttl_seconds: int = 300
 
     fee_reserve_per_item_cents: int = 0
     payout_max_cents: int = 100000
@@ -35,6 +38,7 @@ class Settings(BaseSettings):
     pledge_min_cents: int = 500
     default_close_policy: str = "EARLY_ON_GOAL"
     clock_interval_seconds: int = 60
+    poll_interval_seconds: int = 30
     ba_target_score: int = 90
     ba_max_rounds: int = 5
     demo_mode: bool = True

@@ -12,3 +12,6 @@ node_modules/
 out/
 .claude/
 AI-Toolkit/
+
+# build caches
+*.tsbuildinfo

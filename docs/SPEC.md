@@ -783,6 +783,7 @@ class MoneyPlanSpec(BaseModel):
 | S-01 | The freelancer's PayPal email appears among this campaign's pledgers (self-funding) |
 | S-02 | Concentration or surge: one `payer_email` holds ≥ 60% of the goal, or ≥ 50% of the goal was authorized in the last 10 minutes before the deadline (possible shill pledging) |
 | S-03 | PayPal-side proof `UNVERIFIED` (API unreachable) |
+| S-04 | A `FREELANCER_PAYOUT` whose verification was overridden by every sponsor after a FAILED verdict (D-048); the approver must write an acknowledgement |
 
 #### 7.5.4 LLM risk review (escalate-only)
 The model receives the plan summary (kinds, counts, amounts, display names, no emails), the campaign timeline (pledge times and amounts), and for payouts the verification summary and auto-check results (not raw images).
@@ -1256,6 +1257,10 @@ HONOR_SAFETY_MARGIN_HOURS=2
 PLEDGE_MIN_CENTS=500
 DEFAULT_CLOSE_POLICY=EARLY_ON_GOAL   # EARLY_ON_GOAL | AT_DEADLINE
 CLOCK_INTERVAL_SECONDS=60
+POLL_INTERVAL_SECONDS=30           # poll fallback for PayPal steps whose webhook never arrived (D-044)
+LOCAL_IMAGES_DIR=./local_images    # IMAGE_PROVIDER=local only
+IMAGE_MAX_BYTES=5000000
+IMAGE_URL_TTL_SECONDS=300          # lifetime of a signed image link (D-040)
 BA_TARGET_SCORE=90
 BA_MAX_ROUNDS=5
 DEMO_MODE=true

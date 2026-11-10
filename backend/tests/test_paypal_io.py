@@ -47,3 +47,10 @@ def test_configuring_only_reader_and_writer_leaves_orders_alone():
 
 def test_the_three_roles_are_separate_objects_by_default():
     assert len({id(paypal_io.get_reader()), id(paypal_io.get_writer()), id(paypal_io.get_orders())}) == 3
+
+
+def test_the_unconfigured_reader_refuses_refund_lookups_too():
+    import pytest
+    from app.services.guardian_rules import PayPalUnavailable
+    with pytest.raises(PayPalUnavailable):
+        paypal_io.UnconfiguredReader().get_refund("R1")

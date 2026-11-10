@@ -13,8 +13,8 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
-from app.models import AutoCheck, BRD, Contract, Job, Project, ProjectMember, Submission
-from app.services import contract_service, jobs
+from app.models import AutoCheck, BRD, Contract, Evidence, Job, Project, ProjectMember, Submission, VerificationQuestion, VerificationReport
+from app.services import contract_service, failure_decisions, jobs
 from app.services.autochecks import SHA, AutoChecker, CheckResult, parse_repo
 from app.services.safe_fetch import SafeFetcher
 from app.services.state_machines import ProjectService
@@ -83,8 +83,9 @@ def create_submission(db: Session, project: Project, member: ProjectMember, *, r
     attempts = db.scalar(select(func.count(Submission.id)).where(Submission.contract_id == contract.id)) or 0
     if db.scalars(select(Submission.id).where(Submission.contract_id == contract.id, Submission.state.in_(ACTIVE_STATES))).first():
         raise SubmissionError("SUBMISSION_ACTIVE", "A submission is still being checked")
-    if attempts >= MAX_ATTEMPTS:
-        raise SubmissionError("MAX_ATTEMPTS", f"All {MAX_ATTEMPTS} attempts are used; the lead decides what happens next")
+    allowed = failure_decisions.allowed_attempts(db, contract.id)
+    if attempts >= allowed:
+        raise SubmissionError("MAX_ATTEMPTS", f"All {allowed} attempts are used; the lead decides what happens next")
     if parse_repo(repo_url) is None:
         raise SubmissionError("BAD_REPO_URL", "The repository must look like https://github.com/owner/repo", 422)
     if not SHA.match(commit_sha or ""):
@@ -175,7 +176,8 @@ def run_auto_checks(db: Session, submission_id: int, checker: AutoChecker | None
         db.add(AutoCheck(submission_id=sub.id, check_type=r.check_type, requirement_code=r.requirement_code,
                          input_json={**r.input, **({"criterion_id": item["criterion_id"]} if item["criterion_id"] else {})},
                          result=r.result, detail_json=r.detail))
-    sub.state = "QUESTIONING"           # T-33 writes the questions from here
+    sub.state = "QUESTIONING"
+    jobs.enqueue(db, "VERIFY_QUESTIONS", {"submission_id": sub.id})        # T-33: the questions follow the checks
     db.flush()
     return {"effect": "CHECKED", "submission_id": sub.id, **counts}
 
@@ -188,12 +190,24 @@ def check_view(c: AutoCheck) -> dict:
 
 
 def submission_view(db: Session, s: Submission) -> dict:
+    from app.services import evidence_service      # imported here: evidence_service imports this module
     checks = list(db.scalars(select(AutoCheck).where(AutoCheck.submission_id == s.id).order_by(AutoCheck.id)))
     summary = {r: sum(1 for c in checks if c.result == r) for r in ("PASS", "FAIL", "ERROR")}
+    questions = list(db.scalars(select(VerificationQuestion).where(VerificationQuestion.submission_id == s.id).order_by(VerificationQuestion.id)))
+    evidence = list(db.scalars(select(Evidence).where(Evidence.submission_id == s.id).order_by(Evidence.id)))
     return {"id": s.id, "contract_id": s.contract_id, "attempt_no": s.attempt_no, "state": s.state, "repo_url": s.repo_url,
             "commit_sha": s.commit_sha, "deployed_url": s.deployed_url, "notes": s.notes, "created_at": s.created_at.isoformat(),
             "auto_checks": [check_view(c) for c in checks], "auto_check_summary": summary,
-            "questions": [], "evidence": [], "report": None}   # filled by T-33 / T-34
+            "questions": [evidence_service.question_view(q) for q in questions],
+            "evidence": [evidence_service.evidence_view(e) for e in evidence], "report": report_view(db, s)}
+
+
+def report_view(db: Session, s: Submission) -> dict | None:
+    r = db.scalars(select(VerificationReport).where(VerificationReport.submission_id == s.id).order_by(VerificationReport.id.desc())).first()
+    if r is None:
+        return None
+    return {"id": r.id, "overall": r.overall, "must_pass_pct": r.must_pass_pct, "should_pass_pct": r.should_pass_pct, "summary": r.summary,
+            "sha256": r.sha256, "details": r.verdicts_json, "created_at": r.created_at.isoformat()}
 
 
 def project_submissions(db: Session, project_id: int) -> list[Submission]:

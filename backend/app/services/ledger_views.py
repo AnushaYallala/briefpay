@@ -87,7 +87,7 @@ def ledger_rows(db: Session, project_id: int, *, public: bool) -> dict:
             "running_balance_cents": balance, "status": STATUS_CHIP.get(e.type), "paypal_ref": ref,
             "actor": e.actor, "actor_name": _actor_name(e.actor, users),
             "ref_type": e.ref_type, "ref_id": e.ref_id,
-            "paypal_match": None,  # SHOULD (SPEC 11.1 #12): needs a PayPal read per row; not built yet (GAP-50)
+            "paypal_match": None,  # filled by GET /projects/{id}/ledger/paypal-match (PayPal reads happen on request, never here)
             "alert": any(k in meta for k in ALERT_KEYS),
             "meta": mask(meta) if public else meta,
         })

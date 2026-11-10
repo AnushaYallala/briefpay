@@ -39,7 +39,7 @@ class UnconfiguredReader:
     def get_authorization(self, authorization_id: str) -> PayPalObject | None:
         raise PayPalUnavailable("PayPal is not configured")
 
-    get_capture = get_authorization
+    get_capture = get_refund = get_authorization
 
     def platform_balance_cents(self) -> int | None:
         raise PayPalUnavailable("PayPal is not configured")

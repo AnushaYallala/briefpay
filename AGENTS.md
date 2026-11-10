@@ -12,9 +12,9 @@ Small businesses **pledge** money via PayPal to hire a freelancer (Pledge-If: pl
 2. Pick your task:
    - If the human named a task ID, take that.
    - Else continue any task `IN_PROGRESS` with **your** name, else take the "Next task to pick up" in the Snapshot, else the first `TODO` whose dependencies are `DONE`.
-3. Mark it `IN_PROGRESS` with your name and branch in `docs/STATUS.md` and commit that change first (`T-xx: start`). This prevents two assistants doing the same task.
+3. Mark it `IN_PROGRESS` with your name in `docs/STATUS.md` and commit that change first (`T-xx: start`). This prevents two assistants doing the same task.
 4. Read **only** the `docs/SPEC.md` sections listed in the task's "Spec" column, plus `docs/DECISIONS.md` if you touch contracts.
-5. `git pull`, create/checkout branch `t-xx-short-name`.
+5. `git pull` and work directly on `main` (the human's decision, Nov 9: no branch per task; commit small and often, run the whole suite before every commit).
 
 ## 2. While working
 - **Contracts are fixed:** SPEC §6 (data model), §7 agent schemas, §10 API. If you must change one, update SPEC.md **and** add a `D-00N` entry to DECISIONS.md in the same commit, and mention it in your handoff.
@@ -58,11 +58,13 @@ cp ../.env.example .env                      # then fill in keys; never commit .
 # Gotchas for AI assistants: edit files with the Edit/Write tools, not with Python inside a shell heredoc when the text
 # contains backslash escapes (it corrupted a test file once). Known gaps and fixes: docs/GAPS_AND_FIXES.md.
 
-# frontend
-cd frontend && npm install && npm run dev   # http://localhost:3000
+# frontend (Node 22; a static Next.js export, client components only)
+cd frontend && npm install && npm run dev   # http://localhost:3000 (needs the API on :8000)
+cd frontend && npm run check                # typecheck + 72 tests + the static build into frontend/out
+cd frontend && npx vitest run -t "name"     # one test
 
-# seed demo data
-cd backend && python seed.py
+# seed demo data (needs `alembic upgrade head` first)
+cd backend && .venv/Scripts/python scripts/seed.py
 
 # webhooks locally
 cloudflared tunnel --url http://localhost:8000

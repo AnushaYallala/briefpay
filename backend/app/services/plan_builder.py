@@ -168,7 +168,8 @@ def build_freelancer_payout(db: Session, project_id: int, exclude_plan_id: int |
         kind="FREELANCER_PAYOUT", project_id=project_id, campaign_id=campaign.id, contract_id=contract.id,
         reason="VERIFIED",
         inputs={"report_sha256": report.sha256, "submission_id": sub.id, "brd_sha256": contract.brd_sha256,
-                "currency": contract.currency, "pool_balance_cents": pool},
+                "currency": contract.currency, "pool_balance_cents": pool,
+                **({"verification_override": True} if (report.verdicts_json or {}).get("override") else {})},
         steps=[_step(1, "PAYOUT_ITEM", "CONTRACT", contract.id, amount, "POOL", contract.freelancer_paypal_email)],
     )
     return _finalize(db, spec, exclude_plan_id)

@@ -140,6 +140,26 @@ def check_ready(db: Session, project: Project):
     return session, score
 
 
+def store_brd(db: Session, project: Project, content: BRDContent, *, score: int) -> BRD:
+    """Store an assembled BRD as the next version (older drafts are superseded): rendered, hashed, with its requirement rows."""
+    version = int(db.scalar(select(func.coalesce(func.max(BRD.version), 0)).where(BRD.project_id == project.id)) or 0) + 1
+    for old in db.scalars(select(BRD).where(BRD.project_id == project.id, BRD.status.in_(("DRAFT", "PENDING_APPROVAL")))):
+        old.status = "SUPERSEDED"
+    md = render_markdown(content, version=version, score=score, names=member_names(db, project.id))
+    brd = BRD(project_id=project.id, version=version, status="PENDING_APPROVAL", content_json=content.model_dump(mode="json"),
+              content_md=md, sha256=content_hash(content), score_at_generation=score,
+              open_items_json=content.open_items)
+    db.add(brd)
+    db.flush()
+    for r in content.requirements:
+        db.add(BRDRequirementRow(
+            brd_id=brd.id, code=r.code, title=r.title, description=r.description, priority=r.priority, weight=r.weight,
+            acceptance_criteria_json=[c.model_dump(mode="json") for c in r.acceptance_criteria],
+            evidence_types_json=sorted({e for c in r.acceptance_criteria for e in c.evidence}),
+            source_refs_json=r.source_refs))
+    return brd
+
+
 def generate_brd(db: Session, project: Project, generator: BRDGenerator) -> BRD:
     """Draft, assemble, render, hash, store. On any failure nothing is stored and no state changes."""
     session, score = check_ready(db, project)
@@ -162,22 +182,8 @@ def generate_brd(db: Session, project: Project, generator: BRDGenerator) -> BRD:
         code_open_items=open_items_from_score(score, finalized=session.state == "FINALIZED",
                                               target=get_settings().ba_target_score))
     content = assemble(draft, ctx)
-
-    version = int(db.scalar(select(func.coalesce(func.max(BRD.version), 0)).where(BRD.project_id == project.id)) or 0) + 1
-    for old in db.scalars(select(BRD).where(BRD.project_id == project.id, BRD.status.in_(("DRAFT", "PENDING_APPROVAL")))):
-        old.status = "SUPERSEDED"
-    md = render_markdown(content, version=version, score=score.total, names=member_names(db, project.id))
-    brd = BRD(project_id=project.id, version=version, status="PENDING_APPROVAL", content_json=content.model_dump(mode="json"),
-              content_md=md, sha256=content_hash(content), score_at_generation=score.total,
-              open_items_json=content.open_items)
-    db.add(brd)
-    db.flush()
-    for r in content.requirements:
-        db.add(BRDRequirementRow(
-            brd_id=brd.id, code=r.code, title=r.title, description=r.description, priority=r.priority, weight=r.weight,
-            acceptance_criteria_json=[c.model_dump(mode="json") for c in r.acceptance_criteria],
-            evidence_types_json=sorted({e for c in r.acceptance_criteria for e in c.evidence}),
-            source_refs_json=r.source_refs))
+    brd = store_brd(db, project, content, score=score.total)
+    version = brd.version
     session.state = "BRD_GENERATED"
     ProjectService.transition(db, project, "BRD_REVIEW", actor="agent:brd", reason=f"BRD v{version} generated")
     db.flush()

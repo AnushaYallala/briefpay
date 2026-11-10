@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 Priority = Literal["MUST", "SHOULD", "COULD"]
 EvidenceType = Literal["SCREENSHOT", "LIVE_URL_CHECK", "CODE_SNIPPET", "REPO_PATH", "TEXT"]
-PATH_PATTERN = re.compile(r"^/[a-z0-9/_-]*$")
+PATH_PATTERN = re.compile(r"^/[a-z0-9/_-]*\Z")
 
 
 class AutoCheckHint(BaseModel):

@@ -1,4 +1,4 @@
-"""Payment Guardian: deterministic hard rules G-01..G-13 and soft flags S-01..S-03 (SPEC 7.5.2-7.5.3).
+"""Payment Guardian: deterministic hard rules G-01..G-13 and soft flags S-01..S-04 (SPEC 7.5.2-7.5.3).
 
 Pure review logic: it reads the DB and (through an injected `PayPalReader`) PayPal's own records.
 It never writes to PayPal, never changes plan state, and never uses an LLM. Any FAIL means BLOCK.
@@ -58,6 +58,7 @@ class PayPalObject:
 class PayPalReader(Protocol):
     def get_authorization(self, authorization_id: str) -> PayPalObject | None: ...
     def get_capture(self, capture_id: str) -> PayPalObject | None: ...
+    def get_refund(self, refund_id: str) -> PayPalObject | None: ...
     def platform_balance_cents(self) -> int | None: ...
 
 
@@ -538,6 +539,9 @@ def soft_flags(c: Ctx, results: list[RuleResult]) -> list[dict]:
         elif late * 2 >= camp.goal_cents:
             flags.append({"id": "S-02", "title": "Last-minute surge",
                           "detail": "at least 50% of the goal was authorized in the last 10 minutes"})
+    if c.spec.kind == "FREELANCER_PAYOUT" and c.spec.inputs.get("verification_override"):
+        flags.append({"id": "S-04", "title": "Verification overridden",
+                      "detail": "the work did not pass verification; every sponsor approved paying anyway"})
     if any(r.status == UNVERIFIED for r in results):
         flags.append({"id": "S-03", "title": "PayPal-side proof unverified",
                       "detail": "PayPal could not be reached to confirm the referenced objects"})
