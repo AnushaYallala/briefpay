@@ -157,7 +157,7 @@ function Studio({ id }: { id: number }) {
                 <button
                   type="button"
                   onClick={() => {
-                    setSourceName("Velugu Cove Business Owners Meeting");
+                    setSourceName("velugu_cove_meeting_transcript.txt");
                     setPaste(SAMPLE_TRANSCRIPT);
                   }}
                   className="rounded-lg border border-sea-200 bg-sea-50 px-2.5 py-1 text-xs font-semibold text-sea-800 hover:bg-sea-100 transition shadow-2xs"
@@ -167,7 +167,14 @@ function Studio({ id }: { id: number }) {
               </div>
               <input aria-label="Where it came from" placeholder="Name (optional)" value={sourceName} onChange={(e) => setSourceName(e.target.value)} maxLength={120} className="w-full rounded border border-gray-300 p-2 text-sm" />
               <textarea aria-label="Transcript text" value={paste} onChange={(e) => setPaste(e.target.value)} rows={8} className="w-full rounded border border-gray-300 p-2 font-mono text-xs" />
-              <button disabled={busy !== null || !canUpload(paste)} onClick={() => void act("upload", async () => { await api(`/projects/${id}/transcripts`, { method: "POST", body: { text: paste, source_name: sourceName.trim() } }); setPaste(""); reloadTr(); reloadBa(); })}
+              <button disabled={busy !== null || !canUpload(paste)} onClick={() => void act("upload", async () => {
+                const sName = sourceName.trim();
+                const finalName = sName ? (sName.includes(".") ? sName : `${sName}.txt`) : "";
+                await api(`/projects/${id}/transcripts`, { method: "POST", body: { text: paste, source_name: finalName } });
+                setPaste("");
+                reloadTr();
+                reloadBa();
+              })}
                       className="rounded bg-sea-600 px-3 py-1.5 text-sm text-white hover:bg-sea-700 disabled:opacity-50">{busy === "upload" ? "Uploading..." : "Upload the transcript"}</button>
             </>
           ) : <p className="text-sm text-gray-600">The lead has not uploaded the meeting transcript yet.</p>}
