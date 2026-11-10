@@ -351,3 +351,38 @@ def test_a_missing_transcript_answers_with_the_code_the_studio_looks_for(t, clie
     r = client.get(f"/api/projects/{other}/transcript", headers=t.lakshmi)
     assert r.status_code == 404 and r.json()["error"]["code"] == "NO_TRANSCRIPT"
     assert "NO_TRANSCRIPT" in read("app/ba/page.tsx")
+
+
+def test_the_brd_types_match_real_responses_and_the_words_cover_every_state(client, seeded):  # noqa: F811
+    types = read("lib/types.ts")
+    pid = seeded["payout_ready_project_id"]
+    for headers in (None, auth_header(client)):
+        got = client.get(f"/api/projects/{pid}/brd", headers=headers).json()
+        assert set(got) == fields_of(types, "BrdView")
+        assert set(got["content"]) == fields_of(types, "BrdContent")
+        assert set(got["content"]["constraints"]) == nested_fields(types, "BrdContent", "constraints")
+        assert got["content"]["requirements"] and all(set(r) == fields_of(types, "BrdRequirement") for r in got["content"]["requirements"])
+        crits = [c for r in got["content"]["requirements"] for c in r["acceptance_criteria"]]
+        assert crits and all(set(c) == fields_of(types, "BrdCriterion") for c in crits)
+        assert all(c["auto_check_hint"] is None or set(c["auto_check_hint"]) == {"type", "path", "text"} for c in crits)
+        assert got["versions"] and all(set(v) == {"version", "status", "sha256"} for v in got["versions"])
+        assert all(set(a) == {"member_id", "member_name", "decision", "comment", "created_at"} for a in got["approvals"])
+        assert all(set(a) == {"member_id", "member_name"} for a in got["awaiting"])
+        assert got["content"]["stakeholders"] and all(set(s) == nested_item_fields(types, "BrdContent", "stakeholders") for s in got["content"]["stakeholders"])
+    assert client.get(f"/api/projects/{pid + 99}/brd").status_code == 404
+    from app.schemas.brd import EvidenceType
+    from typing import get_args
+    brd_ts = read("lib/brd.ts")
+    assert set(re.findall(r'\b([A-Z_]{4,}): "', block(brd_ts, "export const EVIDENCE_WORDS"))) == set(get_args(EvidenceType))
+    assert keys_of(block(brd_ts, "export const BRD_STATES")) == {"DRAFT", "PENDING_APPROVAL", "APPROVED", "SUPERSEDED"}
+    assert re.search(r"BRD_REFRESH_MS = 10000;", brd_ts)
+    from app.schemas.brd import AutoCheckHint
+    hint_types = set(get_args(AutoCheckHint.model_fields["type"].annotation))
+    assert set(re.findall(r'case "([A-Z_]+)":', brd_ts)) == hint_types
+
+
+def nested_item_fields(type_source: str, name: str, field: str) -> set[str]:
+    """Field names of the objects in a list field such as `stakeholders: { a: ...; b: ... }[]`."""
+    body = body_of(type_source, name)
+    start = body.index("{", body.index(f"{field}: {{"))
+    return set(re.findall(r"(\w+)\??:", body[start + 1: matching(body, start)]))

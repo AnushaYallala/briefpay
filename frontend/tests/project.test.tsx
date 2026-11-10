@@ -323,6 +323,7 @@ describe("ledger link", () => {
     wrapped(<ProjectPage />);
     const link = await screen.findByRole("link", { name: "Open the public ledger" });
     expect(link.getAttribute("href")).toBe("/ledger?id=1");
+    expect(screen.getByRole("link", { name: "Read the brief" }).getAttribute("href")).toBe("/brd?id=1");
   });
 
   it("points members, and only members, to the AI audit trail", async () => {

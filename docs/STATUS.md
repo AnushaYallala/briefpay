@@ -9,10 +9,10 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-10 by Claude: T-16 BA Studio done |
+| Last updated | 2026-11-10 by Claude: T-17 BRD page done |
 | Overall phase | **Back end feature-complete except the three blocked pieces (BLK-01/02/03); front end just started (home page and sign-in).** Done: BA, BRD, contract, campaign setup, plans + Guardian + executor, webhooks, poll fallback, submissions, evidence, verification, ledger/audit APIs, demo seed, deploy files, web skeleton. Plain-English summary: `docs/PROGRESS_SUMMARY.md` |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
-| Next task to pick up | Not blocked: BRD page (T-17: AG Grid requirements, lock, approvals), freelancer portal (T-35), verification report (T-36), campaign page (T-23, T-27; shows BLK-01/02 as unavailable), make the stepper steps links (GAP-92) · **Human:** decide BLK-01/02/03 · PayPal sandbox keys, Gemini key, Cloudinary · run `backend/scripts/sandbox_check.py` once keys exist |
+| Next task to pick up | Not blocked: freelancer portal (T-35), verification report (T-36), campaign page (T-23, T-27; shows BLK-01/02 as unavailable), contract screen, make the stepper steps links (GAP-92) · **Human:** decide BLK-01/02/03 · PayPal sandbox keys, Gemini key, Cloudinary · run `backend/scripts/sandbox_check.py` once keys exist |
 | Blockers | **BLK-01** (T-22 pledge service/endpoints), **BLK-02** (T-25 clock and lead actions), **BLK-03** (pledge-state helper used by two webhook events): the assistant's attempts to write those files were stopped by a safety check; see `docs/GAPS_AND_FIXES.md` section 0 for the full designs |
 | Deployed URLs | API: _not deployed_ · Web: _not deployed_ · Sample site: _not deployed_ |
 | Repo | https://github.com/AnushaYallala/briefpay (origin; T-01 still needs LICENSE visible in About + secret scanning) |
@@ -49,7 +49,7 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 | T-14 | BRD generator: prompt, `BRDContent`, REQ codes, Jinja Markdown, sha256 | §7.2 | Claude | DONE | t-14-brd-generator | Schemas, prompt `brd-gen-v1`, `BRDGenerator`, code-side assembly, Jinja renderer with escaping, sha256, `BRD_GENERATE` job, generate/read/download endpoints. 75 tests; mutation-checked (15/15 after one added test). Approvals are T-15. No real Gemini call yet (D-029) |
 | T-15 | BRD approvals (hash-bound, unanimous), reject → new BA round + version bump | §7.2 | Claude | DONE | t-15-brd-approvals | Hash-bound unanimous decisions, lock + ledger + CONTRACTING, rejection reopens BA with a question for ALL, withdraw-by-reject, stale/foreign hash refused. 16 tests; mutation-checked (all caught after 2 added tests). (D-030) |
 | T-16 | UI: BA Studio | §11 #4 |  | REVIEW |  | `/ba?id=N`: BA Studio: score gauge + history, gates, 10 dimension bars, conflicts, requirements, questions with answering and skip, transcript panel with source highlights and paste upload, run/finalize with job polling (D-055). 8 + 45 + 16 tests, mutation-checked |
-| T-17 | UI: BRD page (AG Grid requirements, approve/reject, download) | §11 #5 |  | TODO |  | |
+| T-17 | UI: BRD page (AG Grid requirements, approve/reject, download) | §11 #5 |  | REVIEW |  | `/brd?id=N`: public brief page: header with fingerprint/versions/download, content sections, requirements AG Grid + details dialog, sponsor decisions (hash-bound approve / ask for changes), write/new version with job following (D-056). 9 + 38 + 11 tests, mutation-checked |
 
 ### Track B1: Pledge-If (campaigns, holds, webhooks)
 | ID | Task | Spec | Owner | State | Branch | Notes |
@@ -159,6 +159,13 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-10 · Claude · T-17 BRD page (REVIEW)
+- Did: `frontend/src/app/brd/page.tsx`, `components/RequirementsGrid.tsx`, `RequirementDialog.tsx`, `lib/brd.ts` (states, proof and check words, who may decide or write, download address), `lib/useJob.ts` (a reusable hook that follows a background job), types for the brief and its requirements, criteria and decisions; the project page links to the brief for everyone. Committed straight to `main`.
+- Tests: back end `cd backend && .venv/Scripts/python.exe -m pytest -q` -> 1567 passed (1 new contract test: real public and member responses for every field of the brief, content, constraints, requirements, criteria, versions, decisions; state list, proof words, hint kinds, timing); front end `cd frontend && npm run check` -> typecheck clean, 436 tests, build includes `/brd`. Mutation-checked: 123 breakages; first run 16 survivors (2 equivalent or redundant: one redundant check removed and one stable-callback dependency list left; the rest test gaps) -> tests added -> rerun of all survivors: all caught.
+- Contract changes: D-056 (no SPEC changes).
+- Next step: the freelancer portal (T-35): contract summary, submission form, the verifier's question list with evidence upload; read `backend/app/routers/submissions.py`, `images.py` and `contract.py` first.
+- Gotchas: (1) The machine can stall: one back-end run took 42 minutes instead of 90 seconds, which made timing-sensitive front-end tests fail; give tests that rely on a delayed response a wide margin (1.5 s delay, 4 s wait). (2) `useJob` is the shared way to follow a job; the BA Studio still has its own copy (could be switched later). (3) A killed mutation script leaves its last mutant in the file: check sources after any interruption (also in STATUS 2026-11-10 T-16).
 
 ### 2026-11-10 · Claude · T-16 BA Studio (REVIEW)
 - Did: `frontend/src/app/ba/page.tsx`, `components/ScoreGauge.tsx`, `QuestionCard.tsx`, `TranscriptPanel.tsx`, `lib/ba.ts` (states, source references, marks, grouping, chart points), types for the BA view, scores, questions, transcript and job status; the project page links to it for members. Committed straight to `main`.

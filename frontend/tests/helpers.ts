@@ -62,6 +62,28 @@ export const planDetail = (over: Record<string, unknown> = {}) => ({
   ...planItem(), inputs: {}, steps: [step()], reviews: [], approvals: [], ...over,
 }) as import("@/lib/types").PlanDetail;
 
+export const brdReq = (over: Record<string, unknown> = {}) => ({
+  code: "REQ-001", title: "Welcome page", description: "A home page that says what Velugu Cove is.", priority: "MUST", weight: 3, requested_by: [1, 2],
+  acceptance_criteria: [{ id: "AC-1", given: "a visitor opens the site", when: "the home page loads", then: "it welcomes them", evidence: ["LIVE_URL_CHECK", "SCREENSHOT"], auto_check_hint: { type: "URL_REACHABLE", path: "/", text: null } }],
+  source_refs: ["L3-L4"], ...over,
+}) as import("@/lib/types").BrdRequirement;
+
+export const brdView = (over: Record<string, unknown> = {}) => ({
+  id: 1, version: 1, status: "PENDING_APPROVAL", sha256: "a".repeat(64), score_at_generation: 93, markdown: "# Brief", open_items: ["Hosting is not decided"],
+  content: {
+    title: "Velugu Cove tourism website", executive_summary: "One website for the whole cove.", business_goals: ["More enquiries"], success_measures: ["20 enquiries a month"],
+    stakeholders: [{ member_id: 1, business_name: "Sea Breeze Homestay", needs: ["Show the rooms"] }, { member_id: 2, business_name: null, needs: ["Show the menu"] }],
+    audience: "Tourists planning a trip", sitemap: [{ path: "/", purpose: "Welcome" }, { path: "/stay", purpose: "Rooms" }],
+    non_functional: ["Works on a phone"], content_responsibilities: [{ item: "Photos of the rooms", owner_member_id: 1, due: "Nov 20" }, { item: "Menu text", owner_member_id: null, due: null }],
+    out_of_scope: ["Online payments"], open_items: ["Hosting is not decided"], glossary: [{ term: "Enquiry", definition: "A message from a visitor" }],
+    requirements: [brdReq(), brdReq({ code: "REQ-002", title: "Menu page", priority: "SHOULD", requested_by: [2], acceptance_criteria: [], source_refs: [] })],
+    constraints: { budget_cents: 40000, currency: "USD", delivery_days: 5, hosting: null, domain: "velugucove.example" },
+  },
+  approvals: [{ member_id: 2, member_name: "Ravi", decision: "APPROVE", comment: "Looks right", created_at: "2026-11-10T13:00:00" }],
+  awaiting: [{ member_id: 1, member_name: "Lakshmi" }], created_at: "2026-11-10T12:00:00", locked_at: null,
+  versions: [{ version: 1, status: "PENDING_APPROVAL", sha256: "a".repeat(64) }], ...over,
+}) as import("@/lib/types").BrdView;
+
 export const baDim = (over: Record<string, unknown> = {}) => ({
   dimension: "D1", name: "Business goals & success measures", weight: 12, coverage_claimed: 0.5, coverage_effective: 0.5, downgraded: false,
   justification: "Goals are clear, no measure yet", source_refs: ["L3-L5"], ...over,

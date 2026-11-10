@@ -4,6 +4,27 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 39 · The brief page (T-17) · Tue Nov 10
+
+**What now exists**
+- **The brief, readable by anyone.** "Read the brief" on a project opens the written requirements document: summary, goals, who it is for, what each sponsor needs (by name), the pages, terms (budget, delivery time, hosting, domain), who provides what, what is out of scope and, in an amber box, anything still open. A fingerprint shows exactly which text was approved, and "Download as text" saves it.
+- **Every requirement in a table.** Code, title, priority chip (MUST, SHOULD, COULD), weight, who asked and how many checks prove it; searchable. "Details" shows each check as Given / When / Then, what proof is needed (screenshot, live page check...) and, where the platform can check it itself, what it will check.
+- **Sponsor decisions.** "2 of 3 sponsors approved", each decision with the person's name and comment, and who is still to decide. Sponsors (and the lead) can approve or ask for changes (a comment is required for changes, and the button says so). A decision always carries the fingerprint the person read; if the text changed under them the page says so and re-reads it. When the last sponsor approves, the page says the brief is locked and the contract comes next.
+- **Writing and versions.** The lead can write the brief (or a new version) and the page follows the work until it appears; older versions can be opened from chips.
+- A small reusable piece now follows any background job (used here first).
+- 436 front-end tests and 1,567 back-end tests pass. About 123 deliberate breakages: 16 slipped through at first (mostly untested colours, the table not showing names until they load, and timers/messages); all are now caught.
+
+**What it does NOT do yet**
+No side-by-side comparison of two versions, and the contract page that comes next is not built. Not yet tried in a real browser.
+
+**Progress:** 37 of ~45 tasks done or in review. Increment 39 of the 45 you asked for.
+
+**Needed from you:** BLK-01/02/03, PayPal sandbox keys, Gemini key.
+
+**Next increment:** the freelancer portal (T-35): the contract summary, the work submission and the verifier's questions with evidence upload.
+
+---
+
 ## Increment 38 · BA Studio (T-16) · Tue Nov 10
 
 **What now exists**

@@ -77,6 +77,57 @@ export type LedgerRow = {
   meta: Record<string, unknown>;
 };
 
+export type BrdCriterion = {
+  id: string;
+  given: string;
+  when: string;
+  then: string;
+  evidence: string[];
+  auto_check_hint: { type: string; path: string | null; text: string | null } | null;
+};
+export type BrdRequirement = {
+  code: string;
+  title: string;
+  description: string;
+  priority: string;
+  weight: number;
+  requested_by: number[];
+  acceptance_criteria: BrdCriterion[];
+  source_refs: string[];
+};
+export type BrdContent = {
+  title: string;
+  executive_summary: string;
+  business_goals: string[];
+  success_measures: string[];
+  stakeholders: { member_id: number; business_name: string | null; needs: string[] }[];
+  audience: string;
+  sitemap: { path: string; purpose: string }[];
+  non_functional: string[];
+  content_responsibilities: { item: string; owner_member_id: number | null; due: string | null }[];
+  out_of_scope: string[];
+  open_items: string[];
+  glossary: { term: string; definition: string }[];
+  requirements: BrdRequirement[];
+  constraints: { budget_cents: number; currency: string; delivery_days: number | null; hosting: string | null; domain: string | null };
+};
+export type BrdView = {
+  id: number;
+  version: number;
+  status: string;
+  sha256: string;
+  score_at_generation: number | null;
+  content: BrdContent;
+  markdown: string;
+  open_items: string[];
+  approvals: { member_id: number; member_name: string | null; decision: string; comment: string | null; created_at: string }[];
+  awaiting: { member_id: number; member_name: string | null }[];
+  created_at: string;
+  locked_at: string | null;
+  versions: { version: number; status: string; sha256: string }[];
+};
+export type BrdDecisionResult = { changed: boolean; brd_version: number; brd_status: string; project_state: string; approved: number; required: number; locked: boolean };
+
 export type BaDimension = {
   dimension: string;
   name: string;

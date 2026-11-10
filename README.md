@@ -4,7 +4,7 @@
 
 BriefPay was built for the PayPal AI hackathon. Everything runs on **PayPal sandbox money** and fictional people (the Velugu Cove demo). It is not a payments product and moves no real money.
 
-> **Honest status (see [docs/STATUS.md](docs/STATUS.md) for the live board):** the whole back end is built and tested (1,566 back-end tests at the time of writing, no network or keys needed). The web front end has been started: a home page listing projects, sign-in with a demo person switcher, a project page (progress stepper, campaign progress, people, money box), BA Studio (score, questions, transcript), the public ledger, the AI audit trail and the money plans screen (Guardian verdicts, approval, tamper demo) (378 front-end tests). The remaining screens (campaign, brief, freelancer portal, verification report), the hosted Render deployment and the demo video are **not built yet**. Three back-end pieces are blocked and described in [docs/GAPS_AND_FIXES.md](docs/GAPS_AND_FIXES.md) section 0. PayPal, Gemini and Cloudinary have only been exercised against faithful fakes so far, because no sandbox keys have been supplied.
+> **Honest status (see [docs/STATUS.md](docs/STATUS.md) for the live board):** the whole back end is built and tested (1,567 back-end tests at the time of writing, no network or keys needed). The web front end has been started: a home page listing projects, sign-in with a demo person switcher, a project page (progress stepper, campaign progress, people, money box), BA Studio (score, questions, transcript), the brief with sponsor approvals, the public ledger, the AI audit trail and the money plans screen (Guardian verdicts, approval, tamper demo) (436 front-end tests). The remaining screens (campaign, contract, freelancer portal, verification report), the hosted Render deployment and the demo video are **not built yet**. Three back-end pieces are blocked and described in [docs/GAPS_AND_FIXES.md](docs/GAPS_AND_FIXES.md) section 0. PayPal, Gemini and Cloudinary have only been exercised against faithful fakes so far, because no sandbox keys have been supplied.
 
 ---
 
@@ -82,7 +82,7 @@ cp ../.env.example .env                                      # keys are optional
 .venv/Scripts/python -m pytest -q                            # the back-end tests, about a minute, no network
 ```
 
-The web app (Node 22; a static Next.js export, started: home page, sign-in, project page, BA Studio, ledger, AI audit trail and money plans so far):
+The web app (Node 22; a static Next.js export, started: home page, sign-in, project page, BA Studio, brief, ledger, AI audit trail and money plans so far):
 
 ```bash
 cd frontend
@@ -113,7 +113,7 @@ Put keys in `backend/.env` (see [.env.example](.env.example)). `backend/scripts/
 | **Gemini** (Flash model, set by `AI_MODEL`) | BA scoring and questions, BRD drafting, the verification questions and the vision review of evidence, the Guardian risk review. Not yet run against the real model |
 | **FastAPI, SQLAlchemy 2, Alembic, Pydantic 2** | The service |
 | **Next.js 15, React 19, Tailwind, Vitest** | The web app (a static export) |
-| **AG Grid Community** 36.3.0 | The ledger, AI audit trail and plan steps tables (done); planned for the pledge board, BRD requirements and verification matrix |
+| **AG Grid Community** 36.3.0 | The ledger, AI audit trail, plan steps and brief requirements tables (done); planned for the pledge board and verification matrix |
 | **Render, Aiven PostgreSQL, Cloudinary** (free plans) | Planned hosting, database and screenshot storage |
 
 ### How we used APIMatic
