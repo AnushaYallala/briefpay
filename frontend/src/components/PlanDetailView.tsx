@@ -112,9 +112,12 @@ export function PlanDetailView({ plan, role, reload }: { plan: PlanDetail; role:
       )}
 
       {tampers.length > 0 && (
-        <section aria-label="Tamper test" className="space-y-2 rounded-xl border border-dashed border-blue-300 bg-blue-50 p-4">
-          <h3 className="font-semibold text-blue-900">Try to cheat (demo only)</h3>
-          <p className="text-sm text-blue-900">Make a tampered copy of this plan and see the Guardian refuse it. PayPal is never contacted.</p>
+        <section aria-label="Tamper test" className="space-y-2 rounded-xl border border-dashed border-blue-300 bg-blue-50/70 p-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-blue-950">Guardian Tamper Simulation</h3>
+            <span className="rounded-full bg-blue-100/80 px-2 py-0.5 text-[11px] font-semibold text-blue-800">Safety Check</span>
+          </div>
+          <p className="text-xs sm:text-sm text-blue-900 leading-relaxed">Simulate an unauthorized payload change to verify Guardian rejection. PayPal is never contacted.</p>
           <div className="flex flex-wrap gap-2">
             {tampers.map((t) => (
               <button key={t.key} disabled={busy !== null} onClick={() => void act("tamper", `/plans/${plan.id}/simulate-tamper`, { mutation: t.key }, (r: TamperResponse) => setSim(r))}
