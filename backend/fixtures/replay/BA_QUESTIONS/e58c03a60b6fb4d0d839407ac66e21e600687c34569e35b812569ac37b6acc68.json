@@ -1,0 +1,57 @@
+{
+  "agent": "BA_QUESTIONS",
+  "input_hash": "e58c03a60b6fb4d0d839407ac66e21e600687c34569e35b812569ac37b6acc68",
+  "output": {
+    "questions": [
+      {
+        "addressed_to": [
+          "ALL"
+        ],
+        "dimension": "D6",
+        "question": "What specific action must happen for you to consider the WhatsApp button successfully working?",
+        "rationale": "This defines the acceptance criteria for the MUST-have requirement R1.",
+        "suggested_options": null
+      },
+      {
+        "addressed_to": [
+          "ALL"
+        ],
+        "dimension": "D1",
+        "question": "How will you measure if the website is a success after the first month?",
+        "rationale": "This establishes clear business goals to measure the project's impact.",
+        "suggested_options": null
+      },
+      {
+        "addressed_to": [
+          "ALL"
+        ],
+        "dimension": "D4",
+        "question": "Should the website be one single page for all businesses or separate pages for each business?",
+        "rationale": "This clarifies the site structure and scope for the developer.",
+        "suggested_options": [
+          "One single page",
+          "Separate pages for each business"
+        ]
+      },
+      {
+        "addressed_to": [
+          "ALL"
+        ],
+        "dimension": "D7",
+        "question": "Who will be responsible for providing the photos and text for each business section?",
+        "rationale": "This identifies the content owners to ensure the site can be populated.",
+        "suggested_options": null
+      },
+      {
+        "addressed_to": [
+          1
+        ],
+        "dimension": "D10",
+        "question": "Lakshmi, what are your specific needs or goals for this website that haven't been discussed yet?",
+        "rationale": "This addresses the gap where the lead sponsor's needs are not yet fully captured.",
+        "suggested_options": null
+      }
+    ]
+  },
+  "prompt_version": "ba-questions-v1"
+}

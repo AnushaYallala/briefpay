@@ -6,7 +6,7 @@ __pycache__/
 .venv/
 .pytest_cache/
 backend/local_images/
-backend/*.db
+backend/*.db*
 node_modules/
 .next/
 out/

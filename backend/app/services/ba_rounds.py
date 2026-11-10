@@ -128,6 +128,7 @@ def run_round(db: Session, project: Project, agent: BAAgent, qagent: BAQuestions
              and row.gates_json.get("observations", {}).get("transcript_sha256") == t.sha256)
     if not fresh:
         row = score_round(db, project, agent)
+        db.commit()
     info = {"score": row.total, "round": session.round}
     if session.state == "READY":
         return {**info, "state": session.state, "questions": 0}

@@ -260,20 +260,28 @@ class LLMAdapter:
 
     def _log(self, who, agent, project_id, prompt_version, in_hash, started, status, output, error, in_tok, out_tok):
         """Own session + commit so the audit row survives a caller's rollback."""
-        db = self.session_factory()
-        try:
-            row = AgentRun(
-                project_id=project_id, agent=agent, provider=who[0], model=who[1],
-                prompt_version=prompt_version, input_hash=in_hash,
-                latency_ms=int((time.perf_counter() - started) * 1000),
-                input_tokens=in_tok, output_tokens=out_tok, status=status,
-                output_json=output, error=error,
-            )
-            db.add(row)
-            db.commit()
-            return row.id
-        finally:
-            db.close()
+        for attempt in range(3):
+            db = self.session_factory()
+            try:
+                row = AgentRun(
+                    project_id=project_id, agent=agent, provider=who[0], model=who[1],
+                    prompt_version=prompt_version, input_hash=in_hash,
+                    latency_ms=int((time.perf_counter() - started) * 1000),
+                    input_tokens=in_tok, output_tokens=out_tok, status=status,
+                    output_json=output, error=error,
+                )
+                db.add(row)
+                db.commit()
+                return row.id
+            except Exception as e:
+                db.rollback()
+                if attempt == 2:
+                    log.warning("Could not persist agent_run (%s): %s", agent, e)
+                    return 0
+                time.sleep(0.2 * (attempt + 1))
+            finally:
+                db.close()
+        return 0
 
 
 def build_adapter(settings, session_factory: Callable[[], Session], fixtures_dir: Path | None = None) -> LLMAdapter:
