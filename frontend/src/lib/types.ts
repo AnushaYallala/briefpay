@@ -77,6 +77,64 @@ export type LedgerRow = {
   meta: Record<string, unknown>;
 };
 
+export type PlanListItem = {
+  id: number;
+  project_id: number;
+  campaign_id: number | null;
+  kind: string;
+  state: string;
+  reason: string | null;
+  plan_hash: string;
+  release_policy: string;
+  proposed_by: string;
+  created_at: string;
+  decision: string | null;
+};
+
+export type PlanStep = {
+  seq: number;
+  phase: number;
+  op: string;
+  target_type: string;
+  target_id: number;
+  amount_cents: number;
+  bucket: string;
+  receiver_email: string | null;
+  state: string;
+  paypal_ref: string | null;
+  error: Record<string, unknown> | null;
+};
+
+export type GuardianRule = { id: string; title: string; status: string; detail: string; paypal_verified: boolean };
+export type SoftFlag = { id: string; title: string; detail: string };
+export type LlmFinding = { type: string; detail: string; severity: string };
+export type LlmReview = { status: string; risk_level?: string | null; explanation_for_sponsors?: string; findings?: LlmFinding[]; reason?: string };
+
+export type GuardianReview = {
+  id: number;
+  plan_hash: string;
+  decision: string;
+  simulated: boolean;
+  rules: GuardianRule[];
+  soft_flags: SoftFlag[];
+  llm: LlmReview | null;
+  agent_run_id: number | null;
+  created_at: string;
+};
+
+export type PlanApproval = { approver: string; plan_hash: string; ack_note: string | null; created_at: string };
+
+export type PlanDetail = PlanListItem & {
+  inputs: Record<string, unknown>;
+  earliest_honor_until?: string | null;
+  steps: PlanStep[];
+  reviews: GuardianReview[];
+  approvals: PlanApproval[];
+};
+
+export type PlansResponse = { plans: PlanListItem[] };
+export type TamperResponse = { simulation: true; mutation: string; review: GuardianReview };
+
 export type AgentRun = {
   id: number;
   created_at: string;

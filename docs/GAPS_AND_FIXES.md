@@ -6,7 +6,7 @@ A running list of everything that is **missing, risky, unverified, or was found 
 - **Fixes** are problems that were found and already resolved, kept so the reasoning is not lost.
 - IDs are permanent. When a gap is closed, move it to Fixes (keep the ID) and say how.
 
-_Last updated: 2026-11-10, end of T-51._
+_Last updated: 2026-11-10, end of T-49._
 
 ---
 
@@ -138,6 +138,9 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | GAP-100 | Low | 'Check with PayPal' checks only the newest 30 PayPal-backed rows and is manual; a mismatch leaves no stored alert. | See GAP-85. |
 | GAP-101 | Low | The audit trail shows only the newest 500 calls (server limit) and has no CSV export. | Add the server's `agent` filter and a paged view if projects get long. |
 | GAP-102 | Low | AG Grid keeps some of its own timers after the page is left in tests, and its quick filter's use of raw codes was found by experiment, not read from its documentation. | Pinned by tests; recheck on an AG Grid upgrade. |
+| GAP-103 | Low | The plan screen has no view for renewing holds (`REAUTH_PLEDGES` plans); they are not built by the back end yet. | Add words when the back end builds them. |
+| GAP-104 | Low | The plan list shows all plans in one list with no filter; fine for the demo's few plans. | Add chips if projects get many plans. |
+| GAP-105 | Low | Tamper-test results are shown but not remembered after leaving the page (the server stores them as simulated reviews). | Show past simulations if wanted. |
 
 ---
 
@@ -204,6 +207,9 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | FIX-57 | T-51 | Searching the ledger or audit trail for the words on screen ("Pledge collected", "Failed") found nothing, because AG Grid's quick filter ignores the display formatter. | `getQuickFilterText` on the type, agent and result columns; tests for plain words and raw codes. |
 | FIX-58 | T-51 | Mutation check found 25 weak spots in the audit screen (sort order, pinned column, hover texts, chip colours, red rows for each failure kind, timer clean-up, table staying visible during a refresh, switching person, 1 call wording, chips staying while one is chosen). | Tests for each; a redundant guard in `shortHash` removed. |
 | FIX-59 | T-51 | A test that faked only the interval timers made the next timing test hang (state leaking between tests in one file). | That test now runs last in its file, with a comment saying why; spies are restored in `afterEach`. |
+| FIX-60 | T-49 | GAP-96: the money screen never asked PayPal to check (`POST /money/refresh` unused). | The plan screen has 'Ask PayPal now' for running plans; GAP-96 closed. |
+| FIX-61 | T-49 | Mutation check found 33 weak spots (tones, hover texts, error column, pinned column, double-click protection, fingerprint source, user switch, project in URLs, chosen-plan style). | Tests for each; five unnecessary pieces of code removed (reset effect, two id checks, an unused quick filter on the steps grid, a null branch). |
+| FIX-62 | T-49 | A Python heredoc turned a backslash-b in a regex into a real backspace character inside a test file, so the check silently matched nothing. | Repaired using `chr()`; rule recorded in STATUS gotchas: use the Write tool for text with backslashes. |
 
 ---
 

@@ -4,6 +4,27 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 37 · The money plans screen (T-49) · Tue Nov 10
+
+**What now exists**
+- **Money plans page.** From the project's money box, people on the project open "See all the money plans". Every move of money is a *plan* (collect the pledges, release the holds, pay the builder, refund the pledgers), each with a plain-words state and the Payment Guardian's decision (ALLOW, HOLD, BLOCK, or "Not reviewed").
+- **One plan in full.** Its steps in a table (what, who, how much, state, PayPal reference, any problem), then the Guardian's verdict: every safety rule with a tick or cross and a one-line reason, the rules that PayPal itself proved are tagged "verified with PayPal (APIMatic SDK)", cautions that need a human, and the AI's risk opinion (which can only make the Guardian more careful, never less).
+- **Approval that cannot be cheated.** The button says why it is off ("Only the lead can approve this plan", "Write why it is safe to go ahead", "The Guardian blocked this plan"). A HOLD needs a written reason and shows when the earliest hold runs out. Approval is tied to the plan's exact fingerprint.
+- **"Try to cheat" (demo).** The lead can make a tampered copy of a plan (swap the recipient, inflate the amount, add a recipient, collect a pledge twice, sneak a collection into a release) and watch the Guardian refuse it, with the failed rules in red. PayPal is never contacted and the real verdict is untouched.
+- **Build and watch.** Buttons build a payout plan or a refund plan. A running plan updates itself every 5 seconds and has an "Ask PayPal now" button (this was a gap I had noted earlier, now closed).
+- 309 front-end tests and 1,564 back-end tests pass. About 150 deliberate breakages: 33 slipped through the first time (mostly colours, hover texts and double-click protection that no test looked at; some code was simply unnecessary and was removed); all are now caught.
+
+**What it does NOT do yet**
+It cannot run in a real browser here (the tests simulate one), and the "not yet built" plan kind for renewing holds has no screen. The stepper steps are still not links.
+
+**Progress:** 35 of ~45 tasks done or in review. Increment 37 of the 45 you asked for.
+
+**Needed from you:** BLK-01/02/03, PayPal sandbox keys, Gemini key.
+
+**Next increment:** BA Studio (T-16): the chat with the business analyst and the readiness score.
+
+---
+
 ## Increment 36 · The AI audit trail as a table (T-51) · Tue Nov 10
 
 **What now exists**

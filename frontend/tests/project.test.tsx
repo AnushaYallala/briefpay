@@ -126,10 +126,21 @@ describe("money box", () => {
     mockFetch({ "GET /projects/1/money": { body: money({ open_plans: [{ id: 3, kind: "FREELANCER_PAYOUT", state: "REVIEWED" }, { id: 4, kind: "REFUND_CAPTURED", state: "EXECUTING" }],
       unclaimed_payouts: 1, alerts: [{ seq: 9, created_at: "x", meta: {} }] }) } });
     render(<MoneyBox projectId={1} />);
-    expect(await screen.findByText("Pay the builder: reviewed")).toBeTruthy();
-    expect(screen.getByText("Refund the pledgers: executing")).toBeTruthy();
+    const payout = await screen.findByRole("link", { name: "Pay the builder" });
+    expect(payout.parentElement!.textContent).toBe("Pay the builder: reviewed");
+    expect(payout.getAttribute("href")).toBe("/plans?id=1&plan=3");
+    const refund = screen.getByRole("link", { name: "Refund the pledgers" });
+    expect(refund.parentElement!.textContent).toBe("Refund the pledgers: executing");
+    expect(refund.getAttribute("href")).toBe("/plans?id=1&plan=4");
     expect(screen.getByText(/waiting for the builder to claim it at PayPal/)).toBeTruthy();
     expect(screen.getByRole("alert").textContent).toBe("1 item need attention: PayPal reported something different from our records.");
+  });
+
+  it("always links to the money plans", async () => {
+    mockFetch({ "GET /projects/7/money": { body: money({ open_plans: [{ id: 3, kind: "FREELANCER_PAYOUT", state: "REVIEWED" }] }) } });
+    render(<MoneyBox projectId={7} />);
+    expect((await screen.findByRole("link", { name: "See all the money plans" })).getAttribute("href")).toBe("/plans?id=7");
+    expect(screen.getByRole("link", { name: "Pay the builder" }).getAttribute("href")).toBe("/plans?id=7&plan=3");
   });
 
   it("pluralises alerts", async () => {
@@ -275,7 +286,7 @@ describe("gaps found by the mutation check", () => {
   it("does not call it empty while a plan is in progress either", async () => {
     mockFetch({ "GET /projects/1/money": { body: money({ holds: { count: 0, total_cents: 0, note: "n" }, next_honor_deadline: null, open_plans: [{ id: 1, kind: "RELEASE_HOLDS", state: "EXECUTING" }] }) } });
     render(<MoneyBox projectId={1} />);
-    expect(await screen.findByText("Release the holds: executing")).toBeTruthy();
+    expect((await screen.findByRole("link", { name: "Release the holds" })).parentElement!.textContent).toBe("Release the holds: executing");
     expect(screen.queryByText("No money has moved yet")).toBeNull();
   });
 

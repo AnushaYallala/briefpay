@@ -178,7 +178,7 @@ def test_the_money_box_type_matches_the_real_response(client, seeded):  # noqa: 
 
 
 def test_the_plan_words_in_the_money_box_cover_every_plan_kind():
-    kinds = set(re.findall(r"\b([A-Z_]{6,}): \"", block(read("components/MoneyBox.tsx"), "const PLAN_WORDS")))
+    kinds = set(re.findall(r"\b([A-Z_]{6,}): \"", block(read("lib/plans.ts"), "export const PLAN_WORDS")))
     assert kinds == {"CAPTURE_PLEDGES", "RELEASE_HOLDS", "FREELANCER_PAYOUT", "REFUND_CAPTURED"}
 
 
@@ -250,3 +250,58 @@ def test_the_audit_result_words_cover_every_status_the_adapter_writes():
 
 def test_the_audit_refresh_rate_is_gentle():
     assert re.search(r"AUDIT_REFRESH_MS = 20000;", read("lib/audit.ts"))
+
+
+def test_the_plan_types_match_real_responses_and_the_words_cover_every_state(client, db, seeded):  # noqa: F811
+    from app.services import guardian_rules as g
+    from app.services.guardian_tamper import MUTATIONS
+    types = read("lib/types.ts")
+    pid = seeded["payout_ready_project_id"]
+    headers = auth_header(client)
+    listing = client.get(f"/api/projects/{pid}/plans", headers=headers).json()
+    assert set(listing) == fields_of(types, "PlansResponse") and listing["plans"]
+    assert all(set(p) == fields_of(types, "PlanListItem") for p in listing["plans"])
+    detail = client.get(f"/api/plans/{listing['plans'][0]['id']}", headers=headers).json()
+    declared = fields_of(types, "PlanDetail") | fields_of(types, "PlanListItem")
+    assert set(detail) <= declared and declared - set(detail) <= {"earliest_honor_until"}
+    assert detail["steps"] and all(set(s) == fields_of(types, "PlanStep") for s in detail["steps"])
+    built = client.post(f"/api/projects/{pid}/plans", json={"kind": "FREELANCER_PAYOUT"}, headers=headers)
+    assert built.status_code == 201, built.text
+    assert set(built.json()) - {"earliest_honor_until"} <= declared
+    plan_ids = [built.json()["id"]]
+    # a real Guardian review, so its shape is checked too
+    from tests.factories import FakeReader
+    from app.main import app
+    from app.services import paypal_io
+    from app.agents.guardian_llm import GuardianLLM, get_guardian_llm
+    app.dependency_overrides[paypal_io.get_reader] = lambda: FakeReader(db)
+    app.dependency_overrides[get_guardian_llm] = lambda: GuardianLLM(None)          # no model: the AI review is "unavailable"
+    try:
+        reviewed = client.post(f"/api/plans/{plan_ids[0]}/review", headers=headers)
+    finally:
+        app.dependency_overrides.pop(paypal_io.get_reader, None)
+        app.dependency_overrides.pop(get_guardian_llm, None)
+    assert reviewed.status_code == 200, reviewed.text
+    shown = reviewed.json()
+    assert shown["reviews"] and all(set(r) == fields_of(types, "GuardianReview") for r in shown["reviews"])
+    assert shown["reviews"][0]["rules"] and all(set(r) == fields_of(types, "GuardianRule") for r in shown["reviews"][0]["rules"])
+
+    # the words
+    plans_ts = read("lib/plans.ts")
+    assert keys_of(block(plans_ts, "export const PLAN_STATES")) == {"PROPOSED", "REVIEWED", "APPROVED", "EXECUTING", "DONE", "PARTIAL", "FAILED", "BLOCKED"}
+    assert keys_of(block(plans_ts, "export const STEP_STATES")) == {"PENDING", "SENT", "CONFIRMED", "FAILED"}
+    assert set(re.findall(r'\b([A-Z_]{6,}): "', block(plans_ts, "export const OP_WORDS"))) == set(g.BUCKET_FOR_OP)
+    assert set(re.findall(r"^  ([A-Z_]+): \{ symbol", block(plans_ts, "export const RULE_STATUS"), re.M)) == {g.PASS, g.FAIL, g.UNVERIFIED, g.SKIPPED}
+    assert set(re.findall(r"^  ([A-Z_]+): \{ label", block(plans_ts, "export const DECISIONS"), re.M)) == {"ALLOW", "HOLD", "BLOCK"}
+    tampers = dict(re.findall(r'^  ([A-Z_]+): \{ kind: "([A-Z_]+)"', block(plans_ts, "export const TAMPERS"), re.M))
+    assert tampers == {name: kind for name, (kind, _) in MUTATIONS.items()}
+    catches = {m.group(1): set(re.findall(r'"(G-\d\d)"', m.group(2))) for m in re.finditer(r'^  ([A-Z_]+): \{ kind: "[A-Z_]+", label: "[^"]*", catches: \[([^\]]*)\]', block(plans_ts, "export const TAMPERS"), re.M)}
+    assert catches == {name: expected for name, (_, expected) in MUTATIONS.items()}
+
+
+def test_plan_refresh_is_gentle_and_the_plan_kinds_have_words():
+    plans_ts = read("lib/plans.ts")
+    assert re.search(r"PLAN_REFRESH_MS = 5000;", plans_ts)
+    from app.services.guardian_rules import APPLICABLE
+    kinds = set(re.findall(r'\b([A-Z_]{6,}): "', block(plans_ts, "export const PLAN_WORDS")))
+    assert kinds == set(APPLICABLE) - {"REAUTH_PLEDGES"}                    # reauthorisation plans are not built yet

@@ -9,10 +9,10 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-10 by Claude: T-51 audit trail grid done |
+| Last updated | 2026-11-10 by Claude: T-49 money plans screen done |
 | Overall phase | **Back end feature-complete except the three blocked pieces (BLK-01/02/03); front end just started (home page and sign-in).** Done: BA, BRD, contract, campaign setup, plans + Guardian + executor, webhooks, poll fallback, submissions, evidence, verification, ledger/audit APIs, demo seed, deploy files, web skeleton. Plain-English summary: `docs/PROGRESS_SUMMARY.md` |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
-| Next task to pick up | Not blocked: money plans viewer with tamper simulation (T-49; also makes the stepper steps links and wires `POST /money/refresh`), then BA Studio (T-16), BRD (T-17), freelancer portal (T-35), verification report (T-36), campaign page (T-23, T-27; shows BLK-01/02 as unavailable) · **Human:** decide BLK-01/02/03 · PayPal sandbox keys, Gemini key, Cloudinary · run `backend/scripts/sandbox_check.py` once keys exist |
+| Next task to pick up | Not blocked: BA Studio (T-16), BRD (T-17), freelancer portal (T-35), verification report (T-36), campaign page (T-23, T-27; shows BLK-01/02 as unavailable), make the stepper steps links (GAP-92) · **Human:** decide BLK-01/02/03 · PayPal sandbox keys, Gemini key, Cloudinary · run `backend/scripts/sandbox_check.py` once keys exist |
 | Blockers | **BLK-01** (T-22 pledge service/endpoints), **BLK-02** (T-25 clock and lead actions), **BLK-03** (pledge-state helper used by two webhook events): the assistant's attempts to write those files were stopped by a safety check; see `docs/GAPS_AND_FIXES.md` section 0 for the full designs |
 | Deployed URLs | API: _not deployed_ · Web: _not deployed_ · Sample site: _not deployed_ |
 | Repo | https://github.com/AnushaYallala/briefpay (origin; T-01 still needs LICENSE visible in About + secret scanning) |
@@ -86,7 +86,7 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 | T-46 | Strategist (deterministic): forecast, deadline suggestion, nudge target ranking + tests; API + forecast card | §7.4 | Claude | DONE | t-46-strategist | Pure forecast/advice/nudge math + report service + run/read/apply endpoints + STRATEGIST_RUN job. 52 tests; mutation-checked 24/24 (two added tests). LLM wording is T-47 (D-035) |
 | T-47 | Strategist LLM narrative + nudge drafts + numbers validator | §7.4 |  | REVIEW |  | `strategist_words.py` (facts, number validator, template fallback, one draft a day), `agents/strategist.py` + prompt `strategist-v1`, wired into `STRATEGIST_RUN` (D-049). 51 tests, mutation-checked. Never run against the real model (GAP-72/80) |
 | T-48 | Ledger ↔ PayPal reconciliation job (SDK Transaction Search) + "PayPal match" column | §9.7 |  | REVIEW |  | `ledger_match.py` + `GET /projects/{id}/ledger/paypal-match` (D-047): MATCH / PENDING / MISMATCH / NOT_FOUND / UNAVAILABLE per PayPal-backed row, instant lookups instead of Transaction Search, read-only, max 30 lookups. 41 tests, mutation-checked. Unproven against real PayPal answers (A-3) |
-| T-49 | UI: money plans viewer (steps grid, rule rows, risk card, decision, approve, simulate tamper) | §11 #11 |  | TODO |  | |
+| T-49 | UI: money plans viewer (steps grid, rule rows, risk card, decision, approve, simulate tamper) | §11 #11 |  | REVIEW |  | `/plans?id=N`: plan list, plan detail with AG Grid steps, Guardian rules/cautions/AI card, check, approve (HOLD note), tamper demo, build payout/refund plan, live status + Ask PayPal now (D-054). 14 + 46 + 13 + 1 tests, mutation-checked |
 
 ### Track C: Ledger, polish, ship
 | ID | Task | Spec | Owner | State | Branch | Notes |
@@ -159,6 +159,13 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-10 · Claude · T-49 money plans screen (REVIEW)
+- Did: `frontend/src/app/plans/page.tsx`, `components/PlanDetailView.tsx`, `GuardianPanel.tsx`, `StepsGrid.tsx`, `lib/plans.ts` (words, tones, approval rules, tamper list), types for plans, steps, reviews and rules; the money box links to the plans (and each open plan) and now takes its plan words from `lib/plans.ts`; `tests/switch.tsx` is a test-only person switcher. Committed straight to `main`.
+- Tests: back end `cd backend && .venv/Scripts/python.exe -m pytest -q` -> 1564 passed (2 new contract tests: plan, step, review and rule fields from a real built and reviewed plan; state, operation, rule-result, decision and tamper lists equal the server's; refresh rate); front end `cd frontend && npm run check` -> typecheck clean, 309 tests, build includes `/plans`. Mutation-checked: about 150 breakages; first run 33 survivors (dead code removed: a reset effect, two redundant id checks, an unused quick filter, a null branch; the rest test gaps) -> tests added -> rerun of all survivors: all caught.
+- Contract changes: D-054 (no SPEC changes). Closes GAP-96 (money refresh is now wired).
+- Next step: BA Studio (T-16): the chat with the business analyst, the 12-dimension score, the checklist, the "ready at 90" gate. Look at `GET /projects/{id}/requirements/...` and the BA endpoints in `backend/app/routers`.
+- Gotchas: (1) A long bash heredoc or a Python heredoc containing a backslash sequence silently corrupts the text (a `\b` became a real backspace character): write files with the Write tool, or build characters with `chr()`. (2) The test file for mutation gaps is `plans-gaps.test.tsx` because a long append to the main test file was refused by the shell. (3) The contract test builds a real payout plan and reviews it with `FakeReader` and a no-model Guardian AI. (4) Waiting loops on a file that a crashed script never writes wait forever: check the output file first.
 
 ### 2026-11-10 · Claude · T-51 AI audit trail grid (REVIEW)
 - Did: `frontend/src/app/audit/page.tsx`, `components/AuditGrid.tsx`, `components/RunDialog.tsx`, `lib/audit.ts` (agent words, result chips, filter, summary, short hash, time text), types `AgentRun`, `AgentRunsResponse`; the project page links to it for members; the ledger and audit searches now find plain words (D-053). `tests/switch.tsx` is a tiny test-only person switcher. Committed straight to `main`.

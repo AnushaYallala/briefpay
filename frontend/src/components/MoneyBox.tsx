@@ -1,13 +1,12 @@
 "use client";
 import { Empty, ErrorBox, Loading } from "@/components/ui";
+import Link from "next/link";
 import { formatMoney } from "@/lib/money";
+import { PLAN_WORDS } from "@/lib/plans";
 import { formatDateTime } from "@/lib/time";
 import type { Money } from "@/lib/types";
 import { useApi } from "@/lib/useApi";
 
-const PLAN_WORDS: Record<string, string> = {
-  CAPTURE_PLEDGES: "Collect the pledges", RELEASE_HOLDS: "Release the holds", FREELANCER_PAYOUT: "Pay the builder", REFUND_CAPTURED: "Refund the pledgers",
-};
 
 /** The Money box (SPEC 11, screen 3): what is really in the pool, what is only a hold, and what needs attention. Members only. */
 export function MoneyBox({ projectId, currency = "USD" }: { projectId: number; currency?: string }) {
@@ -39,10 +38,11 @@ export function MoneyBox({ projectId, currency = "USD" }: { projectId: number; c
             <div>
               <p className="text-xs uppercase tracking-wide text-gray-500">Money plans in progress</p>
               <ul className="list-disc pl-5">
-                {data.open_plans.map((p) => <li key={p.id}>{PLAN_WORDS[p.kind] ?? p.kind}: {p.state.toLowerCase()}</li>)}
+                {data.open_plans.map((p) => <li key={p.id}><Link href={`/plans?id=${projectId}&plan=${p.id}`} className="text-sea-700 underline">{PLAN_WORDS[p.kind] ?? p.kind}</Link>: {p.state.toLowerCase()}</li>)}
               </ul>
             </div>
           )}
+          <p><Link href={`/plans?id=${projectId}`} className="text-sea-700 underline">See all the money plans</Link></p>
           {data.unclaimed_payouts > 0 && (
             <p className="rounded bg-amber-50 p-2 text-amber-800">A payment is waiting for the builder to claim it at PayPal.</p>
           )}
