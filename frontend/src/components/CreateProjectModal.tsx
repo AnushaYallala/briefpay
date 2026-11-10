@@ -128,6 +128,10 @@ export function CreateProjectModal({
         body: payload,
       });
 
+      if (auth?.reload) {
+        await auth.reload();
+      }
+
       if (onCreated) {
         onCreated(res);
       }

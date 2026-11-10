@@ -73,6 +73,12 @@ function Studio({ id }: { id: number }) {
     return () => clearInterval(t);
   }, [reloadBa]);
 
+  useEffect(() => {                                   // sync memberships if newly created project
+    if (authed && !roleOn(auth.memberships, id)) {
+      void auth.reload?.();
+    }
+  }, [authed, id, auth]);
+
   useEffect(() => {                                   // a run we started: ask about it until it ends
     if (job === null) return;
     let alive = true;

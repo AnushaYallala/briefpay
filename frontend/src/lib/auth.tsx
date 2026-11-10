@@ -13,6 +13,7 @@ type Auth = {
   problem: string | null;
   login: (email: string, displayName: string) => Promise<void>;
   logout: () => void;
+  reload: () => Promise<void>;
 };
 
 const Ctx = createContext<Auth | null>(null);
@@ -58,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearToken();
   }, []);
 
-  const value = useMemo(() => ({ status, user, memberships, problem, login, logout }), [status, user, memberships, problem, login, logout]);
+  const value = useMemo(() => ({ status, user, memberships, problem, login, logout, reload: load }), [status, user, memberships, problem, login, logout, load]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
