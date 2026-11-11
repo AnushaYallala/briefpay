@@ -4,7 +4,7 @@
 
 BriefPay was built for the PayPal AI hackathon. Everything runs on **PayPal sandbox money** and fictional people (the Velugu Cove demo). It is not a payments product and moves no real money.
 
-> **Honest status (see [docs/STATUS.md](docs/STATUS.md) for the live board):** the whole back end is built and tested (1,605 back-end tests at the time of writing, no network or keys needed). The web front end has been started: a home page listing projects, sign-in with a demo person switcher, a project page (progress stepper, campaign progress, people, money box), BA Studio (score, questions, transcript), the brief with sponsor approvals, the campaign page with the organiser's panel, the public ledger, the AI audit trail and the money plans screen (Guardian verdicts, approval, tamper demo) (487 front-end tests). The remaining screens (campaign, contract, freelancer portal, verification report), the hosted Render deployment and the demo video are **not built yet**. Three back-end pieces are blocked and described in [docs/GAPS_AND_FIXES.md](docs/GAPS_AND_FIXES.md) section 0. PayPal, Gemini and Cloudinary have only been exercised against faithful fakes so far, because no sandbox keys have been supplied.
+> **Honest status (see [docs/STATUS.md](docs/STATUS.md) for the live board):** the whole back end is built and tested (1,605 back-end tests at the time of writing, no network or keys needed), and the web app has a screen for every step: projects and sign-in, the project page, BA Studio, the brief with sponsor approvals, the contract, the campaign page with the organiser's panel, the freelancer's submission, the verification matrix, the money plans (Guardian verdicts, approval, tamper demo), the public ledger and the AI audit trail (487 front-end tests). What is **not done**: making a pledge on the campaign page and the campaign clock with the organiser's close, cancel and restart buttons (three back-end pieces, BLK-01/02/03, wait for a decision; described in [docs/GAPS_AND_FIXES.md](docs/GAPS_AND_FIXES.md) section 0), the hosted Render deployment, and the demo video. PayPal and Cloudinary have only been exercised against faithful fakes because no sandbox keys have been supplied; Gemini was called live once to verify the connection, and the AI evaluation of the live model is still to do. **Nobody has yet clicked through it in a real browser:** [docs/TESTING.md](docs/TESTING.md) is the guide for that.
 
 ---
 
@@ -82,7 +82,7 @@ cp ../.env.example .env                                      # keys are optional
 .venv/Scripts/python -m pytest -q                            # the back-end tests, about a minute, no network
 ```
 
-The web app (Node 22; a static Next.js export, started: home page, sign-in, project page, BA Studio, brief, ledger, AI audit trail and money plans so far):
+The web app (Node 22; a static Next.js export with a screen for every step of the story):
 
 ```bash
 cd frontend
@@ -146,6 +146,9 @@ Real money, KYC, tax, legal enforceability of the contract, dispute arbitration,
 * [docs/PROGRESS_SUMMARY.md](docs/PROGRESS_SUMMARY.md): plain-English summary after each increment
 * [docs/DECISIONS.md](docs/DECISIONS.md): every decision that fills a gap in the spec (D-001 onward)
 * [docs/GAPS_AND_FIXES.md](docs/GAPS_AND_FIXES.md): blockers, known gaps and every defect found and fixed
+* [docs/TESTING.md](docs/TESTING.md): how to run it and click through it, person by person
+* [docs/EVAL_RESULTS.md](docs/EVAL_RESULTS.md): what we measured (Guardian, BA scoring, Verifier rules, Strategist)
+* [docs/DEPLOY.md](docs/DEPLOY.md): putting it on Render
 
 ## Licence
 

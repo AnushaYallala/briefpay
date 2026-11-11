@@ -4,6 +4,31 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 45 · Final tidy, and exactly what is left · Wed Nov 11
+
+**What I did**
+- Re-read the README and the status board for things that were no longer true and fixed them: the README said four screens were "not built yet" (they all are built now), that Gemini had never been touched (a live call was verified), and that the pledge and clock pieces were merely "not produced". The status board still carried Sunday's goal. Both now say what is true and point to the testing guide.
+- The README's document list now includes the testing guide, the evaluation table and the deployment guide.
+
+**Where the project stands, in one picture**
+- **Done and tested (1,605 back-end tests, 487 front-end tests):** requirements analysis with scoring, the brief with hash-locked approvals, the contract, campaign setup and launch, the Strategist, the Payment Guardian with the tamper demo, money plans, execution paths, webhooks, reconciliation, the freelancer's submission and the verification (automatic checks, questions, judge, report), failure options, the public ledger, the AI audit trail, the demo data, the evaluation table, a testing guide and a one-command check.
+- **Not done, and why:**
+  1. **Making a pledge** (the PayPal button on the campaign page) and **the campaign clock with the organiser's close/cancel/restart buttons**: three back-end pieces (BLK-01, 02, 03) that need your decision; their full designs are written down. Everything around them is built and tells the visitor plainly that these are not switched on.
+  2. **Anything that needs keys:** the real PayPal sandbox (paying out, matching the ledger to PayPal) and the live AI parts (running the analysis, writing the brief, judging evidence). PayPal and Cloudinary have only been exercised against faithful fakes.
+  3. **Putting it online** (Render and Aiven accounts), **the video**, **the submission**.
+  4. **A real person clicking through it in a browser.** My tests simulate a browser; the guide is for you.
+
+**What I need from you, in order**
+1. Follow `docs/TESTING.md` and tell me anything that looks wrong.
+2. Decide BLK-01/02/03 (this unlocks pledging and the clock).
+3. PayPal sandbox accounts and keys, then `backend/scripts/sandbox_check.py`.
+4. A Gemini key on this machine for the live evaluation.
+5. Render and Aiven accounts, then the deployment steps in `docs/DEPLOY.md`.
+
+**Progress:** All 45 increments you asked for are done (the plan's numbering is mine; the content is listed above). Nothing unblocked is left for me except fixing what your hands-on test finds.
+
+---
+
 ## Increment 44 · No demo leftovers, no silent failures · Wed Nov 11
 
 **What happened**

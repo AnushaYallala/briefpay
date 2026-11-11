@@ -9,10 +9,10 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-11 by Claude: demo leftovers removed and failures made visible on the contract, brief, submit and verify screens (D-061); testing guide and smoke check (D-060); tests for the teammate's screens (D-059); T-63 eval; T-23/T-27 campaign page |
+| Last updated | 2026-11-11 by Claude: final tidy of the plan of 45 increments (stale claims corrected; what is left listed by who must act). Earlier today: contract/brief/submit/verify clean-up (D-061), testing guide and smoke check (D-060), tests for the teammate's screens (D-059), T-63 eval, T-23/T-27 campaign page |
 | Overall phase | **Back end feature-complete except the three blocked pieces (BLK-01/02/03); front end feature-complete for all core steps (Requirements, Brief, Contract, Campaign, Submit, Verify, Payout Plans, Ledger, AI Audit).** Plain-English summary: `docs/PROGRESS_SUMMARY.md` |
-| Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
-| Next task to pick up | Not blocked: tests for the teammate's screens (contract, submit, verify, brief) against the real API shapes; a live-model eval run (needs the Gemini key on the machine); rehearsal and video (T-64) · **Human:** decide BLK-01/02/03 (pledging and the campaign clock) · PayPal sandbox keys · Cloudinary · deploy accounts · run `backend/scripts/sandbox_check.py` once keys exist |
+| Current goal | A person follows `docs/TESTING.md` in a real browser and reports what looks wrong; decide BLK-01/02/03; then keys (PayPal sandbox, Gemini), deploy (T-61), rehearse and record (T-64), submit (T-65) |
+| Next task to pick up | Nothing unblocked is left for the assistant except fixing what the hands-on test finds · **You:** (1) follow `docs/TESTING.md`; (2) decide BLK-01/02/03 (pledging and the campaign clock); (3) PayPal sandbox accounts and keys (T-02) then run `backend/scripts/sandbox_check.py`; (4) a Gemini key on this machine for the live evaluation; (5) Render and Aiven accounts to deploy (T-03, T-61); (6) record the video and submit (T-64, T-65) |
 | Blockers | **BLK-01** (T-22 pledge service/endpoints), **BLK-02** (T-25 clock and lead actions), **BLK-03** (pledge-state helper used by two webhook events): the assistant's attempts to write those files were stopped by a safety check; see `docs/GAPS_AND_FIXES.md` section 0 for the full designs |
 | Deployed URLs | API: _not deployed_ · Web: _not deployed_ · Sample site: _not deployed_ |
 | Repo | https://github.com/AnushaYallala/briefpay (origin; T-01 still needs LICENSE visible in About + secret scanning) |

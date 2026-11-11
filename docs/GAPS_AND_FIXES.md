@@ -6,7 +6,7 @@ A running list of everything that is **missing, risky, unverified, or was found 
 - **Fixes** are problems that were found and already resolved, kept so the reasoning is not lost.
 - IDs are permanent. When a gap is closed, move it to Fixes (keep the ID) and say how.
 
-_Last updated: 2026-11-11, after the contract, brief, submit and verify clean-up._
+_Last updated: 2026-11-11, final tidy of the 45 increments._
 
 ---
 
@@ -245,6 +245,7 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | FIX-77 | D-061 | Contract banner always said 'Arjun accepted'; brief said 'Awaiting project lead (Lakshmi)'. | Real names from the project's members, with fallbacks; tested. |
 | FIX-78 | D-061 | The lead's contract offer started at a fixed $400 on every project. | Starts at the project's own budget; tested with two budgets. |
 | FIX-79 | D-061 | Submit and verify showed a blank page when a load failed. | The server's reason is shown in a red message; tested for both screens and both loads. |
+| FIX-80 | final tidy | The README and the status board still said four finished screens were 'not built yet', that Gemini had never been called, and carried Sunday's day goal. | Corrected; the README now also links the testing guide, the evaluation table and the deployment guide. |
 
 ---
 
