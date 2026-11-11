@@ -1,0 +1,51 @@
+{
+  "agent": "BA_QUESTIONS",
+  "input_hash": "d2456aff9b8498727c05e49a4db7b69343101175c17bb8d332ef09ed811e15ed",
+  "output": {
+    "questions": [
+      {
+        "addressed_to": [
+          "ALL"
+        ],
+        "dimension": "D6",
+        "question": "What specific check will prove the single-page business listings are correctly displayed?",
+        "rationale": "Requirement R2 is a MUST but currently lacks an acceptance criterion.",
+        "suggested_options": null
+      },
+      {
+        "addressed_to": [
+          2
+        ],
+        "dimension": "D6",
+        "question": "What exact test confirms that the driving directions and map link work correctly?",
+        "rationale": "Requirement R3 is a MUST but currently lacks an acceptance criterion.",
+        "suggested_options": null
+      },
+      {
+        "addressed_to": [
+          1
+        ],
+        "dimension": "D9",
+        "question": "Should the website load completely in under three seconds on mobile phones?",
+        "rationale": "Performance criteria are needed to specify non-functional requirements for mobile users.",
+        "suggested_options": null
+      },
+      {
+        "addressed_to": [
+          1,
+          2,
+          3
+        ],
+        "dimension": "D8",
+        "question": "What primary color scheme should the website use to fit the beach and cove theme?",
+        "rationale": "Look and feel requirements are currently sparse and need clear visual direction.",
+        "suggested_options": [
+          "Ocean blue and sandy white",
+          "Sunset orange and warm yellow",
+          "Natural green and earthy brown"
+        ]
+      }
+    ]
+  },
+  "prompt_version": "ba-questions-v1"
+}

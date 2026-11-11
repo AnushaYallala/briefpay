@@ -9,7 +9,7 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-10: Frontend UI/UX complete redesign (executive dashboard, full widescreen utilization, light slate canvas, interactive stepper, no 'demo' wording); Project creation modal with 1-click Velugu Cove pre-fill; BA Studio sample transcript pre-fill; SQLite database fully purged of seeded dummy data (32 tables reset to 0 rows); 378/378 vitest passed, static export passed (14/14 pages), 30/30 backend contract tests passed. |
+| Last updated | 2026-11-10: Cross-Stage Workflow Navigation (`WorkflowNav`) & forward progression steppers added across all 8 project stages (`ba`, `brd`, `contract`, `submit`, `verify`, `plans`, `ledger`); Forward navigation banner in BA Studio on score 90+ threshold; Graceful BRD generation flow on `/brd` with 1-click Gemini AI trigger; 378/378 vitest tests passing, static export 14/14 pages passing. |
 | Overall phase | **Back end feature-complete except the three blocked pieces (BLK-01/02/03); front end feature-complete for all core steps (Requirements, Brief, Contract, Campaign, Submit, Verify, Payout Plans, Ledger, AI Audit).** Plain-English summary: `docs/PROGRESS_SUMMARY.md` |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
 | Next task to pick up | T-23 / T-27 Campaign public page & pledge view · **Human:** decide BLK-01/02/03 · PayPal sandbox keys, Gemini key, Cloudinary · run `backend/scripts/sandbox_check.py` once keys exist |
@@ -148,6 +148,18 @@ _Add things you confirmed so the next AI doesn't re-verify. Include date and who
 ---
 
 ## 6. Handoff log
+
+### 2026-11-10 · Gemini · Cross-Stage Workflow Navigation & Forward Steppers
+- Did:
+  1. Built universal `frontend/src/components/WorkflowNav.tsx`: An interactive 8-stage project progression stepper ribbon (`Requirements -> Brief -> Contract -> Campaign -> Build -> Verify -> Payout -> Ledger`) with breadcrumbs, state badges, stage subtitles, active stage highlighting, and contextual next-action forward buttons.
+  2. Integrated `WorkflowNav` across all project views: `ba/page.tsx`, `brd/page.tsx`, `contract/page.tsx`, `submit/page.tsx`, `verify/page.tsx`, `plans/page.tsx`, and `ledger/page.tsx`.
+  3. Added Forward Navigation Hero Banner on `/ba`: When requirements score reaches 90+ or session is READY (e.g. score 97/100), prominently displays a celebration callout with a direct button `Proceed to BRD Specification →` (`/brd?id=...`).
+  4. Upgraded `/brd` handling: When the BRD is not yet generated (`NO_BRD`), renders a clean generation workspace where the lead can trigger Gemini AI generation (`POST /projects/{id}/brd/generate`) with live job polling instead of displaying an error.
+  5. Added Forward Navigation Banners on `/brd` (when approved → `/contract`), `/contract` (when signed → `/project`), `/verify` (when verified → `/plans`), and `/plans` (when executed → `/ledger`).
+  6. Fixed `isLead` member role detection on newly created projects by checking project members list alongside cached memberships.
+  7. Ensured uploaded transcript filenames are automatically guaranteed to have a `.txt` extension if none is provided.
+- State now: 378/378 vitest tests passed (14/14 suites), TypeScript check passed 0 errors, Next.js static build exported all 14 pages cleanly.
+- Next step: User walkthrough of BRD generation on `/brd?id=1` and sponsor approvals.
 
 ### 2026-11-10 · Gemini · UI Redesign, Project Creation, and Database Reset
 - Did:

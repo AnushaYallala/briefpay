@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { Stepper } from "@/components/Stepper";
+import { WorkflowNav } from "@/components/WorkflowNav";
 import { Badge, Empty, ErrorBox, Loading } from "@/components/ui";
 import { apiPost } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -90,6 +91,45 @@ function ContractStudio({ projectId }: { projectId: number }) {
 
   return (
     <div className="space-y-6">
+      <WorkflowNav
+        projectId={projectId}
+        projectTitle={project.title}
+        projectState={project.state}
+        currentStep="Contract"
+        nextAction={isSigned ? {
+          label: "Proceed to Pledge Campaign",
+          href: `/project?id=${projectId}`,
+          badge: "Contract Signed",
+          description: "Builder signed and PayPal locked! Open pledges from sponsors.",
+        } : null}
+      />
+
+      {/* Prominent Forward Navigation Banner when Contract is Signed */}
+      {isSigned && (
+        <section aria-label="Contract signed" className="rounded-2xl border-2 border-emerald-500/80 bg-gradient-to-r from-emerald-50 via-teal-50 to-white p-5 sm:p-6 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white shadow-xs">✓</span>
+                <h2 className="text-base sm:text-lg font-bold text-slate-900">
+                  Conditional Agreement Signed by Freelancer!
+                </h2>
+              </div>
+              <p className="text-xs sm:text-sm text-slate-600 max-w-2xl">
+                Arjun accepted the delivery terms ({contract?.delivery_days} days, {formatMoney(contract?.amount_cents ?? 0, contract?.currency ?? "USD")}) and locked their PayPal payout address ({contract?.freelancer_paypal_email}). You can now proceed to the Pledge Campaign to collect pledge holds from sponsors.
+              </p>
+            </div>
+            <Link
+              href={`/project?id=${projectId}`}
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 px-5 py-3 text-sm font-bold text-white shadow-md hover:from-emerald-700 hover:to-teal-800 transition hover:scale-[1.02] hover:shadow-lg"
+            >
+              <span>Proceed to Pledge Campaign</span>
+              <span aria-hidden="true">&rarr;</span>
+            </Link>
+          </div>
+        </section>
+      )}
+
       {/* Header card with Stepper */}
       <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs">
         <div className="mb-2">

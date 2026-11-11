@@ -1,13 +1,14 @@
 "use client";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useState, useMemo } from "react";
+import { Suspense, useState, useMemo, useEffect } from "react";
 import { AllCommunityModule, ModuleRegistry, type ColDef } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
+import { WorkflowNav } from "@/components/WorkflowNav";
 import { Badge, Empty, ErrorBox, Loading } from "@/components/ui";
-import { apiPost } from "@/lib/api";
+import { api, apiPost } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import type { BRDResponse, BRDRequirementItem, ProjectDetail } from "@/lib/types";
+import type { BRDResponse, BRDRequirementItem, JobStatus, ProjectDetail } from "@/lib/types";
 import { useApi } from "@/lib/useApi";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -19,12 +20,52 @@ function BRDView({ id }: { id: number }) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [comment, setComment] = useState("");
   const [selectedReq, setSelectedReq] = useState<BRDRequirementItem | null>(null);
+  const [genJob, setGenJob] = useState<number | null>(null);
+  const [genError, setGenError] = useState<string | null>(null);
 
   const { data: project } = useApi<ProjectDetail>(auth.status === "loading" ? null : `/projects/${id}`, auth.user?.id ?? null);
   const { data: brd, error, loading, slow, reload } = useApi<BRDResponse>(
     auth.status === "loading" ? null : `/projects/${id}/brd`,
     `${auth.user?.id ?? "anon"}-${refreshKey}`
   );
+
+  useEffect(() => {
+    if (genJob === null) return;
+    let alive = true;
+    const t = setInterval(async () => {
+      try {
+        const j = await api<JobStatus>(`/jobs/${genJob}`);
+        if (!alive) return;
+        if (j.state === "DONE") {
+          setGenJob(null);
+          setRefreshKey((k) => k + 1);
+          reload();
+        } else if (j.state === "FAILED") {
+          setGenJob(null);
+          setGenError(j.error ? `Generation failed: ${j.error}` : "Generation failed");
+        }
+      } catch (e) {
+        if (alive) {
+          setGenJob(null);
+          setGenError(e instanceof Error ? e.message : "Failed checking job status");
+        }
+      }
+    }, 2000);
+    return () => { alive = false; clearInterval(t); };
+  }, [genJob, reload]);
+
+  async function generateBRD() {
+    setGenError(null);
+    setBusy("generate");
+    try {
+      const res = await api<{ job_id: number }>(`/projects/${id}/brd/generate`, { method: "POST" });
+      setGenJob(res.job_id);
+    } catch (e) {
+      setGenError(e instanceof Error ? e.message : "Failed to start BRD generation");
+    } finally {
+      setBusy(null);
+    }
+  }
 
   async function submitDecision(decision: "APPROVE" | "REJECT") {
     if (!brd) return;
@@ -63,17 +104,121 @@ function BRDView({ id }: { id: number }) {
     { field: "weight", headerName: "Weight", width: 90 },
   ], []);
 
+  const userMembership = project?.members?.find(
+    (m) =>
+      (m.email && auth.user?.email && m.email.toLowerCase() === auth.user.email.toLowerCase()) ||
+      (m.display_name && auth.user?.display_name && m.display_name.toLowerCase() === auth.user.display_name.toLowerCase())
+  );
+  const isLead = userMembership?.role === "LEAD";
+  const isSponsor = isLead || userMembership?.role === "SPONSOR";
+
   if (auth.status === "loading" || loading) return <Loading what="Loading BRD" slow={slow} />;
+
+  if (error && error.code === "NO_BRD") {
+    return (
+      <div className="space-y-6">
+        <WorkflowNav
+          projectId={id}
+          projectTitle={project?.title}
+          projectState={project?.state}
+          currentStep="Brief"
+          nextAction={{
+            label: "Review in BA Studio",
+            href: `/ba?id=${id}`,
+            description: "Review meeting notes and scoring in BA Studio.",
+          }}
+        />
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs text-center max-w-2xl mx-auto space-y-4">
+          <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-sea-50 text-sea-700 text-2xl font-bold shadow-xs">
+            📄
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900">
+            Generate Business Requirements Document (BRD)
+          </h1>
+          <p className="text-sm text-slate-600 leading-relaxed">
+            The business requirements have been analyzed and reached the target quality score. You can now generate the official, immutable specification with REQ codes and acceptance criteria.
+          </p>
+
+          {genError && (
+            <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-900 text-left">
+              {genError}
+            </div>
+          )}
+
+          {genJob !== null ? (
+            <div className="rounded-xl border border-sea-200 bg-sea-50/70 p-4 text-xs font-semibold text-sea-800 flex items-center justify-center gap-2">
+              <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-sea-600 border-t-transparent" />
+              <span>Gemini AI is writing and hashing the BRD specification...</span>
+            </div>
+          ) : isLead ? (
+            <div className="pt-2">
+              <button
+                disabled={busy !== null}
+                onClick={() => void generateBRD()}
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sea-600 to-sea-700 px-6 py-3 text-sm font-bold text-white shadow-md hover:from-sea-700 hover:to-sea-800 transition hover:scale-[1.02] disabled:opacity-60"
+              >
+                <span>Generate BRD with Gemini AI</span>
+                <span aria-hidden="true">&rarr;</span>
+              </button>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+              Awaiting project lead (Lakshmi) to generate the official BRD.
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   if (error) return <ErrorBox error={error} onRetry={reload} />;
   if (!brd) return null;
 
-  const userMembership = project?.members?.find((m) => m.email === auth.user?.email);
-  const isSponsor = userMembership?.role === "LEAD" || userMembership?.role === "SPONSOR";
+  const isApproved = brd.status === "APPROVED" || brd.status === "LOCKED";
   const userDecision = brd.approvals.find((a) => a.member_id === userMembership?.id);
   const canDecide = isSponsor && brd.status !== "LOCKED" && !userDecision;
 
   return (
     <div className="space-y-6">
+      <WorkflowNav
+        projectId={id}
+        projectTitle={project?.title}
+        projectState={project?.state}
+        currentStep="Brief"
+        nextAction={isApproved ? {
+          label: "Proceed to Freelancer Contract",
+          href: `/contract?id=${id}`,
+          badge: "BRD Approved",
+          description: "All sponsors have signed! Set up freelancer agreement.",
+        } : null}
+      />
+
+      {/* Prominent Forward Navigation Banner when BRD is Approved */}
+      {isApproved && (
+        <section aria-label="BRD approved" className="rounded-2xl border-2 border-emerald-500/80 bg-gradient-to-r from-emerald-50 via-teal-50 to-white p-5 sm:p-6 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white shadow-xs">✓</span>
+                <h2 className="text-base sm:text-lg font-bold text-slate-900">
+                  BRD Specification Cryptographically Approved & Locked!
+                </h2>
+              </div>
+              <p className="text-xs sm:text-sm text-slate-600 max-w-2xl">
+                Every sponsor has signed off on the exact SHA-256 fingerprint <code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-800">{brd.sha256.slice(0, 16)}...</code>. Proceed to draft and offer the conditional contract to the builder.
+              </p>
+            </div>
+            <Link
+              href={`/contract?id=${id}`}
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 px-5 py-3 text-sm font-bold text-white shadow-md hover:from-emerald-700 hover:to-teal-800 transition hover:scale-[1.02] hover:shadow-lg"
+            >
+              <span>Proceed to Freelancer Contract</span>
+              <span aria-hidden="true">&rarr;</span>
+            </Link>
+          </div>
+        </section>
+      )}
       {/* Header */}
       <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs">
         <div className="mb-2">

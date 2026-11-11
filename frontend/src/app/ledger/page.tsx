@@ -4,12 +4,13 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { LedgerGrid, type Matches } from "@/components/LedgerGrid";
 import { MetaDialog } from "@/components/MetaDialog";
+import { WorkflowNav } from "@/components/WorkflowNav";
 import { Empty, ErrorBox, Loading } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { REFRESH_MS, filterRows, toCsv, typeLabel, typesPresent } from "@/lib/ledger";
 import { formatMoney } from "@/lib/money";
-import type { LedgerResponse, LedgerRow, MatchResponse } from "@/lib/types";
+import type { LedgerResponse, LedgerRow, MatchResponse, ProjectDetail } from "@/lib/types";
 import { useApi } from "@/lib/useApi";
 
 function download(name: string, text: string) {
@@ -64,6 +65,10 @@ function Ledger({ id }: { id: number }) {
   const member = !data.public;
   return (
     <div className="space-y-4">
+      <WorkflowNav
+        projectId={id}
+        currentStep="Ledger"
+      />
       <div>
         <Link href={`/project?id=${id}`} className="text-sm text-sea-700 hover:underline">Back to the project</Link>
         <h1 className="mt-1 text-2xl font-bold">Ledger</h1>

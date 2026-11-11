@@ -1,0 +1,22 @@
+{
+  "agent": "BA_QUESTIONS",
+  "input_hash": "379a6531dfb2ab8989d351c8dc6e119bd45dfd94f9ffbaa1c05bd278660d6eaa",
+  "output": {
+    "questions": [
+      {
+        "addressed_to": [
+          "ALL"
+        ],
+        "dimension": "D8",
+        "question": "What primary color scheme or visual style should the website use to fit the beach and cove theme?",
+        "rationale": "Clarifies the look and feel to guide the developer on visual branding.",
+        "suggested_options": [
+          "Ocean blues and sandy beige",
+          "Sunset orange and tropical green",
+          "Clean white and deep sea navy"
+        ]
+      }
+    ]
+  },
+  "prompt_version": "ba-questions-v1"
+}

@@ -3,12 +3,13 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useState } from "react";
 import { PlanDetailView } from "@/components/PlanDetailView";
+import { WorkflowNav } from "@/components/WorkflowNav";
 import { Badge, Empty, ErrorBox, Loading } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { decisionInfo, planState, planWord, roleOn } from "@/lib/plans";
 import { formatDateTime } from "@/lib/time";
-import type { PlanDetail, PlanListItem, PlansResponse } from "@/lib/types";
+import type { PlanDetail, PlanListItem, PlansResponse, ProjectDetail } from "@/lib/types";
 import { useApi } from "@/lib/useApi";
 
 function Detail({ id, role, onChanged }: { id: number; role: string | null; onChanged: () => void }) {
@@ -21,6 +22,7 @@ function Detail({ id, role, onChanged }: { id: number; role: string | null; onCh
 
 function Plans({ id, firstSelected }: { id: number; firstSelected: number | null }) {
   const auth = useAuth();
+  const pr = useApi<ProjectDetail>(auth.status === "authed" ? `/projects/${id}` : null, auth.user?.id ?? null);
   const { data, error, loading, slow, reload } = useApi<PlansResponse>(auth.status === "authed" ? `/projects/${id}/plans` : null, auth.user?.id ?? null);
   const [selected, setSelected] = useState<number | null>(firstSelected);
   const [problem, setProblem] = useState<string | null>(null);
@@ -47,8 +49,22 @@ function Plans({ id, firstSelected }: { id: number; firstSelected: number | null
     }
   }
 
+  const hasExecutedPlan = data.plans.some((p: PlanListItem) => p.state === "EXECUTED");
+
   return (
     <div className="space-y-4">
+      <WorkflowNav
+        projectId={id}
+        projectTitle={pr.data?.title}
+        projectState={pr.data?.state}
+        currentStep="Payout"
+        nextAction={hasExecutedPlan ? {
+          label: "View Public Audit Ledger",
+          href: `/ledger?id=${id}`,
+          badge: "Payout Executed",
+          description: "Payout executed! Inspect the immutable double-entry ledger.",
+        } : null}
+      />
       <div>
         <Link href={`/project?id=${id}`} className="text-sm text-sea-700 hover:underline">Back to the project</Link>
         <h1 className="mt-1 text-2xl font-bold">Money plans</h1>

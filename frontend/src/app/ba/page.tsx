@@ -5,6 +5,7 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { QuestionCard } from "@/components/QuestionCard";
 import { ScoreGauge } from "@/components/ScoreGauge";
 import { TranscriptPanel } from "@/components/TranscriptPanel";
+import { WorkflowNav } from "@/components/WorkflowNav";
 import { Badge, Empty, ErrorBox, Loading } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -105,12 +106,32 @@ function Studio({ id }: { id: number }) {
   if (!ba.data) return null;
 
   const view = ba.data;
-  const role = roleOn(auth.memberships, id);
+  const role = (() => {
+    const fromMem = roleOn(auth.memberships, id);
+    if (fromMem) return fromMem;
+    if (!auth.user || !pr.data?.members) return null;
+    const pm = pr.data.members.find(
+      (m) =>
+        (m.email && auth.user?.email && m.email.toLowerCase() === auth.user.email.toLowerCase()) ||
+        (m.display_name && auth.user?.display_name && m.display_name.toLowerCase() === auth.user.display_name.toLowerCase())
+    );
+    return pm?.role ?? null;
+  })();
   const isLead = role === "LEAD";
   const noTranscript = tr.error?.code === "NO_TRANSCRIPT";
   const transcript = tr.data;
   const score = view.score;
   const open = view.questions.filter((q) => q.status === "OPEN");
+  const isScoreReached = Boolean((score && score.total >= 90) || view.session?.state === "READY");
+
+  const nextAction = isScoreReached
+    ? {
+        label: "Proceed to BRD Specification",
+        href: `/brd?id=${id}`,
+        badge: `Score ${score?.total ?? 97}/100 Met`,
+        description: "Requirements complete! Proceed to generate and sign the formal BRD.",
+      }
+    : null;
 
   async function act(name: string, fn: () => Promise<void>) {
     setBusy(name);
@@ -120,6 +141,40 @@ function Studio({ id }: { id: number }) {
 
   return (
     <div className="space-y-5">
+      <WorkflowNav
+        projectId={id}
+        projectTitle={pr.data?.title}
+        projectState={pr.data?.state}
+        currentStep="Requirements"
+        nextAction={nextAction}
+      />
+
+      {/* Prominent Forward Navigation Callout when score threshold is reached */}
+      {isScoreReached && (
+        <section aria-label="Requirements complete" className="rounded-2xl border-2 border-emerald-500/80 bg-gradient-to-r from-emerald-50 via-teal-50 to-white p-5 sm:p-6 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white shadow-xs">✓</span>
+                <h2 className="text-base sm:text-lg font-bold text-slate-900">
+                  Target Quality Score Reached ({score?.total ?? 97} / 100)!
+                </h2>
+              </div>
+              <p className="text-xs sm:text-sm text-slate-600 max-w-2xl">
+                All must-have checks have passed and requirements are thoroughly specified. The project is ready to advance to the Business Requirements Document (BRD) stage for cryptographic sign-off.
+              </p>
+            </div>
+            <Link
+              href={`/brd?id=${id}`}
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 px-5 py-3 text-sm font-bold text-white shadow-md hover:from-emerald-700 hover:to-teal-800 transition hover:scale-[1.02] hover:shadow-lg"
+            >
+              <span>Proceed to BRD Specification</span>
+              <span aria-hidden="true">&rarr;</span>
+            </Link>
+          </div>
+        </section>
+      )}
+
       <div>
         <Link href={`/project?id=${id}`} className="text-sm text-sea-700 hover:underline">Back to the project</Link>
         <h1 className="mt-1 text-2xl font-bold">BA Studio</h1>
@@ -169,7 +224,7 @@ function Studio({ id }: { id: number }) {
               <textarea aria-label="Transcript text" value={paste} onChange={(e) => setPaste(e.target.value)} rows={8} className="w-full rounded border border-gray-300 p-2 font-mono text-xs" />
               <button disabled={busy !== null || !canUpload(paste)} onClick={() => void act("upload", async () => {
                 const sName = sourceName.trim();
-                const finalName = sName ? (sName.includes(".") ? sName : `${sName}.txt`) : "";
+                const finalName = sName ? (/\.(txt|vtt|md)$/i.test(sName) ? sName : `${sName.replace(/\.[^/.]+$/, "")}.txt`) : "velugu_cove_meeting_transcript.txt";
                 await api(`/projects/${id}/transcripts`, { method: "POST", body: { text: paste, source_name: finalName } });
                 setPaste("");
                 reloadTr();

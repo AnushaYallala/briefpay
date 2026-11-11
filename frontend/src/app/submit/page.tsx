@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { Stepper } from "@/components/Stepper";
+import { WorkflowNav } from "@/components/WorkflowNav";
 import { Badge, Empty, ErrorBox, Loading } from "@/components/ui";
 import { apiGet, apiPost } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -175,6 +176,19 @@ function SubmitStudio({ projectId }: { projectId: number }) {
 
   return (
     <div className="space-y-6">
+      <WorkflowNav
+        projectId={projectId}
+        projectTitle={project.title}
+        projectState={project.state}
+        currentStep="Build"
+        nextAction={submissions.length > 0 ? {
+          label: "Proceed to AI Verification",
+          href: `/verify?id=${projectId}`,
+          badge: "Submission Available",
+          description: "Deliverables are submitted. Review autonomous checks and Vision AI verification.",
+        } : null}
+      />
+
       {/* Header card with Stepper */}
       <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs">
         <div className="mb-2">
