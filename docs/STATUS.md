@@ -9,10 +9,10 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-11: T-23 campaign page and T-27 organiser panel (Claude, REVIEW, D-057). Also on main from the teammate: Complete Frontend Redesign (Fintech-Grade Polish across all 14 screens, 15 custom flat SVGs, unified WorkflowNav across all 8 stages, forward progression callout when score ≥ 90, themeQuartz for AG Grid, absolute API_BASE for downloads, 378/378 vitest tests passing, static export 14/14 pages clean). |
+| Last updated | 2026-11-11 by Claude: T-63 eval table (REVIEW). Earlier today: T-23 campaign page and T-27 organiser panel (REVIEW) |
 | Overall phase | **Back end feature-complete except the three blocked pieces (BLK-01/02/03); front end feature-complete for all core steps (Requirements, Brief, Contract, Campaign, Submit, Verify, Payout Plans, Ledger, AI Audit).** Plain-English summary: `docs/PROGRESS_SUMMARY.md` |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
-| Next task to pick up | Not blocked: check the teammate's screens against the API contract and add tests for them (contract, submit, verify, brief); polish and README; the eval table (T-63) now the Gemini key works · **Human:** decide BLK-01/02/03 (pledging and the campaign clock) · PayPal sandbox keys · Cloudinary · run `backend/scripts/sandbox_check.py` once keys exist |
+| Next task to pick up | Not blocked: tests for the teammate's screens (contract, submit, verify, brief) against the real API shapes; a live-model eval run (needs the Gemini key on the machine); rehearsal and video (T-64) · **Human:** decide BLK-01/02/03 (pledging and the campaign clock) · PayPal sandbox keys · Cloudinary · deploy accounts · run `backend/scripts/sandbox_check.py` once keys exist |
 | Blockers | **BLK-01** (T-22 pledge service/endpoints), **BLK-02** (T-25 clock and lead actions), **BLK-03** (pledge-state helper used by two webhook events): the assistant's attempts to write those files were stopped by a safety check; see `docs/GAPS_AND_FIXES.md` section 0 for the full designs |
 | Deployed URLs | API: _not deployed_ · Web: _not deployed_ · Sample site: _not deployed_ |
 | Repo | https://github.com/AnushaYallala/briefpay (origin; T-01 still needs LICENSE visible in About + secret scanning) |
@@ -98,7 +98,7 @@ Owner examples: `Nush`, `Teammate`, `Claude`, `Gemini`, `Cursor`, `Copilot`. A t
 | T-61a | Deploy hello-world API to Render (gets webhook URL early) | §14 |  | TODO |  | |
 | T-61 | Full Render deploy via `render.yaml` (free API + 2 static sites) + env vars + Aiven CA secret file | §14 |  | REVIEW |  | `render.yaml` (API), production start-up checks that refuse an unsafe config (D-046), `docs/DEPLOY.md` with the human steps. 35 tests. **Not deployed:** needs your Render/Aiven/Cloudinary/PayPal/Gemini accounts; the web service and sample site are added when they exist |
 | T-62 | README (problem, Pledge-If explained, architecture diagram, setup, demo personas, tools used, eval results, production boundaries) | §18, §19.3 |  | REVIEW |  | `README.md` written for judges: problem, how Pledge-If works, what is AI / code / human, architecture, run instructions, demo data, tools + APIMatic table, what was measured, production boundaries. **Still to add before submission:** live URLs, the AI eval table (T-63), the video link, the 5 s APIMatic capture, and a front-end section once it exists |
-| T-63 | AI eval mini-set + results table (BA, Verifier, Guardian, Strategist) | §13.3 |  | TODO |  | |
+| T-63 | AI eval mini-set + results table (BA, Verifier, Guardian, Strategist) | §13.3 | Claude | REVIEW |  | `backend/tests/test_eval.py` + `docs/EVAL_RESULTS.md`: Guardian 8/8, BA 3/3 and Verifier 10/10 (recorded model outputs, labelled), Strategist 20 synthetic campaigns (D-058). Live-model run still needs a Gemini key |
 | T-64 | Rehearse E2E on Render, record video (<3 min), upload public to YouTube | §16 |  | TODO |  | |
 | T-65 | Devpost submission (description, tools, sponsor tracks, links) | §18 |  | TODO |  | Target Thu 6 PM IST |
 
@@ -191,6 +191,13 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-11 · Claude · T-63 AI eval mini-set (REVIEW)
+- Did: `backend/tests/test_eval.py` (23 tests: Guardian 8 plans, BA 3 transcripts, Verifier 10 criteria, Strategist 20 synthetic campaigns, a size-and-pass check) and `docs/EVAL_RESULTS.md` (the table, regenerated with `WRITE_EVAL=1`); README "What we measured" now shows the headline numbers. Committed straight to `main`.
+- Tests: back end `cd backend && .venv/Scripts/python.exe -m pytest -q` -> 1592 passed; front end unchanged (459). Violations planted in the production rules (Guardian decision and soft flags, BA cap and two gates, three Verifier overrides, Strategist constants) all make the eval fail; two planted cases survived (one was a no-op of mine, one is the by-design case in D-058).
+- Contract changes: D-058 (no SPEC changes).
+- Next step: with the Gemini key, add a live-model run (BA score per round on 3 real transcripts, Verifier verdicts on real screenshots) and put its numbers beside the recorded ones; rehearse the demo (T-64).
+- Gotchas: (1) The BA and Verifier rows measure our rules on recorded model outputs, not the model: keep that wording. (2) The Strategist set was first all-low (average chance 6%) so the calibration said nothing; the generator now varies goals, existing holds and invitee counts (check `min < 0.1` and `max > 0.9`).
 
 ### 2026-11-11 · Claude · T-23 campaign page + T-27 organiser panel (REVIEW)
 - Did: `frontend/src/app/campaign/page.tsx`, `components/PledgeBoard.tsx`, `LeadPanel.tsx`, `StrategistCard.tsx`, `lib/campaign.ts`, `lib/useJob.ts` (a reusable hook that follows a background job), types for the campaign and the Strategist report; the project page links to the campaign page and, for the lead, to the set-up. Claimed T-23/T-27 on the board first (pushed) so the teammate would not build them too. Committed straight to `main`.

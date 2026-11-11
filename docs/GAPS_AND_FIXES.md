@@ -6,7 +6,7 @@ A running list of everything that is **missing, risky, unverified, or was found 
 - **Fixes** are problems that were found and already resolved, kept so the reasoning is not lost.
 - IDs are permanent. When a gap is closed, move it to Fixes (keep the ID) and say how.
 
-_Last updated: 2026-11-11, end of T-23/T-27._
+_Last updated: 2026-11-11, end of T-63._
 
 ---
 
@@ -150,6 +150,9 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | GAP-112 | Medium | Close and collect now, cancel, another round and the early-deadline demo are shown disabled (BLK-02). | Wire them when the lead actions exist. |
 | GAP-113 | Low | The pledge board is built from the public ledger: a hold shows no amount, and pledges are told apart from earlier rounds only by the time the campaign opened. | Use a pledge list endpoint when one exists. |
 | GAP-114 | Low | The deadline box is typed in UTC (the browser's box has no zone). | Show the local time beside it. |
+| GAP-115 | Medium | The eval does not measure the live model: BA and Verifier rows use recorded outputs. | Run the three BA transcripts and ten Verifier cases against Gemini once a key is on the machine; add a second column. |
+| GAP-116 | Low | The Strategist eval uses 20 invented campaigns; it shows direction and sanity, not real accuracy. | Re-check with real campaign results after the demo. |
+| GAP-117 | Low | Switching off one Guardian rule still blocks every tamper plan because other rules also fire; the eval cannot tell which single rule was removed. | Per-rule fixtures exist in `test_guardian_rules.py`. |
 
 ---
 
@@ -226,6 +229,7 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | FIX-67 | T-23 | Mutation check found 30 weak spots (countdown rounding and day length, lost cents in dollar amounts, the board's currency and time words, clearing earlier errors, double clicks, loading flashes during reloads, timers stopped, the project page's link numbers, 'Link copied'). | Tests for each; a dead quick filter, a pointless default and a fail-reason condition simplified. |
 | FIX-68 | T-23 | I removed a date-format check as 'redundant' and the tests failed: without it an empty deadline box read as the year 2000. | Check restored with a comment. |
 | FIX-69 | T-23 | A mutation run came back to life after the machine slept and overwrote my edits. | Stopped it, restored from a backup, and added the process rule to STATUS. |
+| FIX-70 | T-63 | The first Strategist synthetic set gave every campaign under 50% (average 6%), so the calibration rows were empty and meaningless. | Generator varies goal, existing holds and number of invitees; the test now requires predictions below 10% and above 90% and a better success rate in the high group. |
 
 ---
 
