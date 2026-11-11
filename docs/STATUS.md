@@ -9,7 +9,7 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-11 by Claude: tests and fixes for the teammate's brief, submit and verify screens (D-059); T-63 eval table; T-23/T-27 campaign page |
+| Last updated | 2026-11-11 by Claude: testing guide, smoke check and dev demo mode (D-060); tests and fixes for the teammate's screens (D-059); T-63 eval table; T-23/T-27 campaign page |
 | Overall phase | **Back end feature-complete except the three blocked pieces (BLK-01/02/03); front end feature-complete for all core steps (Requirements, Brief, Contract, Campaign, Submit, Verify, Payout Plans, Ledger, AI Audit).** Plain-English summary: `docs/PROGRESS_SUMMARY.md` |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
 | Next task to pick up | Not blocked: tests for the teammate's screens (contract, submit, verify, brief) against the real API shapes; a live-model eval run (needs the Gemini key on the machine); rehearsal and video (T-64) · **Human:** decide BLK-01/02/03 (pledging and the campaign clock) · PayPal sandbox keys · Cloudinary · deploy accounts · run `backend/scripts/sandbox_check.py` once keys exist |
@@ -191,6 +191,13 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-11 · Claude · hands-on testing path (DONE)
+- Did: `docs/TESTING.md` (guide), `backend/scripts/smoke.py` (10 data checks + one per web page), `backend/tests/test_smoke.py` (12 tests), `frontend/.env.development` (demo mode for `npm run dev`), README run section points to both. Started the real stack (throwaway SQLite database, API on 8765, built web app served on 8766): 22/22 checks pass, CORS right. Walked the payout flow by hand: a payout plan reaches HOLD without keys (AI card unavailable, G-08 skipped) and the swap-recipient test is BLOCKED by G-01, G-03, G-12. Committed straight to `main`.
+- Tests: back end `cd backend && .venv/Scripts/python.exe -m pytest -q` -> 1605 passed; front end unchanged (469). Planted weakenings in smoke.py: 22 of 22 caught after adding a replay test that spoils one field at a time.
+- Contract changes: D-060 (no SPEC changes).
+- Next step: a person follows `docs/TESTING.md` in a real browser and reports what is odd; then decide BLK-01/02/03 (pledging and the campaign clock); put PayPal sandbox keys and a Gemini key on the machine and run `sandbox_check.py` and the live eval.
+- Gotchas: (1) Next.js reads `NEXT_PUBLIC_*` from the `frontend` folder, not the repo-root `.env`: that is why `.env.development` exists. (2) A throwaway stack for checking can be started with `DATABASE_URL=sqlite:///<path>` plus `DEMO_MODE=true`, `alembic upgrade head`, `scripts/seed.py`, `uvicorn`, a build with `NEXT_PUBLIC_API_BASE_URL`/`NEXT_PUBLIC_DEMO_MODE`, and `python -m http.server -d out`. (3) The ledger is append-only even in tests: to break a fact in a test, change something that is not the ledger.
 
 ### 2026-11-11 · Claude · tests for the brief, contract, submit and verify screens (DONE)
 - Did: `backend/tests/test_frontend_contract.py` (new contract test: real brief, contract, submissions, questions, evidence, checks and report against `types.ts`, including every status word), `frontend/tests/screens.test.tsx` (10 tests), `frontend/src/lib/verifyview.ts` (tested helpers). Fixed in the teammate's files (small edits, nothing restyled): submit and verify now show what each automatic check looked at (the field they read, `target`, never existed); the brief shows its four statuses in words and offers a decision only on the open version; the brief decides who is a sponsor from memberships, not names; two type unions corrected (brief status, question status). Committed straight to `main`.

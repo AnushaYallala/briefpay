@@ -4,6 +4,26 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 43 · Ready to test by hand · Wed Nov 11
+
+**What now exists**
+- **A testing guide you can follow** (`docs/TESTING.md`): how to start the server and the web app, who the four demo people are, and a checklist of what to open as each person and what you should see: the funded project, the failed first round where nobody was charged, the pledge board, the ledger and its CSV download, the brief, the money plans with the Guardian's checks and the "try to cheat" buttons (a swapped recipient is BLOCKED), the AI audit trail, the verification of the freelancer's work. It also lists what is not built or needs keys, so you do not report it as a bug.
+- **An automatic "is the demo right?" check** (`backend/scripts/smoke.py`): one command that prints ten plain-language facts about the demo data (for example "Round one: the goal was missed and nobody was charged") and confirms that every page of the web app is served. A line says `[FAIL]` and why if anything is off.
+- **I started the whole thing for real** on a throwaway database and ran that check: 22 of 22 pass. I also confirmed the server accepts the web app's address and refuses a foreign one, and walked the payout flow by hand: without PayPal and AI keys a payout plan ends at HOLD (asking a person), and a tampered one is BLOCKED.
+- **`npm run dev` now starts in demo mode** by itself, so the person drop-down in the top bar is there. (A real build never does that.)
+- 1,605 back-end tests and 469 front-end tests pass. The check script itself is proven: 22 deliberate weakenings were each caught.
+
+**Please note**
+This is the first time a person (you) will look at it in a real browser; my tests simulate one. The live copy I started is still running on this computer: the web app at http://localhost:8766 and the server at http://localhost:8765 (demo database; stop them when you are done, or follow the guide to start your own).
+
+**Progress:** Increment 43 of the 45 you asked for.
+
+**Needed from you:** try the guide; BLK-01/02/03; PayPal sandbox keys; a Gemini key for the live parts.
+
+**Next increment:** fix whatever your hands-on test finds.
+
+---
+
 ## Increment 42 · Checking the teammate's screens against the real API · Wed Nov 11
 
 **What happened**

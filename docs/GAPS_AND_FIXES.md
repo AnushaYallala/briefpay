@@ -6,7 +6,7 @@ A running list of everything that is **missing, risky, unverified, or was found 
 - **Fixes** are problems that were found and already resolved, kept so the reasoning is not lost.
 - IDs are permanent. When a gap is closed, move it to Fixes (keep the ID) and say how.
 
-_Last updated: 2026-11-11, after the contract test for the teammate's screens._
+_Last updated: 2026-11-11, after the testing guide and smoke check._
 
 ---
 
@@ -155,6 +155,8 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | GAP-117 | Low | Switching off one Guardian rule still blocks every tamper plan because other rules also fire; the eval cannot tell which single rule was removed. | Per-rule fixtures exist in `test_guardian_rules.py`. |
 | GAP-118 | Low | The submit and verify pages ignore load failures (`catch {}`), so a failed load shows an empty page with no message. | Show the server's reason like the other screens. |
 | GAP-119 | Low | Home, login and the contract (offer and sign) screens have no tests of their own beyond the shared ones. | Add screen tests. |
+| GAP-120 | Medium | Nobody has used the screens in a real browser: the tests simulate one (jsdom), the smoke check only confirms pages are served. | A person follows `docs/TESTING.md`; consider a browser-driven check later. |
+| GAP-121 | Low | The smoke check needs the demo seed; it does not check anything that needs PayPal or AI keys. | Extend after keys are available. |
 
 ---
 
@@ -236,6 +238,8 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | FIX-72 | D-059 | The brief screen knew only 'locked': a pending version showed the raw code and replaced versions offered the approve button. | Four statuses in words; decision only on the open version. |
 | FIX-73 | D-059 | The brief decided who is a sponsor by matching display names and emails. | Uses the signed-in person's memberships on that project. |
 | FIX-74 | D-059 | Type unions for brief status and question status did not match the API. | Corrected and pinned by the new contract test. |
+| FIX-75 | D-060 | The first draft of the testing guide said the person drop-down appears after setup, but Next.js only reads `NEXT_PUBLIC_*` from the `frontend` folder, so a plain `npm run dev` had no demo mode. | `frontend/.env.development` added (public values only), pinned by a test; the claim was then checked in the dev server's own log. |
+| FIX-76 | D-060 | The smoke script's first tests broke one fact per check, so 18 of 22 planted weakenings survived (each check holds several assertions). | A replay test records the real answers once and spoils one field at a time (29 cases): all 22 weakenings are caught. |
 
 ---
 
