@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="80" height="80">
+  <rect width="80" height="80" rx="16" fill="#f0fdfa"/>
+  <!-- Document with Check -->
+  <rect x="20" y="16" width="36" height="48" rx="4" fill="#ffffff" stroke="#0f766e" stroke-width="2"/>
+  <line x1="28" y1="28" x2="48" y2="28" stroke="#cbd5e1" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="28" y1="36" x2="44" y2="36" stroke="#cbd5e1" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Green Check circle -->
+  <circle cx="34" cy="48" r="8" fill="#10b981"/>
+  <path d="M30 48 L33 51 L38 45" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Padlock in corner -->
+  <g transform="translate(46, 44)">
+    <rect x="2" y="8" width="18" height="14" rx="3" fill="#0d9488"/>
+    <path d="M6 8 V5 a5 5 0 0 1 10 0 v3" fill="none" stroke="#0d9488" stroke-width="2"/>
+    <circle cx="11" cy="15" r="2" fill="#ffffff"/>
+  </g>
+</svg>

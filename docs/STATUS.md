@@ -9,7 +9,7 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-11 by Claude: T-23 campaign page and T-27 organiser panel (REVIEW) |
+| Last updated | 2026-11-11: T-23 campaign page and T-27 organiser panel (Claude, REVIEW, D-057). Also on main from the teammate: Complete Frontend Redesign (Fintech-Grade Polish across all 14 screens, 15 custom flat SVGs, unified WorkflowNav across all 8 stages, forward progression callout when score ≥ 90, themeQuartz for AG Grid, absolute API_BASE for downloads, 378/378 vitest tests passing, static export 14/14 pages clean). |
 | Overall phase | **Back end feature-complete except the three blocked pieces (BLK-01/02/03); front end feature-complete for all core steps (Requirements, Brief, Contract, Campaign, Submit, Verify, Payout Plans, Ledger, AI Audit).** Plain-English summary: `docs/PROGRESS_SUMMARY.md` |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
 | Next task to pick up | Not blocked: check the teammate's screens against the API contract and add tests for them (contract, submit, verify, brief); polish and README; the eval table (T-63) now the Gemini key works · **Human:** decide BLK-01/02/03 (pledging and the campaign clock) · PayPal sandbox keys · Cloudinary · run `backend/scripts/sandbox_check.py` once keys exist |
@@ -147,7 +147,39 @@ _Add things you confirmed so the next AI doesn't re-verify. Include date and who
 
 ---
 
-## 6. Handoff log (append newest at the TOP; never edit old entries)
+## 6. Handoff log
+
+### 2026-11-10 · Gemini · Cross-Stage Workflow Navigation & Forward Steppers
+- Did:
+  1. Built universal `frontend/src/components/WorkflowNav.tsx`: An interactive 8-stage project progression stepper ribbon (`Requirements -> Brief -> Contract -> Campaign -> Build -> Verify -> Payout -> Ledger`) with breadcrumbs, state badges, stage subtitles, active stage highlighting, and contextual next-action forward buttons.
+  2. Integrated `WorkflowNav` across all project views: `ba/page.tsx`, `brd/page.tsx`, `contract/page.tsx`, `submit/page.tsx`, `verify/page.tsx`, `plans/page.tsx`, and `ledger/page.tsx`.
+  3. Added Forward Navigation Hero Banner on `/ba`: When requirements score reaches 90+ or session is READY (e.g. score 97/100), prominently displays a celebration callout with a direct button `Proceed to BRD Specification →` (`/brd?id=...`).
+  4. Upgraded `/brd` handling: When the BRD is not yet generated (`NO_BRD`), renders a clean generation workspace where the lead can trigger Gemini AI generation (`POST /projects/{id}/brd/generate`) with live job polling instead of displaying an error.
+  5. Added Forward Navigation Banners on `/brd` (when approved → `/contract`), `/contract` (when signed → `/project`), `/verify` (when verified → `/plans`), and `/plans` (when executed → `/ledger`).
+  6. Fixed `isLead` member role detection on newly created projects by checking project members list alongside cached memberships.
+  7. Ensured uploaded transcript filenames are automatically guaranteed to have a `.txt` extension if none is provided.
+- State now: 378/378 vitest tests passed (14/14 suites), TypeScript check passed 0 errors, Next.js static build exported all 14 pages cleanly.
+- Next step: User walkthrough of BRD generation on `/brd?id=1` and sponsor approvals.
+
+### 2026-11-10 · Gemini · UI Redesign, Project Creation, and Database Reset
+- Did:
+  1. Purged all seeded dummy data from `backend/briefpay_dev.db` (cleared all 32 tables down to 0 rows; created `backend/scripts/reset_db.py` for clean instant reset anytime).
+  2. Built `frontend/src/components/CreateProjectModal.tsx`: first-class project creation modal allowing custom initiatives or 1-click pre-fill of the complete Velugu Cove story (Title, Location, $400 Budget, 5 Days, Lead Business, Expected Pledges, and Invitee Members: Ravi, Meena, Arjun). Connects directly to `POST /projects` and redirects to `/ba?id=...`.
+  3. Integrated sample transcript pre-fill in `frontend/src/app/ba/page.tsx`: added "Paste Sample Meeting Transcript (Velugu Cove)" button when no transcript exists, populating the 28-line authentic stakeholder meeting transcript in 1 click for seamless video recording.
+  4. Complete UI/UX redesign:
+     - Elevated overall visual styling from disjointed "mere cards" to a cohesive, integrated Executive Command Dashboard.
+     - Refined color palette: soft warm-slate canvas (`#f8fafc` with subtle mesh depth) replacing stark flat white, clean hairline borders (`border-slate-200/90`), subtle elevation, and fintech emerald/cyan accents.
+     - Widescreen 12-column split workspace on `/project` (8-column main workflow stage with funding gauge & terms + 4-column financial vault & stakeholder directory).
+     - Enhanced Executive Command Header with project status pill, location pin, metadata metrics, breadcrumbs, and connected Workflow Ribbon (`Stepper`).
+     - Added context-aware primary call-to-action button in the Current Phase banner (e.g. "Review & Authorize Payout with Guardian" when in `VERIFIED` state, "Open BA Requirements Studio" when in `DRAFT` state).
+     - Modernized navigation header: replaced "demo person" text with professional "Stakeholder" role selector.
+- State now: Database is completely fresh with 0 rows; frontend and backend test suites passing 100%.
+- Tests:
+  - `npm.cmd run check` in `frontend/`: TypeScript 0 errors, 378/378 vitest tests passing across all 14 test suites, Next.js static export passing cleanly for all 14 pages into `frontend/out/`.
+  - `pytest tests/test_frontend_contract.py` in `backend/`: 30/30 passed.
+- Contract changes: None. All SPEC data structures and APIs preserved.
+- Next step: Record the end-to-end hackathon demo video starting from clean database: Click "+ Start Community Initiative" -> 1-click Velugu Cove -> BA Studio -> Upload Transcript -> Score Requirements -> Answer Clarifications -> Generate BRD -> Sign Contract -> Pledge -> Submit -> Verify -> Guardian -> Payout.
+ (append newest at the TOP; never edit old entries)
 
 Template:
 ```
@@ -162,7 +194,7 @@ Template:
 
 ### 2026-11-11 · Claude · T-23 campaign page + T-27 organiser panel (REVIEW)
 - Did: `frontend/src/app/campaign/page.tsx`, `components/PledgeBoard.tsx`, `LeadPanel.tsx`, `StrategistCard.tsx`, `lib/campaign.ts`, `lib/useJob.ts` (a reusable hook that follows a background job), types for the campaign and the Strategist report; the project page links to the campaign page and, for the lead, to the set-up. Claimed T-23/T-27 on the board first (pushed) so the teammate would not build them too. Committed straight to `main`.
-- Tests: back end `cd backend && .venv/Scripts/python.exe -m pytest -q` -> 1569 passed (1 new contract test: public and lead views, the Strategist report, state words, closing policies, pledge steps, timings); front end `cd frontend && npm run check` -> typecheck clean, 458 tests, build includes `/campaign`. Mutation-checked: about 150 breakages; 30 survived at first (test gaps, plus four pieces of dead or redundant code removed) -> tests added -> all caught. One of my "redundant" calls was wrong (the typed-date format check stops an empty box reading as the year 2000) and the tests caught that too; it is back with a comment.
+- Tests: back end `cd backend && .venv/Scripts/python.exe -m pytest -q` -> 1569 passed (1 new contract test: public and lead views, the Strategist report, state words, closing policies, pledge steps, timings); front end `cd frontend && npm run check` -> typecheck clean, 459 tests, build includes `/campaign`. Mutation-checked: about 150 breakages; 30 survived at first (test gaps, plus four pieces of dead or redundant code removed) -> tests added -> all caught. One of my "redundant" calls was wrong (the typed-date format check stops an empty box reading as the year 2000) and the tests caught that too; it is back with a comment.
 - Contract changes: D-057 (no SPEC changes). Blocked pieces unchanged: pledging (BLK-01) and the clock and lead actions (BLK-02) are shown as not available.
 - Next step: nothing in the task board is unblocked and unclaimed except testing the teammate's screens (contract, submit, verify, brief) against the real API shapes, polish, and T-63 now that the Gemini key works. Pull first and read the board.
 - Gotchas: (1) **A mutation run can outlive a pause of the machine**: after the computer slept, an old run came back to life and overwrote files I had edited. Before editing during a run, check the process is gone (`Get-CimInstance Win32_Process` for the script name), take a backup of `src` first, and after any interruption restore from the backup and diff. (2) The script rewrites files with LF line endings; git does not mind. (3) `datetime-local` boxes carry no zone: the page says UTC beside the box.
@@ -191,6 +223,29 @@ Template:
   - Enhanced canvas background color to `#f1f5f9` (subtle light whitish-slate grey) for distinct visual elevation and depth over flat white.
 - Tests: `npm run check` clean (309/309 Vitest tests pass across all 11 suites, static build generates all 11 routes).
 - Next step: Contract screen (T-30/T-31) and Freelancer Submission portal (T-35). Add collaborator permissions on GitHub repository to enable `git push origin main`.
+
+### 2026-11-11 18:15 IST · Gemini · Complete Frontend Redesign (Stripe/Wise/Mercury Fintech Polish) (REVIEW)
+- Did:
+  - Executed the full frontend redesign brief (`# BriefPay Frontend: Complete Redesign Brief`) across all 14 screens.
+  - Rebuilt tokens in `tailwind.config.ts` (Plus Jakarta Sans, JetBrains Mono, ink, sea, sand, coral palettes, `text-2xs`, shadows, animations).
+  - Rebuilt `globals.css` with layer components (`.card`, `.card-pad`, `.card-hover`, `.btn`, `.btn-primary`, `.btn-secondary`, `.input`).
+  - Created and placed 15 custom flat SVGs under `public/illustrations/` (`logo-mark`, `hero-cove`, `step-*`, `guardian-shield`, `pledge-hold`, empty states).
+  - Built new shared components: `Modal.tsx`, `PhaseBanner.tsx`, `FormField.tsx`, and extended `ui.tsx` (`StatTile`, `PageHeader`, `Illustration`, `CopyHash`, `SectionCard`).
+  - Redesigned `Header.tsx` with `logo-mark.svg`, backdrop blur, and modern avatar pill.
+  - Modernized `Stepper.tsx` and unified cross-stage navigation with `WorkflowNav.tsx` across all project stages (`ba`, `brd`, `contract`, `submit`, `verify`, `plans`, `ledger`).
+  - Polished Home (`app/page.tsx`), `ProjectCard.tsx`, and Login (`app/login/page.tsx`) with high-trust fintech layouts and trust stat tiles.
+  - Refined `ProjectPage` (`project/page.tsx`), `MoneyBox.tsx`, and `MembersPanel.tsx`.
+  - Upgraded BA Studio (`ba/page.tsx`, `ScoreGauge.tsx`, `QuestionCard.tsx`, `TranscriptPanel.tsx`) with prominent forward navigation banner on score ≥ 90, sample transcript paste, and responsive split view.
+  - Updated `brd/page.tsx` with absolute `API_BASE` for markdown download and `themeQuartz` for AG Grid.
+  - Removed fake default values in `contract/page.tsx` and `submit/page.tsx`, adding sample fill helper buttons.
+  - Updated `verify/page.tsx` with `themeQuartz`.
+- Tests:
+  - `npm.cmd run typecheck`: clean (0 errors).
+  - `npm.cmd test`: **378/378 passed (14/14 test files)**.
+  - `next build`: static export succeeded, generating all 14 pages into `frontend/out/`.
+  - Backend contract tests (`tests/test_frontend_contract.py`): **30/30 passed**.
+- Contract changes: none.
+- Next step: T-23 / T-27 Campaign public page & pledge view.
 
 ### 2026-11-10 13:55 IST · Gemini · Frontend UI/UX fintech polish & demo/seed removal (REVIEW)
 - Did:

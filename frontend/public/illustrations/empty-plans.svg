@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 120" width="160" height="120">
+  <rect width="160" height="120" rx="12" fill="#f8fafc"/>
+  <g transform="translate(45, 18)">
+    <!-- Shield -->
+    <path d="M35 5 L65 18 C65 52 35 68 35 68 C35 68 5 52 5 18 Z" fill="#f0fdfa" stroke="#0d9488" stroke-width="2"/>
+    <!-- Checklist items inside shield -->
+    <circle cx="24" cy="30" r="3" fill="#0d9488"/>
+    <line x1="32" y1="30" x2="48" y2="30" stroke="#0d9488" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="24" cy="42" r="3" fill="#2dd4bf"/>
+    <line x1="32" y1="42" x2="48" y2="42" stroke="#2dd4bf" stroke-width="2" stroke-linecap="round"/>
+  </g>
+</svg>

@@ -2,9 +2,10 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
-import { AllCommunityModule, ModuleRegistry, type ColDef } from "ag-grid-community";
+import { AllCommunityModule, ModuleRegistry, themeQuartz, type ColDef } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
 import { Stepper } from "@/components/Stepper";
+import { WorkflowNav } from "@/components/WorkflowNav";
 import { Badge, Empty, ErrorBox, Loading } from "@/components/ui";
 import { apiGet, apiPost } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -247,6 +248,45 @@ function VerificationStudio({ projectId, initialSubId }: { projectId: number; in
 
   return (
     <div className="space-y-6">
+      <WorkflowNav
+        projectId={projectId}
+        projectTitle={project.title}
+        projectState={project.state}
+        currentStep="Verify"
+        nextAction={isVerified ? {
+          label: "Proceed to Guardian Settlement",
+          href: `/plans?id=${projectId}`,
+          badge: "Verification Passed",
+          description: "All acceptance criteria verified! Review and approve payout plan.",
+        } : null}
+      />
+
+      {/* Prominent Forward Navigation Banner when Verified */}
+      {isVerified && (
+        <section aria-label="Verification passed" className="rounded-2xl border-2 border-emerald-500/80 bg-gradient-to-r from-emerald-50 via-teal-50 to-white p-5 sm:p-6 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white shadow-xs">✓</span>
+                <h2 className="text-base sm:text-lg font-bold text-slate-900">
+                  Deliverable Verified: 100% Passing Criteria!
+                </h2>
+              </div>
+              <p className="text-xs sm:text-sm text-slate-600 max-w-2xl">
+                The autonomous verification engine and Gemini Vision AI judged the live deliverable against the locked BRD specification. The project has satisfied all must-have criteria and is ready for Payment Guardian review and payout disbursement.
+              </p>
+            </div>
+            <Link
+              href={`/plans?id=${projectId}`}
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 px-5 py-3 text-sm font-bold text-white shadow-md hover:from-emerald-700 hover:to-teal-800 transition hover:scale-[1.02] hover:shadow-lg"
+            >
+              <span>Proceed to Guardian Settlement</span>
+              <span aria-hidden="true">&rarr;</span>
+            </Link>
+          </div>
+        </section>
+      )}
+
       {/* Header card with Stepper */}
       <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs">
         <div className="mb-2">
@@ -492,9 +532,9 @@ function VerificationStudio({ projectId, initialSubId }: { projectId: number; in
             </div>
 
             {criteriaRows.length > 0 ? (
-              <div className="ag-theme-alpine w-full" style={{ height: "380px" }}>
+              <div className="w-full rounded-2xl overflow-hidden border border-slate-200" style={{ height: "380px" }}>
                 <AgGridReact
-                  theme="legacy"
+                  theme={themeQuartz}
                   rowData={criteriaRows}
                   columnDefs={columns}
                   defaultColDef={{ resizable: true, sortable: true, filter: true }}

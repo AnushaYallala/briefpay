@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 280" width="400" height="280">
+  <defs>
+    <linearGradient id="sky" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f0fdfa"/>
+      <stop offset="100%" stop-color="#ccfbf1"/>
+    </linearGradient>
+    <linearGradient id="sea-water" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2dd4bf"/>
+      <stop offset="100%" stop-color="#0f766e"/>
+    </linearGradient>
+  </defs>
+  <!-- Sky -->
+  <rect width="400" height="280" rx="16" fill="url(#sky)"/>
+  <!-- Sun -->
+  <circle cx="320" cy="70" r="32" fill="#fef08a" opacity="0.9"/>
+  <circle cx="320" cy="70" r="22" fill="#facc15"/>
+  <!-- Mountains/Coast background -->
+  <path d="M0 160 Q80 110 180 140 T360 120 L400 140 L400 280 L0 280 Z" fill="#99f6e4" opacity="0.5"/>
+  <!-- Sea / Cove waters -->
+  <path d="M0 170 Q100 155 200 168 T400 160 L400 280 L0 280 Z" fill="url(#sea-water)"/>
+  <path d="M0 195 Q120 185 240 192 T400 188 L400 280 L0 280 Z" fill="#0d9488" opacity="0.8"/>
+  <path d="M0 220 Q100 215 220 222 T400 218 L400 280 L0 280 Z" fill="#0f766e"/>
+  <!-- Sandy beach foreground -->
+  <path d="M0 235 Q140 225 280 240 T400 238 L400 280 L0 280 Z" fill="#fde68a"/>
+  <!-- Shop 1: Sea Breeze Homestay -->
+  <g transform="translate(45, 175)">
+    <rect x="0" y="20" width="46" height="36" rx="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+    <polygon points="23,0 -4,22 50,22" fill="#f97360"/>
+    <rect x="16" y="32" width="14" height="24" fill="#0d9488" rx="2"/>
+    <rect x="6" y="26" width="8" height="8" rx="1.5" fill="#bae6fd"/>
+    <rect x="32" y="26" width="8" height="8" rx="1.5" fill="#bae6fd"/>
+  </g>
+  <!-- Shop 2: Ravi's Fish Kitchen -->
+  <g transform="translate(110, 182)">
+    <rect x="0" y="16" width="42" height="32" rx="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+    <polygon points="21,0 -3,18 45,18" fill="#0284c7"/>
+    <rect x="14" y="28" width="14" height="20" fill="#f59e0b" rx="2"/>
+    <circle cx="8" cy="24" r="3" fill="#fdba74"/>
+    <circle cx="34" cy="24" r="3" fill="#fdba74"/>
+  </g>
+  <!-- Shop 3: Boat Tours Shack -->
+  <g transform="translate(170, 185)">
+    <rect x="0" y="14" width="38" height="28" rx="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+    <polygon points="19,0 -2,16 40,16" fill="#10b981"/>
+    <rect x="12" y="24" width="14" height="18" fill="#0f766e" rx="2"/>
+  </g>
+  <!-- Palm tree -->
+  <path d="M235 240 Q240 180 252 165" stroke="#78350f" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path d="M252 165 Q230 150 215 158" stroke="#15803d" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  <path d="M252 165 Q260 145 278 152" stroke="#15803d" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  <path d="M252 165 Q275 160 282 175" stroke="#15803d" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  <!-- Fishing / Tour boat on water -->
+  <g transform="translate(290, 180)">
+    <path d="M0 16 L38 16 Q34 26 22 26 L10 26 Q2 26 0 16 Z" fill="#ffffff" stroke="#0f172a" stroke-width="1.5"/>
+    <path d="M6 16 L32 16" stroke="#f97360" stroke-width="3"/>
+    <line x1="18" y1="16" x2="18" y2="2" stroke="#475569" stroke-width="2"/>
+    <polygon points="18,3 30,9 18,14" fill="#38bdf8"/>
+    <!-- Water ripple -->
+    <path d="M-8 20 Q-2 22 4 20" stroke="#ccfbf1" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M28 22 Q34 24 42 22" stroke="#ccfbf1" stroke-width="2" fill="none" stroke-linecap="round"/>
+  </g>
+</svg>

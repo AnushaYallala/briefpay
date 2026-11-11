@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { Stepper } from "@/components/Stepper";
+import { WorkflowNav } from "@/components/WorkflowNav";
 import { Badge, Empty, ErrorBox, Loading } from "@/components/ui";
 import { apiGet, apiPost } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -28,11 +29,11 @@ function SubmitStudio({ projectId }: { projectId: number }) {
   const [currentSub, setCurrentSub] = useState<SubmissionDetail | null>(null);
   const [subLoading, setSubLoading] = useState<boolean>(false);
 
-  // New submission form
-  const [repoUrl, setRepoUrl] = useState<string>("https://github.com/velugu-cove/tourism-site");
-  const [commitSha, setCommitSha] = useState<string>("a1b2c3d4e5f67890123456789abcdef012345678");
-  const [deployedUrl, setDeployedUrl] = useState<string>("https://velugucove.demo");
-  const [notes, setNotes] = useState<string>("Implemented all 9 requirements from the approved BRD.");
+  // New submission form - starts empty with quick paste helper (no fake defaults)
+  const [repoUrl, setRepoUrl] = useState<string>("");
+  const [commitSha, setCommitSha] = useState<string>("");
+  const [deployedUrl, setDeployedUrl] = useState<string>("");
+  const [notes, setNotes] = useState<string>("");
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -175,6 +176,19 @@ function SubmitStudio({ projectId }: { projectId: number }) {
 
   return (
     <div className="space-y-6">
+      <WorkflowNav
+        projectId={projectId}
+        projectTitle={project.title}
+        projectState={project.state}
+        currentStep="Build"
+        nextAction={submissions.length > 0 ? {
+          label: "Proceed to AI Verification",
+          href: `/verify?id=${projectId}`,
+          badge: "Submission Available",
+          description: "Deliverables are submitted. Review autonomous checks and Vision AI verification.",
+        } : null}
+      />
+
       {/* Header card with Stepper */}
       <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs">
         <div className="mb-2">
@@ -254,13 +268,27 @@ function SubmitStudio({ projectId }: { projectId: number }) {
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Left Column: Submit New Deliverable */}
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs space-y-5">
-          <div>
-            <h2 className="text-lg font-bold text-slate-900">
-              {submissions.length === 0 ? "Submit Work Deliverables" : "Submit New Attempt"}
-            </h2>
-            <p className="text-xs text-slate-500 mt-1">
-              Provide the GitHub repository, commit hash, and deployed URL. Automated checks run immediately upon submission.
-            </p>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">
+                {submissions.length === 0 ? "Submit Work Deliverables" : "Submit New Attempt"}
+              </h2>
+              <p className="text-xs text-slate-500 mt-1">
+                Provide the GitHub repository, commit hash, and deployed URL. Automated checks run immediately upon submission.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setRepoUrl("https://github.com/meghavardhan-git/velugu-cove-site");
+                setCommitSha("1a75b03");
+                setDeployedUrl("https://velugucove.demo");
+                setNotes("Delivered v2 website featuring room booking, WhatsApp contact button, seafood restaurant menu, and boat tours schedule.");
+              }}
+              className="rounded-xl border border-sea-200 bg-sea-50 px-3 py-1.5 text-xs font-semibold text-sea-800 hover:bg-sea-100 transition shadow-2xs"
+            >
+              Paste Sample Deliverables (Velugu Cove v2)
+            </button>
           </div>
 
           {submitError && (

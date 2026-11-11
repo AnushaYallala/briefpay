@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="80" height="80">
+  <rect width="80" height="80" rx="16" fill="#f0fdfa"/>
+  <!-- Document -->
+  <rect x="22" y="16" width="34" height="46" rx="4" fill="#ffffff" stroke="#0d9488" stroke-width="2"/>
+  <line x1="28" y1="26" x2="48" y2="26" stroke="#99f6e4" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="28" y1="34" x2="48" y2="34" stroke="#99f6e4" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="28" y1="42" x2="42" y2="42" stroke="#99f6e4" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Chat bubbles overlay -->
+  <g transform="translate(42, 38)">
+    <rect x="0" y="0" width="28" height="20" rx="6" fill="#0d9488"/>
+    <polygon points="6,20 12,20 6,26" fill="#0d9488"/>
+    <circle cx="8" cy="10" r="1.5" fill="#ffffff"/>
+    <circle cx="14" cy="10" r="1.5" fill="#ffffff"/>
+    <circle cx="20" cy="10" r="1.5" fill="#ffffff"/>
+  </g>
+</svg>

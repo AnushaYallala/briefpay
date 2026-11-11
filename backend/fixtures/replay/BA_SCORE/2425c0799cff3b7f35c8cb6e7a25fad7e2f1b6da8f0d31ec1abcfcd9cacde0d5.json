@@ -1,0 +1,154 @@
+{
+  "agent": "BA_SCORE",
+  "input_hash": "2425c0799cff3b7f35c8cb6e7a25fad7e2f1b6da8f0d31ec1abcfcd9cacde0d5",
+  "output": {
+    "budget_stated": true,
+    "conflicts": [
+      {
+        "positions": [
+          {
+            "member_id": 1,
+            "position": "Interested in booking with advance"
+          },
+          {
+            "member_id": 3,
+            "position": "Does not want payments on the site"
+          }
+        ],
+        "resolution": "Meena (3) rejected payments, Lakshmi (1) agreed to discuss later, effectively deferring/dropping for now.",
+        "resolved": true,
+        "topic": "Online Payments"
+      }
+    ],
+    "deadline_stated": true,
+    "dimensions": [
+      {
+        "coverage": 0.25,
+        "dimension": "D1",
+        "justification": "Goal is to promote tourism to Velugu Cove. No specific measurable outcomes (e.g., number of enquiries) defined.",
+        "source_refs": [
+          "L4",
+          "L5",
+          "L6"
+        ]
+      },
+      {
+        "coverage": 0.5,
+        "dimension": "D2",
+        "justification": "Target audience identified as tourists from Hyderabad and Bangalore. Mobile-first mentioned.",
+        "source_refs": [
+          "L14",
+          "L24"
+        ]
+      },
+      {
+        "coverage": 0.75,
+        "dimension": "D3",
+        "justification": "Needs for homestays (L7), restaurant (L8), and boat tours (L9) are clearly attributed to sponsors.",
+        "source_refs": [
+          "L7",
+          "L8",
+          "L9"
+        ]
+      },
+      {
+        "coverage": 0.25,
+        "dimension": "D4",
+        "justification": "Implied sections for rooms, menu, and tours, but no formal page structure or site map defined.",
+        "source_refs": [
+          "L7",
+          "L8",
+          "L9"
+        ]
+      },
+      {
+        "coverage": 0.5,
+        "dimension": "D5",
+        "justification": "WhatsApp contact button and content display mentioned, but details on maps or booking forms are missing.",
+        "source_refs": [
+          "L7",
+          "L8",
+          "L9",
+          "L25"
+        ]
+      },
+      {
+        "coverage": 0.0,
+        "dimension": "D6",
+        "justification": "No acceptance criteria provided.",
+        "source_refs": []
+      },
+      {
+        "coverage": 0.25,
+        "dimension": "D7",
+        "justification": "Photos mentioned as important, but ownership and supply process are not defined.",
+        "source_refs": [
+          "L16",
+          "L17"
+        ]
+      },
+      {
+        "coverage": 0.0,
+        "dimension": "D8",
+        "justification": "No style, color, or branding requirements mentioned.",
+        "source_refs": []
+      },
+      {
+        "coverage": 0.25,
+        "dimension": "D9",
+        "justification": "Mobile-first mentioned, but no other non-functional requirements like accessibility or SEO.",
+        "source_refs": [
+          "L24"
+        ]
+      },
+      {
+        "coverage": 0.5,
+        "dimension": "D10",
+        "justification": "Budget and timeline mentioned, but maintenance and hosting responsibilities are unclear.",
+        "source_refs": [
+          "L19",
+          "L20",
+          "L21",
+          "L22",
+          "L23",
+          "L26"
+        ]
+      }
+    ],
+    "injection_attempts": [],
+    "out_of_scope": [
+      "Online payments"
+    ],
+    "requirements": [
+      {
+        "acceptance_criteria": [],
+        "description": "A button on the website to initiate a WhatsApp conversation with the business owners.",
+        "priority": "MUST",
+        "requested_by": [
+          3
+        ],
+        "source_refs": [
+          "L25"
+        ],
+        "temp_id": "R1",
+        "title": "WhatsApp Contact"
+      },
+      {
+        "acceptance_criteria": [],
+        "description": "Website content in English and Telugu.",
+        "priority": "SHOULD",
+        "requested_by": [
+          2,
+          3
+        ],
+        "source_refs": [
+          "L14",
+          "L15"
+        ],
+        "temp_id": "R2",
+        "title": "Multilingual Support"
+      }
+    ]
+  },
+  "prompt_version": "ba-score-v1"
+}

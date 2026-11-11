@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 120" width="160" height="120">
+  <rect width="160" height="120" rx="12" fill="#f8fafc"/>
+  <!-- Open ledger book -->
+  <g transform="translate(30, 25)">
+    <!-- Shadow -->
+    <path d="M4 64 L50 68 L96 64 L92 12 L50 16 L8 12 Z" fill="#e2e8f0"/>
+    <!-- Left page -->
+    <path d="M10 14 L50 18 L50 70 L10 66 Z" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+    <!-- Right page -->
+    <path d="M50 18 L90 14 L90 66 L50 70 Z" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+    <!-- Spine -->
+    <line x1="50" y1="18" x2="50" y2="70" stroke="#0d9488" stroke-width="2.5"/>
+    <!-- Ruled lines left -->
+    <line x1="16" y1="28" x2="44" y2="30" stroke="#e2e8f0" stroke-width="2" stroke-linecap="round"/>
+    <line x1="16" y1="38" x2="44" y2="40" stroke="#e2e8f0" stroke-width="2" stroke-linecap="round"/>
+    <line x1="16" y1="48" x2="44" y2="50" stroke="#e2e8f0" stroke-width="2" stroke-linecap="round"/>
+    <line x1="16" y1="58" x2="36" y2="60" stroke="#0d9488" stroke-width="2" stroke-linecap="round"/>
+    <!-- Ruled lines right -->
+    <line x1="56" y1="30" x2="84" y2="28" stroke="#e2e8f0" stroke-width="2" stroke-linecap="round"/>
+    <line x1="56" y1="40" x2="84" y2="38" stroke="#e2e8f0" stroke-width="2" stroke-linecap="round"/>
+    <line x1="56" y1="50" x2="84" y2="48" stroke="#e2e8f0" stroke-width="2" stroke-linecap="round"/>
+    <line x1="56" y1="60" x2="76" y2="58" stroke="#2dd4bf" stroke-width="2" stroke-linecap="round"/>
+  </g>
+</svg>

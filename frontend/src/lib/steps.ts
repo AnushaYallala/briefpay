@@ -33,3 +33,22 @@ export const WHAT_NEXT: Record<string, string> = {
   REFUNDING: "The project was cancelled. The pledged money is being returned.",
   CANCELLED: "The project was cancelled and every pledger was refunded.",
 };
+
+/** Recommended next action CTA for each state */
+export const CTA_OF: Record<string, { label: string; href: (id: number) => string } | null> = {
+  DRAFT: { label: "Open BA Studio", href: (id) => `/ba?id=${id}` },
+  REQUIREMENTS: { label: "Continue in BA Studio", href: (id) => `/ba?id=${id}` },
+  BRD_REVIEW: { label: "Review & Sign Brief", href: (id) => `/brd?id=${id}` },
+  CONTRACTING: { label: "Review & Sign Contract", href: (id) => `/contract?id=${id}` },
+  CAMPAIGN_SETUP: { label: "Configure Campaign", href: (id) => `/project?id=${id}` },
+  PLEDGING: { label: "Campaign Live", href: (id) => `/project?id=${id}` },
+  CAMPAIGN_FAILED: { label: "Review Release Plans", href: (id) => `/plans?id=${id}` },
+  IN_PROGRESS: { label: "Submit Deliverables", href: (id) => `/submit?id=${id}` },
+  VERIFYING: { label: "View Verification Report", href: (id) => `/verify?id=${id}` },
+  PAYOUT_READY: { label: "Review & Approve Payout", href: (id) => `/plans?id=${id}` },
+  PAYOUT_PENDING: { label: "Monitor Money Plan", href: (id) => `/plans?id=${id}` },
+  PAYOUT_FAILED: { label: "Retry Money Plan", href: (id) => `/plans?id=${id}` },
+  PAID: { label: "View Public Ledger", href: (id) => `/ledger?id=${id}` },
+  REFUNDING: { label: "Monitor Refunds", href: (id) => `/plans?id=${id}` },
+  CANCELLED: { label: "View Public Ledger", href: (id) => `/ledger?id=${id}` },
+};

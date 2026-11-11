@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="80" height="80">
+  <rect width="80" height="80" rx="16" fill="#f0fdfa"/>
+  <!-- Funding jar -->
+  <path d="M26 26 L54 26 L56 62 Q56 66 52 66 L28 66 Q24 66 24 62 Z" fill="#ffffff" stroke="#0d9488" stroke-width="2"/>
+  <rect x="28" y="20" width="24" height="6" rx="2" fill="#99f6e4" stroke="#0d9488" stroke-width="1.5"/>
+  <!-- Gold coins dropping in -->
+  <circle cx="40" cy="54" r="6" fill="#fbbf24" stroke="#d97706" stroke-width="1.2"/>
+  <circle cx="32" cy="52" r="5.5" fill="#f59e0b" stroke="#d97706" stroke-width="1.2"/>
+  <circle cx="46" cy="50" r="5" fill="#fcd34d" stroke="#d97706" stroke-width="1.2"/>
+  <!-- Falling coin -->
+  <circle cx="40" cy="34" r="5" fill="#fbbf24" stroke="#d97706" stroke-width="1.2"/>
+  <!-- Small spark -->
+  <path d="M58 20 L60 25 L65 27 L60 29 L58 34 L56 29 L51 27 L56 25 Z" fill="#2dd4bf"/>
+</svg>

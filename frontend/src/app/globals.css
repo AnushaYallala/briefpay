@@ -1,34 +1,33 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+:root { --page: #f6f8fb; }
+body { @apply font-sans text-slate-800 antialiased; background: var(--page); min-height: 100vh; }
+
+@layer components {
+  .card        { @apply rounded-2xl border border-slate-200/80 bg-white shadow-card; }
+  .card-pad    { @apply card p-5 sm:p-6; }
+  .card-hover  { @apply transition duration-200 hover:-translate-y-0.5 hover:shadow-lift hover:border-slate-300; }
+  .section-title { @apply text-base font-bold tracking-tight text-slate-900; }
+  .eyebrow     { @apply text-2xs font-bold uppercase tracking-wider text-slate-500; }
+  .btn         { @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition focus:outline-none focus-visible:shadow-glow disabled:opacity-50 disabled:cursor-not-allowed; }
+  .btn-primary { @apply btn bg-sea-700 text-white shadow-sm hover:bg-sea-800; }
+  .btn-secondary { @apply btn border border-slate-300 bg-white text-slate-700 hover:bg-slate-50; }
+  .btn-danger  { @apply btn border border-red-300 bg-red-50 text-red-700 hover:bg-red-100; }
+  .input       { @apply w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sea-500 focus:outline-none focus:shadow-glow; }
+  .hero-mesh   { background:
+      radial-gradient(60% 80% at 0% 0%, rgba(45,212,191,.18), transparent 60%),
+      radial-gradient(50% 70% at 100% 0%, rgba(56,189,248,.14), transparent 60%),
+      #fff; }
 }
 
-body {
-  font-family: var(--font-sans);
-  @apply text-slate-800 antialiased;
-  background-color: #f1f5f9;
-  min-height: 100vh;
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
-
-/* Polished Card Hover Transitions */
-.card-hover {
-  transition: all 0.15s ease-out;
-}
-.card-hover:hover {
-  border-color: #cbd5e1;
-  box-shadow: 0 6px 16px -2px rgba(15, 23, 42, 0.08), 0 2px 6px -2px rgba(15, 23, 42, 0.04);
-}
-
-/* Crisp financial surfaces */
-.surface-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04);
-}
-
