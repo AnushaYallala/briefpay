@@ -190,6 +190,14 @@ function Studio({ id }: { id: number }) {
           <button disabled={busy !== null || job !== null} onClick={() => void act("run", async () => { const r = await api<{ job_id: number }>(`/projects/${id}/ba/run`, { method: "POST" }); setJob(r.job_id); })}
                   className="rounded bg-sea-600 px-3 py-1.5 text-sm text-white hover:bg-sea-700 disabled:opacity-60">{view.session === null ? "Start the analysis" : "Run the analysis again"}</button>
         )}
+        {(isScoreReached || view.session?.state === "READY" || view.session?.state === "FINALIZED") && (
+          <Link
+            href={`/brd?id=${id}`}
+            className="rounded-lg bg-emerald-600 px-3.5 py-1.5 text-sm font-bold text-white hover:bg-emerald-700 transition shadow-xs"
+          >
+            {isLead ? "Generate & Review BRD →" : "View BRD Specification →"}
+          </Link>
+        )}
         {view.can_finalize && !confirming && <button onClick={() => setConfirming(true)} className="rounded border border-amber-400 bg-amber-50 px-3 py-1.5 text-sm text-amber-900">Accept the gaps and move on</button>}
         {view.can_finalize && confirming && (
           <span className="flex items-center gap-2 text-sm">

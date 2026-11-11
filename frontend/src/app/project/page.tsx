@@ -28,14 +28,22 @@ function Workspace({ id }: { id: number }) {
   const nextActionCta = (() => {
     switch (p.state) {
       case "DRAFT":
+      case "REQUIREMENTS":
         return { label: "Open BA Requirements Studio", href: `/ba?id=${p.id}` };
-      case "READY_TO_CONTRACT":
+      case "BRD_REVIEW":
+        return { label: "Review & Sign BRD Specification", href: `/brd?id=${p.id}` };
+      case "CONTRACTING":
         return { label: "Review & Sign Contract", href: `/contract?id=${p.id}` };
-      case "BUILDING":
+      case "CAMPAIGN_SETUP":
+      case "PLEDGING":
+        return { label: "View Pledging Campaign", href: `/project?id=${p.id}#campaign` };
+      case "IN_PROGRESS":
         return { label: "Freelancer Submission Portal", href: `/submit?id=${p.id}` };
       case "VERIFYING":
         return { label: "View Verification Matrix", href: `/verify?id=${p.id}` };
-      case "VERIFIED":
+      case "PAYOUT_READY":
+      case "PAYOUT_PENDING":
+      case "PAYOUT_FAILED":
         return { label: "Authorize Payout in Payment Guardian", href: `/plans?id=${p.id}` };
       case "PAID":
         return { label: "View Public Immutable Ledger", href: `/ledger?id=${p.id}` };
@@ -86,7 +94,7 @@ function Workspace({ id }: { id: number }) {
           </div>
           <p className="text-sm font-medium text-sea-950 leading-relaxed" data-testid="what-next">{WHAT_NEXT[p.state] ?? ""}</p>
         </div>
-        {nextActionCta && isMember && (
+        {nextActionCta && (
           <Link
             href={nextActionCta.href}
             className="inline-flex items-center gap-1.5 rounded-lg bg-sea-700 px-3.5 py-1.5 text-xs font-semibold text-white shadow-2xs hover:bg-sea-800 transition"
