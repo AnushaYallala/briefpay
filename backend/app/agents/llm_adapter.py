@@ -16,6 +16,8 @@ from sqlalchemy.orm import Session
 
 from app.models import AgentRun
 
+BRD_AGENT = "BRD_GEN"          # the brief writer (agents/brd_generator.py): the only agent that can be sent to Groq
+
 
 # ---------- parts ----------
 @dataclass(frozen=True)
@@ -284,6 +286,74 @@ class LLMAdapter:
         return 0
 
 
+class GroqBackend:
+    """Groq (OpenAI-style chat API) with JSON mode, for TEXT-ONLY agents. It cannot read images, so it is never used for the Verifier.
+
+    JSON mode makes the reply valid JSON but does not enforce our schema, so the schema is written into the instructions and the
+    adapter's own validation (with one retry) does the enforcing, exactly as for every other backend."""
+
+    provider = "groq"
+    MAX_OUTPUT_TOKENS = 8192
+
+    def __init__(self, api_key: str, model: str, client=None):
+        if not model:
+            raise AgentError("GROQ_MODEL is not set")
+        self.model = model
+        if client is not None:
+            self._client = client
+        else:
+            from groq import Groq  # lazy: tests and replay mode don't need the SDK/network
+
+            self._client = Groq(api_key=api_key)
+
+    def generate(self, *, agent, in_hash, system, parts, schema, temperature) -> RawResult:
+        if any(isinstance(p, ImagePart) for p in parts):
+            raise AgentError(f"{agent}: Groq is text-only; this agent sends images, so it must use another provider")
+        instructions = (f"{system}\n\nReply with ONE JSON object and nothing else (no markdown, no commentary) that matches this JSON Schema:\n"
+                        f"{json.dumps(schema.model_json_schema(), sort_keys=True)}")
+        user = "\n\n".join(p.text for p in parts if isinstance(p, TextPart))
+        try:
+            resp = self._client.chat.completions.create(
+                model=self.model, temperature=temperature, max_completion_tokens=self.MAX_OUTPUT_TOKENS,
+                response_format={"type": "json_object"},
+                messages=[{"role": "system", "content": instructions}, {"role": "user", "content": user}],
+            )
+        except Exception as e:
+            raise AgentError(f"groq call failed: {type(e).__name__}: {e}") from e
+        try:
+            data = json.loads(resp.choices[0].message.content or "")
+        except (json.JSONDecodeError, IndexError, AttributeError) as e:
+            return RawResult(data={"__invalid_json__": str(e)}, provider=self.provider, model=self.model)    # the schema check rejects it and retries once
+        usage = getattr(resp, "usage", None)
+        return RawResult(data=data, provider=self.provider, model=self.model,
+                         input_tokens=getattr(usage, "prompt_tokens", None), output_tokens=getattr(usage, "completion_tokens", None))
+
+
+class MissingBackend:
+    """Stands in for a provider that was asked for but has no key, so only the agents that need it fail, and say why."""
+
+    def __init__(self, provider: str, message: str):
+        self.provider, self.model, self.message = provider, "unavailable", message
+
+    def generate(self, **_kw) -> RawResult:
+        raise AgentError(self.message)
+
+
+class RoutedBackend:
+    """Sends chosen agents to their own backend and everything else to the default one."""
+
+    def __init__(self, default: Backend | None, routes: dict[str, Backend]):
+        self.default, self.routes = default, dict(routes)
+        first = default or next(iter(self.routes.values()))
+        self.provider, self.model = first.provider, first.model            # only used to label a call that fails before it is answered
+
+    def generate(self, *, agent, in_hash, system, parts, schema, temperature) -> RawResult:
+        backend = self.routes.get(agent, self.default)
+        if backend is None:
+            raise AgentError(f"{agent}: no AI provider is configured for this agent (set GEMINI_API_KEY)")
+        return backend.generate(agent=agent, in_hash=in_hash, system=system, parts=parts, schema=schema, temperature=temperature)
+
+
 def build_adapter(settings, session_factory: Callable[[], Session], fixtures_dir: Path | None = None) -> LLMAdapter:
     """AI_PROVIDER = gemini | replay | replay_or_real."""
     fixtures_dir = fixtures_dir or Path(__file__).resolve().parents[2] / "fixtures" / "replay"
@@ -291,6 +361,13 @@ def build_adapter(settings, session_factory: Callable[[], Session], fixtures_dir
     real = None
     if provider in ("gemini", "replay_or_real") and settings.gemini_api_key:
         real = GeminiBackend(settings.gemini_api_key, settings.ai_model)
+    brd = (settings.brd_provider or "").strip().lower()
+    if brd not in ("", "groq"):
+        raise AgentError(f"unknown BRD_PROVIDER {settings.brd_provider}")
+    if brd == "groq" and provider != "replay":
+        groq = (GroqBackend(settings.groq_api_key, settings.groq_model) if settings.groq_api_key
+                else MissingBackend("groq", "BRD_PROVIDER=groq needs GROQ_API_KEY"))
+        real = RoutedBackend(real, {BRD_AGENT: groq})                      # the brief writer goes to Groq; every other agent keeps its provider
     if provider == "gemini":
         if real is None:
             raise AgentError("AI_PROVIDER=gemini needs GEMINI_API_KEY")

@@ -222,7 +222,7 @@ def test_gemini_requires_a_model_name():
 
 # ---------- factory ----------
 def test_build_adapter_modes(factory, tmp_path):
-    S = lambda **k: SimpleNamespace(**{"ai_provider": "replay", "gemini_api_key": "", "ai_model": "m", **k})  # noqa: E731
+    S = lambda **k: SimpleNamespace(**{"ai_provider": "replay", "gemini_api_key": "", "ai_model": "m", "brd_provider": "", "groq_api_key": "", "groq_model": "g", **k})  # noqa: E731
     assert build_adapter(S(), factory, tmp_path).provider == "replay"
     assert build_adapter(S(ai_provider="replay_or_real"), factory, tmp_path).backend.fallback is None
     with pytest.raises(AgentError):

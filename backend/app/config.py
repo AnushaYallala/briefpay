@@ -22,6 +22,10 @@ class Settings(BaseSettings):
     ai_provider: str = "replay_or_real"
     gemini_api_key: str = ""
     ai_model: str = ""
+    # Optional: send ONLY the brief writer (BRD_GEN) to Groq instead of Gemini. Empty = everything uses the default provider.
+    brd_provider: str = ""            # "" | "groq"
+    groq_api_key: str = ""
+    groq_model: str = "llama-3.3-70b-versatile"
     github_token: str = ""
 
     image_provider: str = "local"

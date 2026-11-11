@@ -4,6 +4,21 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Extra increment · Writing the brief with Groq (instead of Gemini) · Wed Nov 11
+
+**What now exists**
+- You can now choose **Groq** for the one step where the AI writes the brief (the requirements document). Everything else (scoring the meeting, checking the freelancer's work, the safety checks, the forecasts) stays on Gemini. It is off by default.
+- To turn it on: in `backend/.env` put `BRD_PROVIDER=groq` and your `GROQ_API_KEY` (keep the key private), install the new package with the usual `pip install -r requirements.txt`, restart the server, and press "Write the brief". The AI audit trail will show that call as coming from Groq.
+- Safe by design: if you ask for Groq but forget the key, only the brief step fails, with a clear message. Groq can never be used for the step that reads screenshots (it cannot see pictures). The AI still only proposes; the same checks decide, and the same one retry applies if its answer is malformed.
+- 32 new tests (with a pretend Groq, no key needed), and 31 deliberate breakages of the new code were all caught. 1,637 back-end tests and 487 front-end tests pass.
+
+**Please note**
+- **I could not try it against the real Groq service** (no key here), so the first real run is yours: if it fails, the page shows the reason.
+- **Your meeting transcript and project details are sent to Groq for that step** (as they are to Gemini for the others). Tell the sponsors.
+- Groq's free tier has limits, and the model name (`llama-3.3-70b-versatile`) should be checked against Groq's current list; you can change it with `GROQ_MODEL`.
+
+---
+
 ## Increment 45 · Final tidy, and exactly what is left · Wed Nov 11
 
 **What I did**

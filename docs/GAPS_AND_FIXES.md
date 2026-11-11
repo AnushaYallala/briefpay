@@ -6,7 +6,7 @@ A running list of everything that is **missing, risky, unverified, or was found 
 - **Fixes** are problems that were found and already resolved, kept so the reasoning is not lost.
 - IDs are permanent. When a gap is closed, move it to Fixes (keep the ID) and say how.
 
-_Last updated: 2026-11-11, final tidy of the 45 increments._
+_Last updated: 2026-11-11, after adding Groq for the brief._
 
 ---
 
@@ -159,6 +159,8 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | GAP-121 | Low | The smoke check needs the demo seed; it does not check anything that needs PayPal or AI keys. | Extend after keys are available. |
 | GAP-122 | Low | A load error shown on the submit page is cleared on the next load but this is not tested; the amount box takes whole dollars only. | Add a retry test; allow cents if the lead needs them. |
 | GAP-123 | Low | The create-project window and the sample transcript button use the demo cast (Ravi, Meena, Arjun) on purpose; they are demo helpers, not real flows. | Hide them outside demo mode when the site is deployed for real use. |
+| GAP-124 | Medium | Groq has not been run for real (no key): the model name, JSON mode and the 8192-token reply limit are untested against the live service. A very large brief could be cut off, which shows as an invalid reply and one retry. | Run one real brief; raise `MAX_OUTPUT_TOKENS` or ask for a shorter draft if it truncates. |
+| GAP-125 | Low | With `BRD_PROVIDER=groq` the transcript and project details go to a second AI company for that step. | Tell the sponsors; keep it off by default (it is). |
 
 ---
 
@@ -246,6 +248,7 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | FIX-78 | D-061 | The lead's contract offer started at a fixed $400 on every project. | Starts at the project's own budget; tested with two budgets. |
 | FIX-79 | D-061 | Submit and verify showed a blank page when a load failed. | The server's reason is shown in a red message; tested for both screens and both loads. |
 | FIX-80 | final tidy | The README and the status board still said four finished screens were 'not built yet', that Gemini had never been called, and carried Sunday's day goal. | Corrected; the README now also links the testing guide, the evaluation table and the deployment guide. |
+| FIX-81 | D-062 | Two older guards objected to the new settings: SPEC 14.3 must list every backend setting, and an older adapter test built its settings by hand. | SPEC 14.3 and the test updated together with the code. |
 
 ---
 

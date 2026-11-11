@@ -9,7 +9,7 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-11 by Claude: final tidy of the plan of 45 increments (stale claims corrected; what is left listed by who must act). Earlier today: contract/brief/submit/verify clean-up (D-061), testing guide and smoke check (D-060), tests for the teammate's screens (D-059), T-63 eval, T-23/T-27 campaign page |
+| Last updated | 2026-11-11 by Claude: the brief can be written with Groq (BRD_PROVIDER, D-062); final tidy of the plan of 45 increments; hands-on testing path (D-060); screens clean-up (D-059, D-061); T-63 eval; T-23/T-27 campaign page |
 | Overall phase | **Back end feature-complete except the three blocked pieces (BLK-01/02/03); front end feature-complete for all core steps (Requirements, Brief, Contract, Campaign, Submit, Verify, Payout Plans, Ledger, AI Audit).** Plain-English summary: `docs/PROGRESS_SUMMARY.md` |
 | Current goal | A person follows `docs/TESTING.md` in a real browser and reports what looks wrong; decide BLK-01/02/03; then keys (PayPal sandbox, Gemini), deploy (T-61), rehearse and record (T-64), submit (T-65) |
 | Next task to pick up | Nothing unblocked is left for the assistant except fixing what the hands-on test finds · **You:** (1) follow `docs/TESTING.md`; (2) decide BLK-01/02/03 (pledging and the campaign clock); (3) PayPal sandbox accounts and keys (T-02) then run `backend/scripts/sandbox_check.py`; (4) a Gemini key on this machine for the live evaluation; (5) Render and Aiven accounts to deploy (T-03, T-61); (6) record the video and submit (T-64, T-65) |
@@ -191,6 +191,14 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-11 · Claude · Groq for the brief only (REVIEW; not yet run against real Groq)
+- Did: `GroqBackend`, `MissingBackend`, `RoutedBackend` and the wiring in `backend/app/agents/llm_adapter.py`; settings `brd_provider`, `groq_api_key`, `groq_model` in `app/config.py`; `.env.example`, SPEC 14.3, `requirements.txt` (`groq==1.7.0`); 32 tests in `backend/tests/test_groq.py` (fake client, no key). Committed straight to `main`.
+- Tests: back end `cd backend && .venv/Scripts/python.exe -m pytest -q` -> 1637 passed; front end unchanged (487). 31 planted breakages in the new code (JSON mode, schema text, image refusal, joins, error handling, token mapping, routing, key-less fallback, unknown provider, replay-only, defaults) all caught.
+- Contract changes: D-062; SPEC 14.3 lists the three new settings (a test enforces that every setting is listed).
+- To use it: in `backend/.env` set `BRD_PROVIDER=groq` and `GROQ_API_KEY=<your key>` (never paste the key anywhere else), run `.venv\Scripts\python.exe -m pip install -r requirements.txt`, restart the server, then press "Write the brief". The Audit trail page then shows the call as provider `groq`.
+- Next step: run one real brief through Groq with a key; check the model name is still on Groq's list; look at whether a large brief is cut off at 8192 tokens.
+- Gotchas: (1) Only `BRD_GEN` is routed: the Verifier needs images and stays on Gemini. (2) A recorded (replayed) brief is used before any live call, so a repeat brief does not reach Groq. (3) The transcript goes to Groq for this step: say so to the sponsors.
 
 ### 2026-11-11 · Claude · screens: real names, budget default, visible failures (DONE)
 - Did: in the teammate's files, small edits: `contract/page.tsx` (banner names the real freelancer; the offer starts at the project's budget, not 400), `brd/page.tsx` (names the real lead), `submit/page.tsx` and `verify/page.tsx` (a red message with the server's reason when a load fails). Helpers `problemText`, `memberName`, `leadName` in `lib/verifyview.ts`. Tests: `frontend/tests/screens-more.test.tsx` (18). Committed straight to `main`.
