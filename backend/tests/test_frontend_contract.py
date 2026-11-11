@@ -377,3 +377,42 @@ def nested_item_fields(type_source: str, name: str, field: str) -> set[str]:
     body = body_of(type_source, name)
     start = body.index("{", body.index(f"{field}: {{"))
     return set(re.findall(r"(\w+)\??:", body[start + 1: matching(body, start)]))
+
+
+from tests.test_strategist_api import staged, run_report  # noqa: E402
+
+
+def test_the_campaign_and_strategist_types_match_real_responses_and_the_words_cover_every_state(t, client, db):  # noqa: F811
+    from app.services.ledger import LEDGER_TYPES
+    from app.services.state_machines import CAMPAIGN_TRANSITIONS
+    types = read("lib/types.ts")
+    cid = staged(t, db)
+    lead = client.get(f"/api/campaigns/{cid}", headers=t.lakshmi).json()
+    public = client.get(f"/api/campaigns/{cid}").json()
+    declared = fields_of(types, "CampaignView")
+    assert set(public) == declared - {"lead"} and set(lead) == declared
+    body = body_of(types, "CampaignView")
+    start = body.index("{", body.index("lead?: {"))
+    assert set(lead["lead"]) == set(re.findall(r"(\w+)\??:", body[start + 1: matching(body, start)]))
+    report = run_report(t, cid)
+    assert set(report) == fields_of(types, "StrategistReport")
+    assert set(report["forecast"]) == nested_fields(types, "StrategistReport", "forecast")
+    assert set(report["narrative"]) == nested_fields(types, "StrategistReport", "narrative")
+    sug_body = body_of(types, "StrategistReport")
+    s_start = sug_body.index("{", sug_body.index("suggestions: {"))
+    sug_fields = set(re.findall(r"(\w+)\??:", re.sub(r"\{[^{}]*\}", "", sug_body[s_start + 1: matching(sug_body, s_start)])))
+    assert set(report["suggestions"]) <= sug_fields and {"kind", "deadline", "nudge_targets", "campaign_state"} <= set(report["suggestions"])
+    assert report["nudges"] and all(set(n) == fields_of(types, "Nudge") for n in report["nudges"])
+    assert report["suggestions"]["nudge_targets"] and set(report["suggestions"]["nudge_targets"][0]) == {"member_id", "name", "invite_status", "expected_pledge_cents", "score", "reason"}
+
+    campaign_ts = read("lib/campaign.ts")
+    assert keys_of_plain(block(campaign_ts, "export const MONEY_NOTES")) == set(CAMPAIGN_TRANSITIONS)
+    assert keys_of_plain(block(campaign_ts, "export const CLOSE_POLICY_WORDS")) == {"EARLY_ON_GOAL", "AT_DEADLINE"}
+    assert re.search(r"CAMPAIGN_REFRESH_MS = 10000;", campaign_ts) and re.search(r"CLOCK_MS = 30000;", campaign_ts)
+    pledge_steps = set(re.findall(r"(PLEDGE_[A-Z]+): \"", campaign_ts))
+    assert pledge_steps <= set(LEDGER_TYPES) and pledge_steps == {"PLEDGE_AUTHORIZED", "PLEDGE_CAPTURED", "PLEDGE_VOIDED", "PLEDGE_EXPIRED"}
+
+
+def keys_of_plain(text: str) -> set[str]:
+    """Keys of an `export const X: Record<string, string> = { KEY: "words", ... }` block, one per line."""
+    return set(re.findall(r"^  ([A-Z_]+): ", text, re.M))

@@ -86,9 +86,13 @@ function Workspace({ id }: { id: number }) {
               <div className="space-y-2">
                 <p className="sr-only">Round {c.number}: {campaignState(c.state).label}</p>
                 <PledgeProgress pledgedCents={c.pledged_cents} goalCents={c.goal_cents} count={c.pledge_count} open={c.state === "OPEN"} />
+                <Link href={`/campaign?id=${c.id}`} className="inline-block text-sm font-semibold text-sea-700 underline">Open the campaign page</Link>
               </div>
             ) : (
-              <Empty title="No campaign yet">The campaign starts after the brief is approved and the builder has signed.</Empty>
+              <>
+                <Empty title="No campaign yet">The campaign starts after the brief is approved and the builder has signed.</Empty>
+                {p.state === "CAMPAIGN_SETUP" && p.viewer?.role === "LEAD" && <Link href={`/campaign?project=${p.id}`} className="mt-2 inline-block text-sm font-semibold text-sea-700 underline">Set up the campaign</Link>}
+              </>
             )}
           </section>
 

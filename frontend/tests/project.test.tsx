@@ -339,4 +339,33 @@ describe("ledger link", () => {
     expect(link.getAttribute("href")).toBe("/audit?id=1");
     expect(screen.getByRole("link", { name: "Open BA Studio" }).getAttribute("href")).toBe("/ba?id=1");
   });
+
+  it("links to the campaign page when there is a campaign, using the campaign's own number", async () => {
+    mockFetch({ "GET /projects/1": { body: detail({ campaign: { id: 7, number: 1, state: "OPEN", goal_cents: 40000, pledged_cents: 0, pledge_count: 0, deadline_at: null } }) } });
+    wrapped(<ProjectPage />);
+    expect((await screen.findByRole("link", { name: "Open the campaign page" })).getAttribute("href")).toBe("/campaign?id=7");
+    expect(screen.queryByRole("link", { name: "Set up the campaign" })).toBeNull();
+  });
+
+  it("builds the set-up link from the project's own number", async () => {
+    setToken("tok");
+    mockFetch({ "GET /auth/me": { body: me }, "GET /projects/1": { body: detail({ id: 5, campaign: null, state: "CAMPAIGN_SETUP", viewer: { role: "LEAD", member_id: 1 } }) } });
+    wrapped(<ProjectPage />);
+    expect((await screen.findByRole("link", { name: "Set up the campaign" })).getAttribute("href")).toBe("/campaign?project=5");
+  });
+
+  it("offers the lead, and only the lead, a way to set the campaign up once the contract is signed", async () => {
+    setToken("tok");
+    mockFetch({ "GET /auth/me": { body: me }, "GET /projects/1": { body: detail({ campaign: null, state: "CAMPAIGN_SETUP", viewer: { role: "LEAD", member_id: 1 } }) } });
+    wrapped(<ProjectPage />);
+    expect((await screen.findByRole("link", { name: "Set up the campaign" })).getAttribute("href")).toBe("/campaign?project=1");
+    expect(screen.queryByRole("link", { name: "Open the campaign page" })).toBeNull();
+    for (const [state, viewer] of [["CAMPAIGN_SETUP", null], ["CAMPAIGN_SETUP", { role: "SPONSOR", member_id: 2 }], ["CONTRACTING", { role: "LEAD", member_id: 1 }]] as const) {
+      cleanup();
+      mockFetch({ "GET /auth/me": { body: me }, "GET /projects/1": { body: detail({ campaign: null, state, viewer }) } });
+      wrapped(<ProjectPage />);
+      await screen.findByText("No campaign yet");
+      expect(screen.queryByRole("link", { name: "Set up the campaign" }), `${state} ${viewer?.role}`).toBeNull();
+    }
+  });
 });

@@ -6,7 +6,7 @@ A running list of everything that is **missing, risky, unverified, or was found 
 - **Fixes** are problems that were found and already resolved, kept so the reasoning is not lost.
 - IDs are permanent. When a gap is closed, move it to Fixes (keep the ID) and say how.
 
-_Last updated: 2026-11-10, end of T-17._
+_Last updated: 2026-11-11, end of T-23/T-27._
 
 ---
 
@@ -146,6 +146,10 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | GAP-108 | Low | Timer tests that spy on interval functions are timing-sensitive under heavy load (one failed in about one full run in four before the wait was added). | Keep waits on observable state; recheck if flakes return. |
 | GAP-109 | Low | No side-by-side comparison of two brief versions (the teammate's brief page was kept; check whether it has version chips and hash-bound decisions). | See D-056 for the ideas. |
 | GAP-110 | Low | BA Studio has its own copy of the job-following code; a shared hook was written for the dropped brief page and removed with it. | Add a shared hook if a second screen needs it. |
+| GAP-111 | Medium | Pledging cannot be done from the page: the PayPal button waits for the pledge service (BLK-01). | Replace the 'not switched on yet' box with the button. |
+| GAP-112 | Medium | Close and collect now, cancel, another round and the early-deadline demo are shown disabled (BLK-02). | Wire them when the lead actions exist. |
+| GAP-113 | Low | The pledge board is built from the public ledger: a hold shows no amount, and pledges are told apart from earlier rounds only by the time the campaign opened. | Use a pledge list endpoint when one exists. |
+| GAP-114 | Low | The deadline box is typed in UTC (the browser's box has no zone). | Show the local time beside it. |
 
 ---
 
@@ -219,6 +223,9 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | FIX-64 | T-16 | A mutation run that was killed by the session ending left its last deliberate break (a removed `clearInterval`) in the BA page. | The timer test caught it; restored; process rule recorded in STATUS gotchas (run in the background, verify sources after any interruption). |
 | FIX-65 | T-17 | My brief page (dropped after the merge) was mutation-checked: 16 weak spots found and fixed in it. | No code remains; the lesson is to pull before starting a screen. |
 | FIX-66 | T-17 | A test that relied on a 0.3 s delay failed when the machine stalled (a back-end run took 42 minutes). | Give delay-based tests a wide margin. |
+| FIX-67 | T-23 | Mutation check found 30 weak spots (countdown rounding and day length, lost cents in dollar amounts, the board's currency and time words, clearing earlier errors, double clicks, loading flashes during reloads, timers stopped, the project page's link numbers, 'Link copied'). | Tests for each; a dead quick filter, a pointless default and a fail-reason condition simplified. |
+| FIX-68 | T-23 | I removed a date-format check as 'redundant' and the tests failed: without it an empty deadline box read as the year 2000. | Check restored with a comment. |
+| FIX-69 | T-23 | A mutation run came back to life after the machine slept and overwrote my edits. | Stopped it, restored from a backup, and added the process rule to STATUS. |
 
 ---
 

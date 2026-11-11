@@ -62,6 +62,27 @@ export const planDetail = (over: Record<string, unknown> = {}) => ({
   ...planItem(), inputs: {}, steps: [step()], reviews: [], approvals: [], ...over,
 }) as import("@/lib/types").PlanDetail;
 
+export const campaignView = (over: Record<string, unknown> = {}) => ({
+  id: 1, project_id: 1, project_title: "Velugu Cove tourism website", number: 1, state: "OPEN", goal_cents: 40000, fee_reserve_cents: 0, currency: "USD",
+  min_pledge_cents: 500, suggested_share_cents: null, close_policy: "EARLY_ON_GOAL", opens_at: "2026-11-10T10:00:00+00:00", deadline_at: "2026-11-12T10:00:00+00:00",
+  seconds_left: 172800, pledged_cents: 15000, pledge_count: 1, remaining_need_cents: 25000, goal_reached_at: null, held_not_charged: true, fail_reason: null, ...over,
+}) as import("@/lib/types").CampaignView;
+
+export const leadPart = (over: Record<string, unknown> = {}) => ({
+  launch_blockers: [], can_launch: true, deadline_earliest: "2026-11-10T11:00:00+00:00", deadline_latest: "2026-11-13T08:00:00+00:00", earliest_honor_until: null, ...over,
+});
+
+export const strategistReport = (over: Record<string, unknown> = {}) => ({
+  id: 1, created_at: "2026-11-10T12:00:00",
+  forecast: { label: "estimate (heuristic)", goal_cents: 40000, pledged_cents: 0, gap_cents: 40000, hours_left: 48, expected_invitees_cents: 15750, expected_open_cents: 0, projected_cents: 15750, ratio: 0.3937, probability: 0.0256 },
+  suggestions: {
+    kind: "SETUP", deadline: { deadline_at: "2026-11-13T12:00:00+00:00", hours: 70, initial_probability: 0.0256, reason: "The expected pledges are well below the goal, so run it as long as allowed." },
+    nudge_targets: [{ member_id: 2, name: "Ravi", invite_status: "INVITED", expected_pledge_cents: 15000, score: 4500, reason: "hasn't opened the link, said $150" }], campaign_state: "SETUP",
+  },
+  narrative: { headline: "About a 3% chance of reaching the goal (estimate (heuristic))", explanation: "$0 of $400 is held.", risk_factors: ["Some invitees have not opened the link"], source: "TEMPLATE", label: "estimate (heuristic)", flags: ["AI_UNAVAILABLE"] },
+  nudges: [{ member_id: 2, name: "Ravi", channel: "WHATSAPP", message: "Ravi, we're $400 short. The link: http://x/campaign?id=1", source: "TEMPLATE", flags: [], reused: false }], ...over,
+}) as import("@/lib/types").StrategistReport;
+
 export const brdReq = (over: Record<string, unknown> = {}) => ({
   code: "REQ-001", title: "Welcome page", description: "A home page that says what Velugu Cove is.", priority: "MUST", weight: 3, requested_by: [1, 2],
   acceptance_criteria: [{ id: "AC-1", given: "a visitor opens the site", when: "the home page loads", then: "it welcomes them", evidence: ["LIVE_URL_CHECK", "SCREENSHOT"], auto_check_hint: { type: "URL_REACHABLE", path: "/", text: null } }],

@@ -4,6 +4,29 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 40 · The campaign page and organiser panel (T-23, T-27) · Wed Nov 11
+
+**What now exists**
+- **The public campaign page.** From a project, "Open the campaign page" shows the project, the round and its state, the progress bar and, always, the promise in plain words: "Held, not charged. Nothing is charged unless the goal is reached." Every state has its own sentence (not open yet, open, collecting, funded, goal missed and nobody charged, cancelled). Goal, still needed, smallest pledge, deadline, a live countdown ("2 days 3 hours left"), how it closes and why a goal was missed are all there.
+- **Who has pledged.** A table of pledges with a chip (Held, Collected, Released, Expired), built from the public ledger, so anyone can check it. A hold shows no amount until the money is collected.
+- **Pledging itself is honestly shown as "not switched on yet"**, because the pledge service is one of the blocked pieces (BLK-01). A "Copy the link to share" button works.
+- **For the organiser (the lead only).** Set the terms: deadline (with the allowed window and why: PayPal only guarantees a hold for three days), how it closes, smallest pledge and suggested share; the page checks them before asking the server. "Open for pledges" lists what is blocking it and stays off until nothing is. Buttons for closing and collecting now, cancelling, another round and trying the deadline early are shown switched off with a note that they are not built yet (BLK-02).
+- **The Strategist.** One button makes the forecast: an honest estimate ("estimate (heuristic)", chance of reaching the goal, risks), a suggested deadline with the reason and one click to apply (the server allows one extension only), and a ready message for each person to nudge, to copy or send on WhatsApp. It says whether a template or the AI worded it; every number is computed by the system.
+- 458 front-end tests and 1,569 back-end tests pass. About 150 deliberate breakages: 30 slipped through at first (countdown rounding, amounts with lost cents, currencies, double clicks, timers, loading flashes...); all are now caught.
+
+**What it does NOT do yet**
+Pledge, collect, cancel or restart a campaign (BLK-01/02), show the amount of a hold, or show pledges from an earlier round separately.
+
+**Process note:** I claimed the task on the board and pushed that first, so the teammate would not build it too.
+
+**Progress:** the campaign screens exist. Increment 40 of the 45 you asked for.
+
+**Needed from you:** BLK-01/02/03, PayPal sandbox keys.
+
+**Next increment:** check the teammate's contract, submit, verify and brief screens against the real API with tests.
+
+---
+
 ## Increment 39 · The brief page (T-17): built twice, teammate's kept · Tue Nov 10
 
 **What happened**
