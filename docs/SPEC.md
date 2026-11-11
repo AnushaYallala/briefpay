@@ -1248,7 +1248,7 @@ GEMINI_API_KEY=...
 AI_MODEL=...                     # verify current Gemini Flash model name
 BRD_PROVIDER=                    # optional: "groq" writes the BRD with Groq (text only; D-062). Empty keeps everything on Gemini
 GROQ_API_KEY=...                 # only needed when BRD_PROVIDER=groq
-GROQ_MODEL=llama-3.3-70b-versatile   # verify the name is still offered
+GROQ_MODEL=openai/gpt-oss-120b   # verify the name is still offered
 CLOUDINARY_URL=cloudinary://<api_key>:<api_secret>@<cloud_name>
 IMAGE_PROVIDER=cloudinary|local
 GITHUB_TOKEN=...                 # optional, raises API rate limit for repo checks

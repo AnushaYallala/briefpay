@@ -159,7 +159,7 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | GAP-121 | Low | The smoke check needs the demo seed; it does not check anything that needs PayPal or AI keys. | Extend after keys are available. |
 | GAP-122 | Low | A load error shown on the submit page is cleared on the next load but this is not tested; the amount box takes whole dollars only. | Add a retry test; allow cents if the lead needs them. |
 | GAP-123 | Low | The create-project window and the sample transcript button use the demo cast (Ravi, Meena, Arjun) on purpose; they are demo helpers, not real flows. | Hide them outside demo mode when the site is deployed for real use. |
-| GAP-124 | Medium | Groq has not been run for real (no key): the model name, JSON mode and the 8192-token reply limit are untested against the live service. A very large brief could be cut off, which shows as an invalid reply and one retry. | Run one real brief; raise `MAX_OUTPUT_TOKENS` or ask for a shorter draft if it truncates. |
+| GAP-124 | Low | Groq was verified with one real demo brief (valid, 8 s) but not with a very large brief or under rate limits; the reply cap is 16384 tokens. | Watch the AI audit trail for `SCHEMA_INVALID` or errors on `BRD_GEN`. |
 | GAP-125 | Low | With `BRD_PROVIDER=groq` the transcript and project details go to a second AI company for that step. | Tell the sponsors; keep it off by default (it is). |
 
 ---

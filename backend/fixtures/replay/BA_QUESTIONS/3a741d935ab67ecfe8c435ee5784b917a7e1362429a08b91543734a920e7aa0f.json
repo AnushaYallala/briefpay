@@ -1,0 +1,48 @@
+{
+  "agent": "BA_QUESTIONS",
+  "input_hash": "3a741d935ab67ecfe8c435ee5784b917a7e1362429a08b91543734a920e7aa0f",
+  "output": {
+    "questions": [
+      {
+        "addressed_to": [
+          3
+        ],
+        "dimension": "D6",
+        "question": "Meena, what specific test or condition must be met for you to consider the Boat Tours section complete?",
+        "rationale": "This requirement is marked as a MUST but lacks acceptance criteria, which is a red gate.",
+        "suggested_options": null
+      },
+      {
+        "addressed_to": [
+          2
+        ],
+        "dimension": "D6",
+        "question": "Ravi, what specific test or condition must be met for you to consider the Restaurant section complete?",
+        "rationale": "The requirement is a MUST but lacks specific acceptance criteria for the developer to test against.",
+        "suggested_options": null
+      },
+      {
+        "addressed_to": [
+          "ALL"
+        ],
+        "dimension": "D10",
+        "question": "Who will be the main contact person to manage the website updates after the developer finishes the site?",
+        "rationale": "The team needs to define who handles maintenance to ensure the site stays current after handover.",
+        "suggested_options": null
+      },
+      {
+        "addressed_to": [
+          "ALL"
+        ],
+        "dimension": "D9",
+        "question": "Is it a requirement that the website must be fully functional in both English and Telugu at launch?",
+        "rationale": "Multilingual support is currently a SHOULD, but confirming this helps define the final scope for the developer.",
+        "suggested_options": [
+          "English only at launch",
+          "Both English and Telugu at launch"
+        ]
+      }
+    ]
+  },
+  "prompt_version": "ba-questions-v1"
+}

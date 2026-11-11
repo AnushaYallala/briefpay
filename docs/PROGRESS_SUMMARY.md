@@ -13,9 +13,9 @@ Written after every increment so you can see the state without reading code. The
 - 32 new tests (with a pretend Groq, no key needed), and 31 deliberate breakages of the new code were all caught. 1,637 back-end tests and 487 front-end tests pass.
 
 **Please note**
-- **I could not try it against the real Groq service** (no key here), so the first real run is yours: if it fails, the page shows the reason.
+- **I tried it against the real Groq service** with the key you gave me (stored only in your local, git-ignored `backend/.env`): a full brief for the demo project came back valid in about 8 seconds with all 9 requirements. The model I first chose was no longer offered, so I switched to `openai/gpt-oss-120b`.
 - **Your meeting transcript and project details are sent to Groq for that step** (as they are to Gemini for the others). Tell the sponsors.
-- Groq's free tier has limits, and the model name (`llama-3.3-70b-versatile`) should be checked against Groq's current list; you can change it with `GROQ_MODEL`.
+- Groq's free tier has limits, and model names change: you can switch with `GROQ_MODEL`. Since the key was pasted in a chat, consider rotating it on the Groq site and updating `backend/.env`.
 
 ---
 

@@ -1,0 +1,18 @@
+{
+  "agent": "BA_QUESTIONS",
+  "input_hash": "080d4dc64e02f20f26110e6050123c4a88e159d3a00ea046f5430d34011921f6",
+  "output": {
+    "questions": [
+      {
+        "addressed_to": [
+          3
+        ],
+        "dimension": "D6",
+        "question": "Meena, what specific test or condition must be met for you to consider the Cove Boat Tours section complete?",
+        "rationale": "Requirement R5 is a MUST but lacks acceptance criteria.",
+        "suggested_options": null
+      }
+    ]
+  },
+  "prompt_version": "ba-questions-v1"
+}

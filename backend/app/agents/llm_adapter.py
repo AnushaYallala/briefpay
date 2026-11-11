@@ -6,6 +6,7 @@ Backends only turn (system, parts, schema) into raw JSON; they never touch the D
 """
 import hashlib
 import json
+import logging
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -17,6 +18,8 @@ from sqlalchemy.orm import Session
 from app.models import AgentRun
 
 BRD_AGENT = "BRD_GEN"          # the brief writer (agents/brd_generator.py): the only agent that can be sent to Groq
+
+log = logging.getLogger("briefpay.ai")
 
 
 # ---------- parts ----------
@@ -127,11 +130,11 @@ class GeminiBackend:
 
     provider = "gemini"
     DEFAULT_FALLBACKS = (
-        "gemini-3.5-flash-lite",
         "gemini-3.1-flash-lite",
-        "gemini-2.5-flash",
+        "gemini-3.5-flash-lite",
         "gemini-3.5-flash",
-        "gemini-2.5-pro",
+        "gemini-3.6-flash",
+        "gemini-3.8-flash",
     )
 
     def __init__(self, api_key: str, model: str, client=None, fallback_models: tuple[str, ...] | None = None):
@@ -160,8 +163,13 @@ class GeminiBackend:
         models_to_try = [self.model] + [m for m in self.fallback_models if m != self.model]
         last_error = None
 
-        for candidate_model in models_to_try:
+        log.info("[Gemini AI] Agent '%s' starting generation with primary model '%s' (pool: %s)",
+                 agent, self.model, ", ".join(models_to_try[1:]))
+
+        for idx, candidate_model in enumerate(models_to_try, 1):
             try:
+                log.info("[Gemini AI] (%s/%s) Requesting '%s' for agent '%s'...",
+                         idx, len(models_to_try), candidate_model, agent)
                 resp = self._client.models.generate_content(
                     model=candidate_model,
                     contents=contents,
@@ -172,22 +180,43 @@ class GeminiBackend:
                 )
                 data = json.loads(resp.text)
                 usage = getattr(resp, "usage_metadata", None)
+                in_tok = getattr(usage, "prompt_token_count", None)
+                out_tok = getattr(usage, "candidates_token_count", None)
+                log.info("[Gemini AI] SUCCESS with '%s' for '%s' (Tokens: %s in, %s out)",
+                         candidate_model, agent, in_tok, out_tok)
                 return RawResult(
                     data=data, provider=self.provider, model=candidate_model,
-                    input_tokens=getattr(usage, "prompt_token_count", None),
-                    output_tokens=getattr(usage, "candidates_token_count", None),
+                    input_tokens=in_tok,
+                    output_tokens=out_tok,
                 )
             except json.JSONDecodeError as e:
-                # Not valid JSON at all: surface as a dict the schema check will reject (and retry once)
+                log.warning("[Gemini AI] '%s' returned invalid JSON: %s. Surfacing to schema validator.", candidate_model, e)
                 return RawResult(data={"__invalid_json__": str(e)})
             except Exception as e:
                 last_error = e
                 err_str = str(e).lower()
-                is_recoverable = any(k in err_str for k in ("429", "quota", "resource_exhausted", "rate", "limit", "not_found", "not found"))
-                if not is_recoverable and len(models_to_try) == 1:
+                if "getaddrinfo" in err_str or "wsa_host_not_found" in err_str:
+                    log.error("[Gemini AI] Network/DNS unreachable ([Errno 11001] getaddrinfo failed). Please verify your internet connection.")
                     break
+                is_recoverable = any(
+                    k in err_str
+                    for k in (
+                        "429", "quota", "resource_exhausted", "rate", "limit",
+                        "not_found", "not found", "503", "unavailable", "500",
+                        "demand", "overloaded", "timeout", "deadline", "connection",
+                        "aborted", "reset"
+                    )
+                )
+                if not is_recoverable and len(models_to_try) == 1:
+                    log.error("[Gemini AI] Non-recoverable error with '%s': %s", candidate_model, e)
+                    break
+                log.warning("[Gemini AI] Model '%s' issue (%s/%s): %s (%s). Falling back to next candidate...",
+                            candidate_model, idx, len(models_to_try), type(e).__name__, str(e)[:180])
+                time.sleep(1.0)
                 continue
 
+        log.error("[Gemini AI] All candidate models exhausted for agent '%s'. Last error: %s: %s",
+                  agent, type(last_error).__name__, last_error)
         raise AgentError(f"gemini call failed across models: {type(last_error).__name__}: {last_error}") from last_error
 
 
@@ -293,7 +322,7 @@ class GroqBackend:
     adapter's own validation (with one retry) does the enforcing, exactly as for every other backend."""
 
     provider = "groq"
-    MAX_OUTPUT_TOKENS = 8192
+    MAX_OUTPUT_TOKENS = 16384            # a reasoning model spends part of this thinking; a full brief needs the rest
 
     def __init__(self, api_key: str, model: str, client=None):
         if not model:

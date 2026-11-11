@@ -192,12 +192,12 @@ Template:
 - Gotchas: …
 ```
 
-### 2026-11-11 · Claude · Groq for the brief only (REVIEW; not yet run against real Groq)
+### 2026-11-11 · Claude · Groq for the brief only (DONE; verified with one real brief)
 - Did: `GroqBackend`, `MissingBackend`, `RoutedBackend` and the wiring in `backend/app/agents/llm_adapter.py`; settings `brd_provider`, `groq_api_key`, `groq_model` in `app/config.py`; `.env.example`, SPEC 14.3, `requirements.txt` (`groq==1.7.0`); 32 tests in `backend/tests/test_groq.py` (fake client, no key). Committed straight to `main`.
-- Tests: back end `cd backend && .venv/Scripts/python.exe -m pytest -q` -> 1637 passed; front end unchanged (487). 31 planted breakages in the new code (JSON mode, schema text, image refusal, joins, error handling, token mapping, routing, key-less fallback, unknown provider, replay-only, defaults) all caught.
+- Tests: back end `cd backend && .venv/Scripts/python.exe -m pytest -q` -> 1637 passed; front end unchanged (487). **Real check:** with the user's key (kept only in the git-ignored `backend/.env`; `BRD_PROVIDER=groq` set there) a real brief for the demo project came back valid in about 8 s (9 requirements, all covered; audit row provider `groq`, model `openai/gpt-oss-120b`). The first default model name was withdrawn by Groq, found by that call, and replaced. 31 planted breakages in the new code (JSON mode, schema text, image refusal, joins, error handling, token mapping, routing, key-less fallback, unknown provider, replay-only, defaults) all caught.
 - Contract changes: D-062; SPEC 14.3 lists the three new settings (a test enforces that every setting is listed).
 - To use it: in `backend/.env` set `BRD_PROVIDER=groq` and `GROQ_API_KEY=<your key>` (never paste the key anywhere else), run `.venv\Scripts\python.exe -m pip install -r requirements.txt`, restart the server, then press "Write the brief". The Audit trail page then shows the call as provider `groq`.
-- Next step: run one real brief through Groq with a key; check the model name is still on Groq's list; look at whether a large brief is cut off at 8192 tokens.
+- Next step: press "Write the brief" in the app on a real project and read the result; the key was pasted in a chat, so rotate it on Groq when convenient.
 - Gotchas: (1) Only `BRD_GEN` is routed: the Verifier needs images and stays on Gemini. (2) A recorded (replayed) brief is used before any live call, so a repeat brief does not reach Groq. (3) The transcript goes to Groq for this step: say so to the sponsors.
 
 ### 2026-11-11 · Claude · screens: real names, budget default, visible failures (DONE)

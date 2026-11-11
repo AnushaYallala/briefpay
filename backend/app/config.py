@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     # Optional: send ONLY the brief writer (BRD_GEN) to Groq instead of Gemini. Empty = everything uses the default provider.
     brd_provider: str = ""            # "" | "groq"
     groq_api_key: str = ""
-    groq_model: str = "llama-3.3-70b-versatile"
+    groq_model: str = "openai/gpt-oss-120b"
     github_token: str = ""
 
     image_provider: str = "local"

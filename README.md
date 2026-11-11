@@ -113,7 +113,7 @@ Put keys in `backend/.env` (see [.env.example](.env.example)). `backend/scripts/
 | **PayPal** Orders v2 (`AUTHORIZE`), Payments v2 (capture, void, refund, reads), Payouts, Webhooks, Transaction Search | The pledge holds, captures, refunds, the freelancer payout and the confirmation of each |
 | **APIMatic**-generated `paypal-server-sdk` | Orders, Payments and balance reads (Payouts and webhook verification use `httpx`, as the SDK does not cover them) |
 | **Gemini** (Flash model, set by `AI_MODEL`) | BA scoring and questions, BRD drafting, the verification questions and the vision review of evidence, the Guardian risk review. Not yet run against the real model |
-| **Groq** (optional, `BRD_PROVIDER=groq`) | Writes the brief (BRD) instead of Gemini, text only; every other AI step stays on Gemini. Not yet run against the real service |
+| **Groq** (optional, `BRD_PROVIDER=groq`) | Writes the brief (BRD) instead of Gemini, text only (`openai/gpt-oss-120b` by default); every other AI step stays on Gemini. Verified with one real demo brief |
 | **FastAPI, SQLAlchemy 2, Alembic, Pydantic 2** | The service |
 | **Next.js 15, React 19, Tailwind, Vitest** | The web app (a static export) |
 | **AG Grid Community** 36.3.0 | The ledger, AI audit trail, plan steps and brief requirements tables (done, the last by the teammate); planned for the pledge board and verification matrix |
