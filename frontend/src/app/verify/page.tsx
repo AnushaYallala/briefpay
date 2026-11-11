@@ -15,6 +15,7 @@ import type {
   SubmissionListItem,
 } from "@/lib/types";
 import { useApi } from "@/lib/useApi";
+import { checkTarget, problemText } from "@/lib/verifyview";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -52,6 +53,7 @@ function VerificationStudio({ projectId, initialSubId }: { projectId: number; in
   const [selectedSubId, setSelectedSubId] = useState<number | null>(initialSubId);
   const [sub, setSub] = useState<SubmissionDetail | null>(null);
   const [subLoading, setSubLoading] = useState<boolean>(false);
+  const [loadProblem, setLoadProblem] = useState<string | null>(null);
   const [failureOptions, setFailureOptions] = useState<FailureOptions | null>(null);
   const [actionMsg, setActionMsg] = useState<string | null>(null);
   const [actionBusy, setActionBusy] = useState<boolean>(false);
@@ -61,14 +63,15 @@ function VerificationStudio({ projectId, initialSubId }: { projectId: number; in
   const [overrideNote, setOverrideNote] = useState<string>("");
 
   const loadSubmissions = async () => {
+    setLoadProblem(null);
     try {
       const res = await apiGet<{ submissions: SubmissionListItem[] }>(`/projects/${projectId}/submissions`);
       setSubmissions(res.submissions || []);
       if (!selectedSubId && res.submissions && res.submissions.length > 0) {
         setSelectedSubId(res.submissions[res.submissions.length - 1].id);
       }
-    } catch {
-      // ignore
+    } catch (err) {
+      setLoadProblem(problemText(err, "Could not load the submissions."));
     }
   };
 
@@ -94,7 +97,7 @@ function VerificationStudio({ projectId, initialSubId }: { projectId: number; in
         setFailureOptions(null);
       }
     } catch (err) {
-      console.error(err);
+      setLoadProblem(problemText(err, "Could not load this submission."));
     } finally {
       setSubLoading(false);
     }
@@ -248,6 +251,7 @@ function VerificationStudio({ projectId, initialSubId }: { projectId: number; in
 
   return (
     <div className="space-y-6">
+      {loadProblem && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{loadProblem}</p>}
       <WorkflowNav
         projectId={projectId}
         projectTitle={project.title}
@@ -554,7 +558,7 @@ function VerificationStudio({ projectId, initialSubId }: { projectId: number; in
                         <div key={chk.id} className="flex items-center justify-between bg-white p-2 rounded border border-slate-200">
                           <div>
                             <span className="font-bold text-slate-800">{chk.check_type}</span>
-                            <span className="text-slate-500 font-mono text-2xs ml-2">{chk.target}</span>
+                            <span className="text-slate-500 font-mono text-2xs ml-2">{checkTarget(chk.input)}</span>
                           </div>
                           <span className={`font-bold px-2 py-0.5 rounded text-2xs ${
                             chk.result === "PASS" ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-800"

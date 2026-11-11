@@ -6,7 +6,7 @@ A running list of everything that is **missing, risky, unverified, or was found 
 - **Fixes** are problems that were found and already resolved, kept so the reasoning is not lost.
 - IDs are permanent. When a gap is closed, move it to Fixes (keep the ID) and say how.
 
-_Last updated: 2026-11-10, end of T-17._
+_Last updated: 2026-11-11, final tidy of the 45 increments._
 
 ---
 
@@ -146,6 +146,19 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | GAP-108 | Low | Timer tests that spy on interval functions are timing-sensitive under heavy load (one failed in about one full run in four before the wait was added). | Keep waits on observable state; recheck if flakes return. |
 | GAP-109 | Low | No side-by-side comparison of two brief versions (the teammate's brief page was kept; check whether it has version chips and hash-bound decisions). | See D-056 for the ideas. |
 | GAP-110 | Low | BA Studio has its own copy of the job-following code; a shared hook was written for the dropped brief page and removed with it. | Add a shared hook if a second screen needs it. |
+| GAP-111 | Medium | Pledging cannot be done from the page: the PayPal button waits for the pledge service (BLK-01). | Replace the 'not switched on yet' box with the button. |
+| GAP-112 | Medium | Close and collect now, cancel, another round and the early-deadline demo are shown disabled (BLK-02). | Wire them when the lead actions exist. |
+| GAP-113 | Low | The pledge board is built from the public ledger: a hold shows no amount, and pledges are told apart from earlier rounds only by the time the campaign opened. | Use a pledge list endpoint when one exists. |
+| GAP-114 | Low | The deadline box is typed in UTC (the browser's box has no zone). | Show the local time beside it. |
+| GAP-115 | Medium | The eval does not measure the live model: BA and Verifier rows use recorded outputs. | Run the three BA transcripts and ten Verifier cases against Gemini once a key is on the machine; add a second column. |
+| GAP-116 | Low | The Strategist eval uses 20 invented campaigns; it shows direction and sanity, not real accuracy. | Re-check with real campaign results after the demo. |
+| GAP-117 | Low | Switching off one Guardian rule still blocks every tamper plan because other rules also fire; the eval cannot tell which single rule was removed. | Per-rule fixtures exist in `test_guardian_rules.py`. |
+| GAP-118 | Low | The submit and verify pages ignore load failures (`catch {}`), so a failed load shows an empty page with no message. | Show the server's reason like the other screens. |
+| GAP-119 | Low | Home, login and the contract (offer and sign) screens have no tests of their own beyond the shared ones. | Add screen tests. |
+| GAP-120 | Medium | Nobody has used the screens in a real browser: the tests simulate one (jsdom), the smoke check only confirms pages are served. | A person follows `docs/TESTING.md`; consider a browser-driven check later. |
+| GAP-121 | Low | The smoke check needs the demo seed; it does not check anything that needs PayPal or AI keys. | Extend after keys are available. |
+| GAP-122 | Low | A load error shown on the submit page is cleared on the next load but this is not tested; the amount box takes whole dollars only. | Add a retry test; allow cents if the lead needs them. |
+| GAP-123 | Low | The create-project window and the sample transcript button use the demo cast (Ravi, Meena, Arjun) on purpose; they are demo helpers, not real flows. | Hide them outside demo mode when the site is deployed for real use. |
 
 ---
 
@@ -219,6 +232,20 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | FIX-64 | T-16 | A mutation run that was killed by the session ending left its last deliberate break (a removed `clearInterval`) in the BA page. | The timer test caught it; restored; process rule recorded in STATUS gotchas (run in the background, verify sources after any interruption). |
 | FIX-65 | T-17 | My brief page (dropped after the merge) was mutation-checked: 16 weak spots found and fixed in it. | No code remains; the lesson is to pull before starting a screen. |
 | FIX-66 | T-17 | A test that relied on a 0.3 s delay failed when the machine stalled (a back-end run took 42 minutes). | Give delay-based tests a wide margin. |
+| FIX-67 | T-23 | Mutation check found 30 weak spots (countdown rounding and day length, lost cents in dollar amounts, the board's currency and time words, clearing earlier errors, double clicks, loading flashes during reloads, timers stopped, the project page's link numbers, 'Link copied'). | Tests for each; a dead quick filter, a pointless default and a fail-reason condition simplified. |
+| FIX-68 | T-23 | I removed a date-format check as 'redundant' and the tests failed: without it an empty deadline box read as the year 2000. | Check restored with a comment. |
+| FIX-69 | T-23 | A mutation run came back to life after the machine slept and overwrote my edits. | Stopped it, restored from a backup, and added the process rule to STATUS. |
+| FIX-70 | T-63 | The first Strategist synthetic set gave every campaign under 50% (average 6%), so the calibration rows were empty and meaningless. | Generator varies goal, existing holds and number of invitees; the test now requires predictions below 10% and above 90% and a better success rate in the high group. |
+| FIX-71 | D-059 | Submit and verify showed a blank where each automatic check should say what it looked at (they read `target`; the API sends `input`). | `checkTarget` helper, tested; types corrected. |
+| FIX-72 | D-059 | The brief screen knew only 'locked': a pending version showed the raw code and replaced versions offered the approve button. | Four statuses in words; decision only on the open version. |
+| FIX-73 | D-059 | The brief decided who is a sponsor by matching display names and emails. | Uses the signed-in person's memberships on that project. |
+| FIX-74 | D-059 | Type unions for brief status and question status did not match the API. | Corrected and pinned by the new contract test. |
+| FIX-75 | D-060 | The first draft of the testing guide said the person drop-down appears after setup, but Next.js only reads `NEXT_PUBLIC_*` from the `frontend` folder, so a plain `npm run dev` had no demo mode. | `frontend/.env.development` added (public values only), pinned by a test; the claim was then checked in the dev server's own log. |
+| FIX-76 | D-060 | The smoke script's first tests broke one fact per check, so 18 of 22 planted weakenings survived (each check holds several assertions). | A replay test records the real answers once and spoils one field at a time (29 cases): all 22 weakenings are caught. |
+| FIX-77 | D-061 | Contract banner always said 'Arjun accepted'; brief said 'Awaiting project lead (Lakshmi)'. | Real names from the project's members, with fallbacks; tested. |
+| FIX-78 | D-061 | The lead's contract offer started at a fixed $400 on every project. | Starts at the project's own budget; tested with two budgets. |
+| FIX-79 | D-061 | Submit and verify showed a blank page when a load failed. | The server's reason is shown in a red message; tested for both screens and both loads. |
+| FIX-80 | final tidy | The README and the status board still said four finished screens were 'not built yet', that Gemini had never been called, and carried Sunday's day goal. | Corrected; the README now also links the testing guide, the evaluation table and the deployment guide. |
 
 ---
 

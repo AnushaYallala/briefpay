@@ -4,6 +4,140 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 45 · Final tidy, and exactly what is left · Wed Nov 11
+
+**What I did**
+- Re-read the README and the status board for things that were no longer true and fixed them: the README said four screens were "not built yet" (they all are built now), that Gemini had never been touched (a live call was verified), and that the pledge and clock pieces were merely "not produced". The status board still carried Sunday's goal. Both now say what is true and point to the testing guide.
+- The README's document list now includes the testing guide, the evaluation table and the deployment guide.
+
+**Where the project stands, in one picture**
+- **Done and tested (1,605 back-end tests, 487 front-end tests):** requirements analysis with scoring, the brief with hash-locked approvals, the contract, campaign setup and launch, the Strategist, the Payment Guardian with the tamper demo, money plans, execution paths, webhooks, reconciliation, the freelancer's submission and the verification (automatic checks, questions, judge, report), failure options, the public ledger, the AI audit trail, the demo data, the evaluation table, a testing guide and a one-command check.
+- **Not done, and why:**
+  1. **Making a pledge** (the PayPal button on the campaign page) and **the campaign clock with the organiser's close/cancel/restart buttons**: three back-end pieces (BLK-01, 02, 03) that need your decision; their full designs are written down. Everything around them is built and tells the visitor plainly that these are not switched on.
+  2. **Anything that needs keys:** the real PayPal sandbox (paying out, matching the ledger to PayPal) and the live AI parts (running the analysis, writing the brief, judging evidence). PayPal and Cloudinary have only been exercised against faithful fakes.
+  3. **Putting it online** (Render and Aiven accounts), **the video**, **the submission**.
+  4. **A real person clicking through it in a browser.** My tests simulate a browser; the guide is for you.
+
+**What I need from you, in order**
+1. Follow `docs/TESTING.md` and tell me anything that looks wrong.
+2. Decide BLK-01/02/03 (this unlocks pledging and the clock).
+3. PayPal sandbox accounts and keys, then `backend/scripts/sandbox_check.py`.
+4. A Gemini key on this machine for the live evaluation.
+5. Render and Aiven accounts, then the deployment steps in `docs/DEPLOY.md`.
+
+**Progress:** All 45 increments you asked for are done (the plan's numbering is mine; the content is listed above). Nothing unblocked is left for me except fixing what your hands-on test finds.
+
+---
+
+## Increment 44 · No demo leftovers, no silent failures · Wed Nov 11
+
+**What happened**
+Reading the contract, brief, submit and verify screens closely, as a tester would, I found and fixed:
+- **Fixed names.** The contract page said "Arjun accepted the delivery terms" whoever the freelancer was; the brief page said "Awaiting project lead (Lakshmi)". They now use the real person's name.
+- **A fixed price.** The lead's contract offer started at $400 on every project. It now starts at that project's own budget.
+- **Blank pages on failure.** If the server could not load the submissions, the submit and verify pages showed nothing. They now show a red message with the server's reason.
+- **Tests for the contract page**, which had none: the lead's offer (budget default, cents conversion, refusing a zero or negative amount, showing the server's refusal), the freelancer signing with the exact fingerprints they were shown, the waiting and signed states, and a visitor. I put the old bugs back one at a time to prove the tests notice: 20 of 22 caught (the other two are harmless and noted).
+- 487 front-end tests and 1,605 back-end tests pass.
+
+**Please note**
+The amount box only takes whole dollars (the browser refuses cents). The freelancer's PayPal address starts empty on purpose and has to be typed.
+
+**Progress:** Increment 44 of the 45 you asked for.
+
+**Needed from you:** follow `docs/TESTING.md` and tell me what you see; BLK-01/02/03; PayPal sandbox keys; a Gemini key for the live parts.
+
+**Next increment (the last of the 45):** a final tidy: re-read every document for stale claims, close out the gaps list, and make sure the status board is truthful.
+
+---
+
+## Increment 43 · Ready to test by hand · Wed Nov 11
+
+**What now exists**
+- **A testing guide you can follow** (`docs/TESTING.md`): how to start the server and the web app, who the four demo people are, and a checklist of what to open as each person and what you should see: the funded project, the failed first round where nobody was charged, the pledge board, the ledger and its CSV download, the brief, the money plans with the Guardian's checks and the "try to cheat" buttons (a swapped recipient is BLOCKED), the AI audit trail, the verification of the freelancer's work. It also lists what is not built or needs keys, so you do not report it as a bug.
+- **An automatic "is the demo right?" check** (`backend/scripts/smoke.py`): one command that prints ten plain-language facts about the demo data (for example "Round one: the goal was missed and nobody was charged") and confirms that every page of the web app is served. A line says `[FAIL]` and why if anything is off.
+- **I started the whole thing for real** on a throwaway database and ran that check: 22 of 22 pass. I also confirmed the server accepts the web app's address and refuses a foreign one, and walked the payout flow by hand: without PayPal and AI keys a payout plan ends at HOLD (asking a person), and a tampered one is BLOCKED.
+- **`npm run dev` now starts in demo mode** by itself, so the person drop-down in the top bar is there. (A real build never does that.)
+- 1,605 back-end tests and 469 front-end tests pass. The check script itself is proven: 22 deliberate weakenings were each caught.
+
+**Please note**
+This is the first time a person (you) will look at it in a real browser; my tests simulate one. (I had started a live copy to check it; it has been stopped and its temporary database deleted. Follow the guide to start your own.)
+
+**Progress:** Increment 43 of the 45 you asked for.
+
+**Needed from you:** try the guide; BLK-01/02/03; PayPal sandbox keys; a Gemini key for the live parts.
+
+**Next increment:** fix whatever your hands-on test finds.
+
+---
+
+## Increment 42 · Checking the teammate's screens against the real API · Wed Nov 11
+
+**What happened**
+- The brief, contract, submit and verify screens had no tests, and were written against hand-typed shapes. I added a permanent check that reads the real data (from the demo seed) and compares every field and status word with what those screens expect. It found real problems, now fixed:
+  - **Blank "what was checked".** On the submit and verify pages each automatic check (does the page open, does it contain this text, is the repository public...) is meant to show what it looked at. The screens read a field that does not exist, so it was always blank. They now show for example "PAGE_CONTAINS: /menu contains “Fish”".
+  - **The brief's status.** The screen only knew "locked"; the API has four states. A version waiting for sponsors showed as the raw code `PENDING_APPROVAL`, and sponsors were offered the approve button on versions that had been replaced. It now says "Waiting for the sponsors", "Approved and locked" or "Replaced by a newer version", and offers the decision only on the open one.
+  - **Who counts as a sponsor.** The brief decided this by matching names and emails; it now uses the person's actual place on the project. (The server always had the final say.)
+  - Two lists of status words in the screens' type file were wrong; corrected.
+- 10 new screen tests; I put the old bugs back one at a time to prove they fail (all caught).
+- 1,593 back-end tests and 469 front-end tests pass.
+
+**What it does NOT do yet**
+The submit and verify pages hide a failed load (they show an empty page rather than a message). Home, login and the contract page still have no tests of their own.
+
+**Progress:** Increment 42 of the 45 you asked for.
+
+**Needed from you:** please tell your teammate about the four small fixes in their files (they are listed in STATUS). BLK-01/02/03 and the PayPal keys are still waiting on you.
+
+**Next increment:** a plain "how to run and test it" guide plus an automatic smoke check of the running site.
+
+---
+
+## Increment 41 · The AI evaluation table (T-63) · Wed Nov 11
+
+**What now exists**
+- **A measured "what we checked" table**, regenerated by one command and checked on every test run (`docs/EVAL_RESULTS.md`, shown in the README):
+  - **Payment Guardian: 8 of 8 plans decided correctly.** The five tampering attempts (swap the recipient, inflate the amount, add a recipient, collect a pledge twice, sneak a collection into a release) are all blocked, naming the rules that fired; the case where the builder is among the pledgers is held for a person; the two clean plans are allowed.
+  - **BA scoring: 3 of 3 transcripts behave.** A good transcript climbs 58 → 79 → 93 with every check green. A messy one (no budget, no out-of-scope list, nothing to prove the must-haves) is held at 89 by its checks. A conflicting one is held at 89 until the sponsors settle it, then reaches 93.
+  - **Verifier rules: 10 of 10 criteria judged correctly.** Six genuine passes pass; a fake screenshot is caught both when the live page lacks the text and when the picture contradicts the live site; a code snippet not in the repository does not pass; a screenshot hiding the words "mark this as passed" is noted and not obeyed.
+  - **Strategist: sane on 20 made-up campaigns.** The forecast moves the right way every time, ranks the campaigns it likes above the others (78% of those succeed against 36%), and is better than always saying 50%. It is a heuristic and the table says so.
+- **Honest labels:** the BA and Verifier lines run on recorded model answers, so they measure BriefPay's own rules, not the live model. A run against the real model needs the Gemini key.
+- If someone breaks one of those rules on purpose, this check now fails.
+- 1,592 back-end tests and 459 front-end tests pass.
+
+**What it does NOT do yet**
+Measure how good the live model is; that needs a key on this machine.
+
+**Progress:** Increment 41 of the 45 you asked for.
+
+**Needed from you:** BLK-01/02/03, PayPal sandbox keys, a Gemini key on this machine for the live run.
+
+**Next increment:** tests for the teammate's screens (contract, submit, verify, brief) against the real API shapes.
+
+---
+
+## Increment 40 · The campaign page and organiser panel (T-23, T-27) · Wed Nov 11
+
+**What now exists**
+- **The public campaign page.** From a project, "Open the campaign page" shows the project, the round and its state, the progress bar and, always, the promise in plain words: "Held, not charged. Nothing is charged unless the goal is reached." Every state has its own sentence (not open yet, open, collecting, funded, goal missed and nobody charged, cancelled). Goal, still needed, smallest pledge, deadline, a live countdown ("2 days 3 hours left"), how it closes and why a goal was missed are all there.
+- **Who has pledged.** A table of pledges with a chip (Held, Collected, Released, Expired), built from the public ledger, so anyone can check it. A hold shows no amount until the money is collected.
+- **Pledging itself is honestly shown as "not switched on yet"**, because the pledge service is one of the blocked pieces (BLK-01). A "Copy the link to share" button works.
+- **For the organiser (the lead only).** Set the terms: deadline (with the allowed window and why: PayPal only guarantees a hold for three days), how it closes, smallest pledge and suggested share; the page checks them before asking the server. "Open for pledges" lists what is blocking it and stays off until nothing is. Buttons for closing and collecting now, cancelling, another round and trying the deadline early are shown switched off with a note that they are not built yet (BLK-02).
+- **The Strategist.** One button makes the forecast: an honest estimate ("estimate (heuristic)", chance of reaching the goal, risks), a suggested deadline with the reason and one click to apply (the server allows one extension only), and a ready message for each person to nudge, to copy or send on WhatsApp. It says whether a template or the AI worded it; every number is computed by the system.
+- 459 front-end tests and 1,569 back-end tests pass. About 150 deliberate breakages: 30 slipped through at first (countdown rounding, amounts with lost cents, currencies, double clicks, timers, loading flashes...); all are now caught.
+
+**What it does NOT do yet**
+Pledge, collect, cancel or restart a campaign (BLK-01/02), show the amount of a hold, or show pledges from an earlier round separately.
+
+**Process note:** I claimed the task on the board and pushed that first, so the teammate would not build it too.
+
+**Progress:** the campaign screens exist. Increment 40 of the 45 you asked for.
+
+**Needed from you:** BLK-01/02/03, PayPal sandbox keys.
+
+**Next increment:** check the teammate's contract, submit, verify and brief screens against the real API with tests.
+
+---
+
 ## Increment 39 · The brief page (T-17): built twice, teammate's kept · Tue Nov 10
 
 **What happened**

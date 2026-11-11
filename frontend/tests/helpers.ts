@@ -62,6 +62,27 @@ export const planDetail = (over: Record<string, unknown> = {}) => ({
   ...planItem(), inputs: {}, steps: [step()], reviews: [], approvals: [], ...over,
 }) as import("@/lib/types").PlanDetail;
 
+export const campaignView = (over: Record<string, unknown> = {}) => ({
+  id: 1, project_id: 1, project_title: "Velugu Cove tourism website", number: 1, state: "OPEN", goal_cents: 40000, fee_reserve_cents: 0, currency: "USD",
+  min_pledge_cents: 500, suggested_share_cents: null, close_policy: "EARLY_ON_GOAL", opens_at: "2026-11-10T10:00:00+00:00", deadline_at: "2026-11-12T10:00:00+00:00",
+  seconds_left: 172800, pledged_cents: 15000, pledge_count: 1, remaining_need_cents: 25000, goal_reached_at: null, held_not_charged: true, fail_reason: null, ...over,
+}) as import("@/lib/types").CampaignView;
+
+export const leadPart = (over: Record<string, unknown> = {}) => ({
+  launch_blockers: [], can_launch: true, deadline_earliest: "2026-11-10T11:00:00+00:00", deadline_latest: "2026-11-13T08:00:00+00:00", earliest_honor_until: null, ...over,
+});
+
+export const strategistReport = (over: Record<string, unknown> = {}) => ({
+  id: 1, created_at: "2026-11-10T12:00:00",
+  forecast: { label: "estimate (heuristic)", goal_cents: 40000, pledged_cents: 0, gap_cents: 40000, hours_left: 48, expected_invitees_cents: 15750, expected_open_cents: 0, projected_cents: 15750, ratio: 0.3937, probability: 0.0256 },
+  suggestions: {
+    kind: "SETUP", deadline: { deadline_at: "2026-11-13T12:00:00+00:00", hours: 70, initial_probability: 0.0256, reason: "The expected pledges are well below the goal, so run it as long as allowed." },
+    nudge_targets: [{ member_id: 2, name: "Ravi", invite_status: "INVITED", expected_pledge_cents: 15000, score: 4500, reason: "hasn't opened the link, said $150" }], campaign_state: "SETUP",
+  },
+  narrative: { headline: "About a 3% chance of reaching the goal (estimate (heuristic))", explanation: "$0 of $400 is held.", risk_factors: ["Some invitees have not opened the link"], source: "TEMPLATE", label: "estimate (heuristic)", flags: ["AI_UNAVAILABLE"] },
+  nudges: [{ member_id: 2, name: "Ravi", channel: "WHATSAPP", message: "Ravi, we're $400 short. The link: http://x/campaign?id=1", source: "TEMPLATE", flags: [], reused: false }], ...over,
+}) as import("@/lib/types").StrategistReport;
+
 export const brdReq = (over: Record<string, unknown> = {}) => ({
   code: "REQ-001", title: "Welcome page", description: "A home page that says what Velugu Cove is.", priority: "MUST", weight: 3, requested_by: [1, 2],
   acceptance_criteria: [{ id: "AC-1", given: "a visitor opens the site", when: "the home page loads", then: "it welcomes them", evidence: ["LIVE_URL_CHECK", "SCREENSHOT"], auto_check_hint: { type: "URL_REACHABLE", path: "/", text: null } }],
@@ -83,6 +104,21 @@ export const brdView = (over: Record<string, unknown> = {}) => ({
   awaiting: [{ member_id: 1, member_name: "Lakshmi" }], created_at: "2026-11-10T12:00:00", locked_at: null,
   versions: [{ version: 1, status: "PENDING_APPROVAL", sha256: "a".repeat(64) }], ...over,
 }) as import("@/lib/types").BrdView;
+
+export const autoCheck = (over: Record<string, unknown> = {}) => ({
+  id: 1, check_type: "PAGE_CONTAINS", requirement_code: "REQ-002", input: { deployed_url: "https://velugu.example.com", path: "/menu", text: "Fish" }, result: "PASS", detail: { status: 200 },
+  created_at: "2026-11-11T10:00:00", ...over,
+}) as import("@/lib/types").AutoCheckItem;
+
+export const subItem = (over: Record<string, unknown> = {}) => ({
+  id: 5, attempt_no: 1, state: "NEEDS_CHANGES", commit_sha: "abc1234", deployed_url: "https://velugu.example.com", created_at: "2026-11-11T10:00:00", ...over,
+}) as import("@/lib/types").SubmissionListItem;
+
+export const subDetail = (over: Record<string, unknown> = {}) => ({
+  ...subItem(), contract_id: 1, repo_url: "https://github.com/arjun/velugu", notes: null,
+  auto_checks: [autoCheck(), autoCheck({ id: 2, check_type: "REPO_PUBLIC", requirement_code: null, input: {} }), autoCheck({ id: 3, check_type: "URL_REACHABLE", input: { deployed_url: "https://velugu.example.com", path: "/stay" }, result: "FAIL" })],
+  auto_check_summary: { PASS: 2, FAIL: 1, ERROR: 0 }, questions: [], evidence: [], report: null, ...over,
+}) as import("@/lib/types").SubmissionDetail;
 
 export const baDim = (over: Record<string, unknown> = {}) => ({
   dimension: "D1", name: "Business goals & success measures", weight: 12, coverage_claimed: 0.5, coverage_effective: 0.5, downgraded: false,

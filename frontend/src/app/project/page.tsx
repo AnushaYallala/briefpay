@@ -41,8 +41,9 @@ function Workspace({ id }: { id: number }) {
       case "CONTRACTING":
         return { label: "Review & Sign Contract", href: `/contract?id=${p.id}` };
       case "CAMPAIGN_SETUP":
+        return { label: "Set up the campaign", href: c ? `/campaign?id=${c.id}` : `/campaign?project=${p.id}` };
       case "PLEDGING":
-        return { label: "View Pledging Campaign", href: `/project?id=${p.id}#campaign` };
+        return { label: "View Pledging Campaign", href: c ? `/campaign?id=${c.id}` : `/campaign?project=${p.id}` };
       case "IN_PROGRESS":
         return { label: "Freelancer Submission Portal", href: `/submit?id=${p.id}` };
       case "VERIFYING":
@@ -204,15 +205,19 @@ function Workspace({ id }: { id: number }) {
                     open={c.state === "OPEN"}
                   />
                 </div>
+                <Link href={`/campaign?id=${c.id}`} className="inline-block text-sm font-semibold text-sea-700 underline">Open the campaign page</Link>
                 <div className="flex items-center gap-2 text-xs text-ink-500">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                   <span>Pledge-If Guarantee: Holds are released immediately if the goal is missed. Nobody is charged.</span>
                 </div>
               </div>
             ) : (
-              <Empty title="No campaign yet">
-                The campaign starts after the brief is approved and the builder has signed.
-              </Empty>
+              <>
+                <Empty title="No campaign yet">
+                  The campaign starts after the brief is approved and the builder has signed.
+                </Empty>
+                {p.state === "CAMPAIGN_SETUP" && p.viewer?.role === "LEAD" && <Link href={`/campaign?project=${p.id}`} className="mt-2 inline-block text-sm font-semibold text-sea-700 underline">Open the campaign set-up</Link>}
+              </>
             )}
           </section>
 

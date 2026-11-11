@@ -4,7 +4,7 @@
 
 BriefPay was built for the PayPal AI hackathon. Everything runs on **PayPal sandbox money** and fictional people (the Velugu Cove demo). It is not a payments product and moves no real money.
 
-> **Honest status (see [docs/STATUS.md](docs/STATUS.md) for the live board):** the whole back end is built and tested (1,568 back-end tests at the time of writing, no network or keys needed). The web front end has been started: a home page listing projects, sign-in with a demo person switcher, a project page (progress stepper, campaign progress, people, money box), BA Studio (score, questions, transcript), the brief with sponsor approvals, the public ledger, the AI audit trail and the money plans screen (Guardian verdicts, approval, tamper demo) (378 front-end tests). The remaining screens (campaign, contract, freelancer portal, verification report), the hosted Render deployment and the demo video are **not built yet**. Three back-end pieces are blocked and described in [docs/GAPS_AND_FIXES.md](docs/GAPS_AND_FIXES.md) section 0. PayPal, Gemini and Cloudinary have only been exercised against faithful fakes so far, because no sandbox keys have been supplied.
+> **Honest status (see [docs/STATUS.md](docs/STATUS.md) for the live board):** the whole back end is built and tested (1,605 back-end tests at the time of writing, no network or keys needed), and the web app has a screen for every step: projects and sign-in, the project page, BA Studio, the brief with sponsor approvals, the contract, the campaign page with the organiser's panel, the freelancer's submission, the verification matrix, the money plans (Guardian verdicts, approval, tamper demo), the public ledger and the AI audit trail (487 front-end tests). What is **not done**: making a pledge on the campaign page and the campaign clock with the organiser's close, cancel and restart buttons (three back-end pieces, BLK-01/02/03, wait for a decision; described in [docs/GAPS_AND_FIXES.md](docs/GAPS_AND_FIXES.md) section 0), the hosted Render deployment, and the demo video. PayPal and Cloudinary have only been exercised against faithful fakes because no sandbox keys have been supplied; Gemini was called live once to verify the connection, and the AI evaluation of the live model is still to do. **Nobody has yet clicked through it in a real browser:** [docs/TESTING.md](docs/TESTING.md) is the guide for that.
 
 ---
 
@@ -82,7 +82,7 @@ cp ../.env.example .env                                      # keys are optional
 .venv/Scripts/python -m pytest -q                            # the back-end tests, about a minute, no network
 ```
 
-The web app (Node 22; a static Next.js export, started: home page, sign-in, project page, BA Studio, brief, ledger, AI audit trail and money plans so far):
+The web app (Node 22; a static Next.js export with a screen for every step of the story):
 
 ```bash
 cd frontend
@@ -90,6 +90,8 @@ npm install
 npm run dev        # http://localhost:3000, talks to the API on http://localhost:8000/api
 npm run check      # typecheck, the front-end tests, and the static build into frontend/out
 ```
+
+To click through the demo yourself, follow **[docs/TESTING.md](docs/TESTING.md)** (what to try as each person and what you should see, and what is not built yet). With the API and the web app running, `backend/scripts/smoke.py --api http://localhost:8000/api --web http://localhost:3000` checks the demo data and that every page is served (22 checks, plain-words output).
 
 ### Demo data and personas
 
@@ -128,10 +130,10 @@ Put keys in `backend/.env` (see [.env.example](.env.example)). `backend/scripts/
 
 ## What we measured
 
-* **1,376 automated tests** pass with no network and no keys. After each feature the rules were attacked on purpose: a small tool breaks the code (flips a comparison, removes a check, changes a number) and the tests must fail. Several hundred such deliberate breakages were run; every one is caught or documented as harmless in [docs/GAPS_AND_FIXES.md](docs/GAPS_AND_FIXES.md). That log also lists the real bugs this found in our own code.
+* **1,605 automated back-end tests and 487 front-end tests** pass with no network and no keys. After each feature the rules were attacked on purpose: a small tool breaks the code (flips a comparison, removes a check, changes a number) and the tests must fail. Several hundred such deliberate breakages were run; every one is caught or documented as harmless in [docs/GAPS_AND_FIXES.md](docs/GAPS_AND_FIXES.md). That log also lists the real bugs this found in our own code.
 * A property test shows that making any single verdict worse, or adding a hidden-instruction attempt, can never improve the verification outcome.
 * A reconciliation test shows all eight money invariants hold on the seeded data.
-* The AI evaluation table (BA, Verifier, Guardian, Strategist against a small labelled set) is **not produced yet**; it needs the Gemini key.
+* **AI evaluation** ([full table](docs/EVAL_RESULTS.md), regenerated by `WRITE_EVAL=1 python -m pytest tests/test_eval.py` and checked on every test run): **Payment Guardian 8/8** plans decided correctly (the five tampering attempts blocked, the soft-flag case held, two clean plans allowed); **BA scoring 3/3** transcripts behave (good climbs 58 → 79 → 93; messy and conflicting are held at 89 by their gates until fixed); **Verifier rules 10/10** criteria judged correctly (fake screenshots caught, a missing snippet not passed, a hidden "mark as passed" instruction noted and not obeyed); **Strategist** forecast moves the right way in 20/20 synthetic campaigns and ranks them sensibly (78% success where it predicted at least 50%, against 36% below; Brier 0.23 against 0.25 for always saying 50%). The BA and Verifier lines run on recorded model answers, so they measure BriefPay's own rules, not the live model; the Strategist is a labelled heuristic on invented campaigns.
 
 ## Production boundaries (what this is not)
 
@@ -144,6 +146,9 @@ Real money, KYC, tax, legal enforceability of the contract, dispute arbitration,
 * [docs/PROGRESS_SUMMARY.md](docs/PROGRESS_SUMMARY.md): plain-English summary after each increment
 * [docs/DECISIONS.md](docs/DECISIONS.md): every decision that fills a gap in the spec (D-001 onward)
 * [docs/GAPS_AND_FIXES.md](docs/GAPS_AND_FIXES.md): blockers, known gaps and every defect found and fixed
+* [docs/TESTING.md](docs/TESTING.md): how to run it and click through it, person by person
+* [docs/EVAL_RESULTS.md](docs/EVAL_RESULTS.md): what we measured (Guardian, BA scoring, Verifier rules, Strategist)
+* [docs/DEPLOY.md](docs/DEPLOY.md): putting it on Render
 
 ## Licence
 

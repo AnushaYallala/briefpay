@@ -16,6 +16,7 @@ import type {
   VerificationQuestionItem,
 } from "@/lib/types";
 import { useApi } from "@/lib/useApi";
+import { checkTarget, problemText } from "@/lib/verifyview";
 
 function SubmitStudio({ projectId }: { projectId: number }) {
   const auth = useAuth();
@@ -28,6 +29,7 @@ function SubmitStudio({ projectId }: { projectId: number }) {
   const [selectedSubId, setSelectedSubId] = useState<number | null>(null);
   const [currentSub, setCurrentSub] = useState<SubmissionDetail | null>(null);
   const [subLoading, setSubLoading] = useState<boolean>(false);
+  const [loadProblem, setLoadProblem] = useState<string | null>(null);
 
   // New submission form - starts empty with quick paste helper (no fake defaults)
   const [repoUrl, setRepoUrl] = useState<string>("");
@@ -51,6 +53,7 @@ function SubmitStudio({ projectId }: { projectId: number }) {
   const [judgeMsg, setJudgeMsg] = useState<string | null>(null);
 
   const loadSubmissions = async () => {
+    setLoadProblem(null);
     try {
       const res = await apiGet<{ submissions: SubmissionListItem[] }>(`/projects/${projectId}/submissions`);
       setSubmissions(res.submissions || []);
@@ -61,8 +64,8 @@ function SubmitStudio({ projectId }: { projectId: number }) {
           setSelectedSubId(latest.id);
         }
       }
-    } catch {
-      // Submissions may be empty initially
+    } catch (err) {
+      setLoadProblem(problemText(err, "Could not load the submissions."));
     }
   };
 
@@ -83,7 +86,7 @@ function SubmitStudio({ projectId }: { projectId: number }) {
         setCurrentSub(data);
       })
       .catch((err: unknown) => {
-        console.error(err);
+        setLoadProblem(problemText(err, "Could not load this submission."));
       })
       .finally(() => {
         setSubLoading(false);
@@ -176,6 +179,7 @@ function SubmitStudio({ projectId }: { projectId: number }) {
 
   return (
     <div className="space-y-6">
+      {loadProblem && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{loadProblem}</p>}
       <WorkflowNav
         projectId={projectId}
         projectTitle={project.title}
@@ -407,7 +411,7 @@ function SubmitStudio({ projectId }: { projectId: number }) {
                   <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-2.5 space-y-1 max-h-40 overflow-y-auto text-2xs font-mono">
                     {currentSub.auto_checks.map((chk) => (
                       <div key={chk.id} className="flex items-center justify-between py-0.5 border-b border-slate-100 last:border-0">
-                        <span className="text-slate-700">{chk.check_type}: {chk.target}</span>
+                        <span className="text-slate-700">{chk.check_type}{checkTarget(chk.input) ? `: ${checkTarget(chk.input)}` : ""}</span>
                         <span className={`font-bold px-1.5 py-0.2 rounded ${
                           chk.result === "PASS" ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-800"
                         }`}>

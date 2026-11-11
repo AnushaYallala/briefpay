@@ -77,6 +77,49 @@ export type LedgerRow = {
   meta: Record<string, unknown>;
 };
 
+export type CampaignView = {
+  id: number;
+  project_id: number;
+  project_title: string;
+  number: number;
+  state: string;
+  goal_cents: number;
+  fee_reserve_cents: number;
+  currency: string;
+  min_pledge_cents: number;
+  suggested_share_cents: number | null;
+  close_policy: string;
+  opens_at: string | null;
+  deadline_at: string;
+  seconds_left: number;
+  pledged_cents: number;
+  pledge_count: number;
+  remaining_need_cents: number;
+  goal_reached_at: string | null;
+  held_not_charged: boolean;
+  fail_reason: string | null;
+  lead?: { launch_blockers: string[]; can_launch: boolean; deadline_earliest: string; deadline_latest: string; earliest_honor_until: string | null };
+};
+
+export type Nudge = { member_id: number; name: string; channel: string; message: string; source: string; flags: string[]; reused: boolean };
+export type StrategistReport = {
+  id: number;
+  created_at: string;
+  forecast: {
+    label: string; goal_cents: number; pledged_cents: number; gap_cents: number; hours_left: number;
+    expected_invitees_cents: number; expected_open_cents: number; projected_cents: number; ratio: number; probability: number;
+  };
+  suggestions: {
+    kind: string | null;
+    deadline: { deadline_at: string; reason: string; hours?: number; initial_probability?: number } | null;
+    nudge_targets: { member_id: number; name: string; invite_status: string; expected_pledge_cents: number; score: number; reason: string }[];
+    campaign_state: string;
+    applied_extension?: { from: string; to: string; at: string };
+  };
+  narrative: { headline: string; explanation: string; risk_factors: string[]; source: string; label: string; flags: string[] };
+  nudges: Nudge[];
+};
+
 export type BrdCriterion = {
   id: string;
   given: string;
@@ -380,7 +423,7 @@ export type BRDApprovalItem = {
 export type BRDResponse = {
   id: number;
   version: number;
-  status: "DRAFT" | "LOCKED" | "APPROVED" | "REJECTED";
+  status: "DRAFT" | "PENDING_APPROVAL" | "APPROVED" | "SUPERSEDED";
   sha256: string;
   score_at_generation: number;
   content: {
@@ -419,10 +462,10 @@ export type ContractResponse = {
 export type AutoCheckItem = {
   id: number;
   check_type: string;
-  target: string;
+  requirement_code: string | null;
+  input: Record<string, unknown>;
   result: "PASS" | "FAIL" | "ERROR";
-  latency_ms: number;
-  details: Record<string, unknown>;
+  detail: Record<string, unknown>;
   created_at: string;
 };
 
@@ -444,7 +487,7 @@ export type VerificationQuestionItem = {
   question: string;
   expected_evidence: string[];
   round: number;
-  status: "PENDING" | "ANSWERED" | "WAIVED";
+  status: "OPEN" | "ANSWERED";
 };
 
 export type VerificationReportItem = {
