@@ -152,10 +152,15 @@ def test_planned_voids_are_confirmed_and_the_campaign_fails_with_nobody_charged(
     assert ledger.pool_balance(w.db, w.project.id) == 0
 
 
-def test_an_unplanned_void_is_acknowledged_but_left_for_the_blocked_pledge_helper(w):
+def test_an_unplanned_void_stops_the_hold_counting(w):
+    """A buyer cancelled the hold in PayPal (we did not ask): it stops counting, with a memo row marked unplanned."""
     p = w.pledge(15000)
     out = run(w, event("PAYMENT.AUTHORIZATION.VOIDED", {"id": p.paypal_authorization_id}))
-    assert out["effect"] == "NOT_HANDLED" and "BLK-03" in out["why"] and p.status == "AUTHORIZED"
+    assert out == {"effect": "PLEDGE_VOIDED", "pledge_id": p.id} and p.status == "VOIDED"
+    memo = w.db.scalars(select(LedgerEntry).where(LedgerEntry.type == "PLEDGE_VOIDED")).one()
+    assert memo.amount_cents == 0 and memo.meta_json["unplanned"] is True
+    assert run(w, event("PAYMENT.AUTHORIZATION.VOIDED", {"id": p.paypal_authorization_id}))["effect"] == "ALREADY_APPLIED"
+    assert w.db.query(LedgerEntry).filter(LedgerEntry.type == "PLEDGE_VOIDED").count() == 1
 
 
 def test_void_events_for_finished_or_unknown_holds(w):
@@ -299,9 +304,55 @@ def test_a_batch_event_while_paypal_is_unreachable_is_retried_later(w):
 
 # ---------------- the rest ----------------
 
-def test_a_hold_placed_event_is_acknowledged_but_left_for_the_blocked_pledge_helper(w):
-    out = run(w, event("PAYMENT.AUTHORIZATION.CREATED", {"id": "AUTH-NEW", "status": "CREATED"}))
-    assert out["effect"] == "NOT_HANDLED" and "BLK-03" in out["why"]
+def waiting(w, cents):
+    """A pledge whose order exists but whose hold has not been recorded yet."""
+    p = w.pledge(cents, status="CREATED")
+    p.paypal_authorization_id = None
+    w.db.flush()
+    return p
+
+
+def created_resource(p, auth_id="AUTH-NEW", cents=None, **kw):
+    c = p.amount_cents if cents is None else cents
+    return {"id": auth_id, "status": "CREATED", "amount": {"currency_code": "USD", "value": f"{c // 100}.{c % 100:02d}"},
+            "supplementary_data": {"related_ids": {"order_id": p.paypal_order_id}}, **kw}
+
+
+def test_a_hold_placed_event_counts_the_hold_once(w):
+    p = waiting(w, 15000)
+    out = run(w, event("PAYMENT.AUTHORIZATION.CREATED", created_resource(p)))
+    assert out == {"effect": "PLEDGE_AUTHORIZED", "pledge_id": p.id}
+    assert p.status == "AUTHORIZED" and p.paypal_authorization_id == "AUTH-NEW" and p.honor_until is not None
+    assert w.db.query(LedgerEntry).filter(LedgerEntry.type == "PLEDGE_AUTHORIZED").count() == 1
+    assert run(w, event("PAYMENT.AUTHORIZATION.CREATED", created_resource(p)))["effect"] == "ALREADY_APPLIED"
+    assert w.db.query(LedgerEntry).filter(LedgerEntry.type == "PLEDGE_AUTHORIZED").count() == 1
+
+
+def test_a_hold_placed_event_finds_the_pledge_by_its_custom_id(w):
+    p = waiting(w, 15000)
+    res = {**created_resource(p), "supplementary_data": {}, "custom_id": f"camp:{w.campaign.id}:pledge:{p.id}"}
+    assert run(w, event("PAYMENT.AUTHORIZATION.CREATED", res))["effect"] == "PLEDGE_AUTHORIZED"
+    q = waiting(w, 5000)
+    wrong = {**created_resource(q, "AUTH-2"), "supplementary_data": {}, "custom_id": f"camp:{w.campaign.id + 99}:pledge:{q.id}"}
+    assert run(w, event("PAYMENT.AUTHORIZATION.CREATED", wrong))["effect"] == "UNKNOWN_OBJECT" and q.status == "CREATED"
+
+
+def test_a_hold_that_does_not_match_is_never_counted(w):
+    p = waiting(w, 15000)
+    assert run(w, event("PAYMENT.AUTHORIZATION.CREATED", created_resource(p, cents=14000)))["effect"] == "HOLD_MISMATCH"
+    assert run(w, event("PAYMENT.AUTHORIZATION.CREATED", created_resource(p, status="DENIED")))["effect"] == "HOLD_MISMATCH"
+    assert p.status == "CREATED" and p.paypal_authorization_id is None
+
+
+def test_a_hold_that_arrives_after_the_campaign_closed_is_not_counted(w):
+    p = waiting(w, 15000)
+    w.campaign.state = "FAILED"
+    assert run(w, event("PAYMENT.AUTHORIZATION.CREATED", created_resource(p)))["effect"] == "LATE_HOLD_IGNORED"
+    assert p.status == "CREATED"
+
+
+def test_a_hold_event_for_something_we_never_started(w):
+    assert run(w, event("PAYMENT.AUTHORIZATION.CREATED", {"id": "AUTH-X", "status": "CREATED"}))["effect"] == "UNKNOWN_OBJECT"
 
 
 def test_informational_alerts_and_unknown_types(w):

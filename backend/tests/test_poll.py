@@ -392,7 +392,7 @@ def test_startup_builds_a_runner_that_polls_at_the_configured_interval(db, monke
     monkeypatch.setattr(get_settings(), "poll_interval_seconds", 17)
     factory = sessionmaker(bind=db.get_bind())
     runner = build_runner(get_settings(), factory)
-    assert len(runner.periodic) == 1 and runner.periodic[0][0] == 17
+    assert len(runner.periodic) == 2 and runner.periodic[0][0] == 17      # the poll fallback first, then the campaign clock
     runner.periodic[0][1]()
     assert seen == [factory]
 

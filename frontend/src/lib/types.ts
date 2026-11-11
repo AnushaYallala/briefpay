@@ -101,6 +101,14 @@ export type CampaignView = {
   lead?: { launch_blockers: string[]; can_launch: boolean; deadline_earliest: string; deadline_latest: string; earliest_honor_until: string | null };
 };
 
+/** One pledge as `POST /campaigns/{id}/pledges/order` and `.../authorize` return it. `currency` is only on the order answer. */
+export type PledgeResult = { id: number; campaign_id: number; display_name: string; amount_cents: number; status: string; order_id: string; honor_until: string | null; currency?: string };
+/** A row of `GET /campaigns/{id}/pledges`: public, no emails; the lead also gets `payer_email` and `honor_until`. */
+export type PledgeListRow = { id: number; display_name: string; amount_cents: number; status: string; at: string | null; payer_email?: string | null; honor_until?: string | null };
+export type PlanSummary = { id: number; kind: string; state: string; decision: string };
+/** What the lead's close and cancel buttons answer: the campaign, plus the money plan that was proposed. */
+export type CampaignActionResult = CampaignView & { plan?: PlanSummary };
+
 export type Nudge = { member_id: number; name: string; channel: string; message: string; source: string; flags: string[]; reused: boolean };
 export type StrategistReport = {
   id: number;

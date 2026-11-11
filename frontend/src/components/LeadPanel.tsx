@@ -1,16 +1,41 @@
 "use client";
+import Link from "next/link";
 import { useState } from "react";
 import { CalendarClock, CheckCircle2, Lock, Rocket, ShieldAlert, SlidersHorizontal } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { CLOSE_POLICY_WORDS, centsToDollars, deadlineProblem, deadlineToIso, dollarsToCents, isoToLocalInput, mayLaunch } from "@/lib/campaign";
 import { formatMoney } from "@/lib/money";
+import { DEMO_MODE } from "@/lib/personas";
 import { formatDateTime, parseApiDate } from "@/lib/time";
-import type { CampaignView } from "@/lib/types";
+import type { CampaignActionResult, CampaignView } from "@/lib/types";
 
 const said = (e: unknown) => (e instanceof ApiError ? e.message : "Something went wrong");
 
-/** What the lead can do: set the goal date and terms, open the campaign, and (not built yet) close, cancel or restart it. The server decides; this explains. */
-export function LeadPanel({ projectId, campaign, onChanged }: { projectId: number; campaign: CampaignView | null; onChanged: () => void }) {
+type ClockAction = { action: string; reason?: string; why?: string };
+
+/** What the clock did on a demo tick, in plain words. */
+function clockWords(actions: ClockAction[]): string {
+  const a = actions.find((x) => x.action === "CAPTURE" || x.action === "RELEASE" || x.action === "SKIPPED" || x.action === "ERROR");
+  if (!a) return "The clock looked at the campaign and had nothing to do yet.";
+  if (a.action === "CAPTURE") return "The clock saw the goal was held and started collecting the money.";
+  if (a.action === "RELEASE") return "The deadline had passed without the goal, so the clock started releasing every hold. Nobody is charged.";
+  if (a.action === "SKIPPED") return "The clock found a money plan already waiting; a person decides from here.";
+  return "The clock could not finish; look at the money plans.";
+}
+
+/** The lead's buttons for a campaign that has opened, and which of them make sense in each state. The server still decides. */
+function controls(state: string) {
+  const all = [
+    { name: "close", label: "Close and collect now", enabled: state === "OPEN", hint: "Only when the holds already cover the goal." },
+    { name: "cancel", label: "Cancel the campaign", enabled: state === "OPEN", hint: "Releases every hold. Nobody is charged." },
+    { name: "round", label: "Start another round", enabled: state === "FAILED", hint: "After a round that missed its goal." },
+    { name: "early", label: "Try the deadline early", enabled: state === "OPEN", hint: "Demo only: pretend the deadline is now." },
+  ];
+  return DEMO_MODE ? all : all.filter((c) => c.name !== "early");
+}
+
+/** What the lead can do: set the goal date and terms, open the campaign, then close and collect, cancel, start another round, or (demo) try the deadline early. The server decides; this explains. */
+export function LeadPanel({ projectId, campaign, onChanged, onRound }: { projectId: number; campaign: CampaignView | null; onChanged: () => void; onRound?: (campaignId: number) => void }) {
   const setup = campaign === null || campaign.state === "SETUP";
   const [deadline, setDeadline] = useState(campaign ? isoToLocalInput(campaign.deadline_at, parseApiDate) : "");
   const [policy, setPolicy] = useState(campaign?.close_policy ?? "EARLY_ON_GOAL");
@@ -19,7 +44,36 @@ export function LeadPanel({ projectId, campaign, onChanged }: { projectId: numbe
   const [busy, setBusy] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [plan, setPlan] = useState<CampaignActionResult["plan"] | null>(null);
   const lead = campaign?.lead;
+
+  /** Close, cancel, another round and the demo shortcut all go through here: busy while it runs, the server's reason if it refuses. */
+  async function act(name: string, run: () => Promise<string | null>) {
+    setBusy(name);
+    setProblem(null);
+    setMessage(null);
+    setPlan(null);
+    setConfirming(false);
+    try {
+      const done = await run();
+      if (done) setMessage(done);
+      onChanged();
+    } catch (e) { setProblem(said(e)); } finally { setBusy(null); }
+  }
+  const planned = (r: CampaignActionResult, words: string) => { setPlan(r.plan ?? null); return `${words}${r.plan ? ` The safety check said ${r.plan.decision}.` : ""}`; };
+  const close = () => act("close", async () => planned(await api<CampaignActionResult>(`/campaigns/${campaign!.id}/close`, { method: "POST" }), "The goal is held, so the money is being collected."));
+  const cancel = () => act("cancel", async () => planned(await api<CampaignActionResult>(`/campaigns/${campaign!.id}/cancel`, { method: "POST" }), "Every hold is being released. Nobody is charged."));
+  const another = () => act("round", async () => {
+    const next = await api<CampaignView>(`/campaigns/${campaign!.id}/relaunch`, { method: "POST" });
+    onRound?.(next.id);
+    return `Round ${next.number} is ready to set up.`;
+  });
+  const early = () => act("early", async () => {
+    await api(`/demo/campaigns/${campaign!.id}/expire`, { method: "POST" });
+    const t = await api<{ actions: ClockAction[] }>("/demo/clock/tick", { method: "POST" });
+    return clockWords(t.actions);
+  });
 
   async function save() {
     setProblem(null);
@@ -202,20 +256,40 @@ export function LeadPanel({ projectId, campaign, onChanged }: { projectId: numbe
 
         {campaign && campaign.state !== "SETUP" && (
           <div className="border-t border-slate-100 pt-4 space-y-3 text-sm" aria-label="Controls">
-            <p className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs text-slate-600 leading-relaxed" data-testid="not-built">
-              Closing and collecting, cancelling, starting another round and trying the deadline early are not built yet. They will appear here.
-            </p>
+            {plan && (
+              <p className="rounded-xl border border-sea-200 bg-sea-50/70 px-3.5 py-2.5 text-xs text-sea-900" data-testid="plan-link">
+                A money plan was prepared.{" "}
+                <Link href={`/plans?id=${projectId}&plan=${plan.id}`} className="font-semibold underline">See the plan and the Guardian&apos;s checks</Link>
+              </p>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {["Close and collect now", "Cancel the campaign", "Start another round", "Try the deadline early"].map((label) => (
-                <button
-                  key={label}
-                  disabled
-                  className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-400 cursor-not-allowed text-left"
-                >
-                  {label}
-                </button>
-              ))}
+              {controls(campaign.state).map((c) => {
+                const off = !c.enabled || busy !== null;
+                return (
+                  <button
+                    key={c.label}
+                    type="button"
+                    disabled={off}
+                    onClick={() => (c.name === "cancel" ? setConfirming(true) : void ({ close, round: another, early }[c.name as "close" | "round" | "early"]()))}
+                    className={`rounded-xl border px-3 py-2 text-xs font-semibold text-left transition ${
+                      off ? "border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed" : "border-sea-200 bg-white text-sea-800 hover:bg-sea-50"
+                    }`}
+                  >
+                    {busy === c.name ? "Working..." : c.label}
+                    <span className="block text-[11px] font-normal text-slate-500">{c.hint}</span>
+                  </button>
+                );
+              })}
             </div>
+            {confirming && (
+              <div role="alertdialog" aria-label="Confirm cancel" className="rounded-xl border border-amber-200 bg-amber-50/80 p-3.5 space-y-2" data-testid="confirm-cancel">
+                <p className="text-xs sm:text-sm text-amber-900">Cancel the campaign? Every hold is released and nobody is charged. This cannot be undone.</p>
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => void cancel()} className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-red-700">Yes, cancel it</button>
+                  <button type="button" onClick={() => setConfirming(false)} className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700">No, keep it open</button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

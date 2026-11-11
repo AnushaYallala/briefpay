@@ -1,9 +1,10 @@
 "use client";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { Check, Share2, ShieldCheck, Users, Wallet } from "lucide-react";
 import { LeadPanel } from "@/components/LeadPanel";
+import { PledgeBox } from "@/components/PledgeBox";
 import { PledgeBoard } from "@/components/PledgeBoard";
 import { StrategistCard } from "@/components/StrategistCard";
 import { WorkflowNav } from "@/components/WorkflowNav";
@@ -34,6 +35,7 @@ function projectStateFromCampaign(state: string): string {
 
 function Campaign({ idParam, projectParam }: { idParam: number | null; projectParam: number | null }) {
   const auth = useAuth();
+  const router = useRouter();
   const ready = auth.status !== "loading";
   const key = auth.user?.id ?? null;
   const project = useApi<ProjectDetail>(ready && idParam === null && projectParam !== null ? `/projects/${projectParam}` : null, key);
@@ -239,11 +241,8 @@ function Campaign({ idParam, projectParam }: { idParam: number | null; projectPa
                   Zero charge until goal met
                 </span>
               </div>
-              <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50/70 p-3.5 text-sm text-slate-700 leading-relaxed" data-testid="pledge-unavailable">
-                {v.state === "OPEN"
-                  ? "Pledging is not switched on yet. When it is, you will be able to hold an amount with PayPal here; nothing is charged unless the goal is reached."
-                  : "This campaign has not opened yet."}
-              </p>
+              <PledgeBox campaign={v} role={role} signedIn={auth.user !== null} userName={auth.user?.display_name ?? null} onPledged={changed} />
+              {v.state === "OPEN" && <p className="text-xs text-slate-500">PayPal shows its own window for your approval. We never see your card or password.</p>}
               <div>
                 <button
                   onClick={async () => {
@@ -293,7 +292,7 @@ function Campaign({ idParam, projectParam }: { idParam: number | null; projectPa
 
         {lead && (
           <div className="lg:col-span-5 space-y-6">
-            <LeadPanel projectId={v.project_id} campaign={v} onChanged={changed} />
+            <LeadPanel projectId={v.project_id} campaign={v} onChanged={changed} onRound={(id) => router.push(`/campaign?id=${id}`)} />
             {isLive(v.state) && (
               <StrategistCard campaignId={v.id} currency={v.currency} report={report.data} missing={report.error?.code === "NO_REPORT"} reload={report.reload} onApplied={changed} />
             )}

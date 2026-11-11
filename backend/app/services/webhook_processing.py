@@ -4,16 +4,16 @@ Rules: never call a PayPal write; only confirm or fail the plan steps we already
 the ledger effects); be idempotent and monotonic, because events repeat and arrive out of order. If an event refers to
 something we sent but whose record is not committed yet, raise `NotReady` so the job retries a little later.
 
-Pledge-status events (a hold placed, an UNPLANNED void) need `pledge_state` (blocked, BLK-03): they are acknowledged
-and recorded as NOT_HANDLED.
+Pledge-status events (a hold placed, an UNPLANNED void) go through `pledge_state`, the one place that changes an existing
+pledge's status, so the synchronous answer from PayPal and the webhook can never disagree.
 """
 from datetime import datetime, timezone
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import LedgerEntry, MoneyPlanStep, PayoutItem, Pledge
-from app.services import ledger, plan_lifecycle
+from app.models import Campaign, LedgerEntry, MoneyPlanStep, PayoutItem, Pledge
+from app.services import ledger, plan_lifecycle, pledge_state
 from app.services.guardian_rules import PayPalUnavailable
 from app.services.paypal_client import value_to_cents
 
@@ -105,7 +105,42 @@ def _void_event(db: Session, resource: dict, now: datetime) -> dict:
         return {"effect": "STEP_CONFIRMED", "step_id": step.id}
     if pledge.status in ("VOIDED", "EXPIRED", "CAPTURED"):
         return {"effect": "ALREADY_APPLIED", "pledge_id": pledge.id}
-    return {"effect": "NOT_HANDLED", "why": "unplanned void needs pledge_state (BLK-03)", "pledge_id": pledge.id}
+    if pledge_state.mark_hold_ended(db, pledge, "VOIDED"):    # a buyer cancelled it, or PayPal ended it: stop counting it
+        return {"effect": "PLEDGE_VOIDED", "pledge_id": pledge.id}
+    return {"effect": "ALREADY_APPLIED", "pledge_id": pledge.id}
+
+
+def _pledge_for_authorization(db: Session, resource: dict) -> Pledge | None:
+    """The pledge a new hold belongs to: by the authorization id if we already know it, then by the order, then by the
+    `custom_id` we put on the order (`camp:<campaign>:pledge:<pledge>`)."""
+    pledge = _pledge_by_auth(db, resource.get("id"))
+    if pledge is None and _related(resource, "order_id"):
+        pledge = db.scalars(select(Pledge).where(Pledge.paypal_order_id == _related(resource, "order_id"))).first()
+    if pledge is None:
+        parts = str(resource.get("custom_id") or "").split(":")
+        if len(parts) == 4 and parts[0] == "camp" and parts[2] == "pledge" and parts[3].isdigit():
+            pledge = db.get(Pledge, int(parts[3]))
+            if pledge is not None and str(pledge.campaign_id) != parts[1]:
+                pledge = None
+    return pledge
+
+
+def _authorization_created(db: Session, resource: dict, now: datetime) -> dict:
+    """A hold exists. It counts only if the pledge is still waiting for it, the campaign is still taking pledges and the
+    amount is exactly the one we asked for; anything else is recorded and left alone (a stray hold is never counted)."""
+    pledge = _pledge_for_authorization(db, resource)
+    if pledge is None:
+        return {"effect": "UNKNOWN_OBJECT", "authorization_id": resource.get("id")}
+    if pledge.status != "CREATED":
+        return {"effect": "ALREADY_APPLIED", "pledge_id": pledge.id}
+    got = _amount_cents(resource)
+    if resource.get("status") not in (None, "CREATED") or (got is not None and got != pledge.amount_cents):
+        return {"effect": "HOLD_MISMATCH", "pledge_id": pledge.id, "paypal_cents": got, "expected_cents": pledge.amount_cents}
+    campaign = db.get(Campaign, pledge.campaign_id)
+    if campaign is None or campaign.state != "OPEN":
+        return {"effect": "LATE_HOLD_IGNORED", "pledge_id": pledge.id}
+    pledge_state.mark_authorized(db, pledge, resource.get("id"), now)
+    return {"effect": "PLEDGE_AUTHORIZED", "pledge_id": pledge.id}
 
 
 def _refund_event(db: Session, resource: dict, now: datetime) -> dict:
@@ -209,7 +244,7 @@ def process(db: Session, event: dict, *, payout_reader, now: datetime | None = N
     if event_type.startswith("PAYMENT.PAYOUTSBATCH."):
         return _payout_batch_event(db, resource, payout_reader, now)
     if event_type == "PAYMENT.AUTHORIZATION.CREATED":
-        return {"effect": "NOT_HANDLED", "why": "needs pledge_state (BLK-03)"}
+        return _authorization_created(db, resource, now)
     if event_type == "PAYMENT.CAPTURE.REVERSED":
         capture_id = resource.get("id")
         pledge = db.scalars(select(Pledge).where(Pledge.paypal_capture_id == capture_id)).first() if capture_id else None

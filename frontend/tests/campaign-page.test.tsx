@@ -74,10 +74,11 @@ describe("the public campaign page", () => {
     expect(screen.getByText("Stays open until the deadline, even after the goal is reached.")).toBeTruthy();
   });
 
-  it("says pledging is not switched on yet for an open campaign, and not open yet for one still being set up", async () => {
+  it("asks a visitor who has not signed in to sign in, and says a campaign still being set up is not open yet", async () => {
     await open();
-    expect(screen.getByTestId("pledge-unavailable").textContent).toContain("Pledging is not switched on yet");
-    expect(screen.queryByRole("button", { name: /Pledge|Pay/ })).toBeNull();
+    expect(screen.getByTestId("pledge-unavailable").textContent).toContain("Sign in to hold an amount");
+    expect(screen.getByRole("link", { name: "Sign in" }).getAttribute("href")).toBe("/login");
+    expect(screen.queryByTestId("pledge-form")).toBeNull();
     cleanup();
     await open(null, campaignView({ state: "SETUP", opens_at: null }));
     expect(screen.getByTestId("pledge-unavailable").textContent).toBe("This campaign has not opened yet.");
@@ -325,19 +326,28 @@ describe("for the organiser: setting up and opening", () => {
     expect((await screen.findByRole("alert")).textContent).toBe("The freelancer must sign first");
   });
 
-  it("says the actions that are not built yet are not built yet, and keeps them off", async () => {
+  it("offers the lead the buttons that make sense for an open campaign, and keeps the others off", async () => {
     await open("LEAD", campaignView({ lead: leadPart({ earliest_honor_until: "2026-11-13T09:00:00+00:00" }) }));
-    expect(screen.getByTestId("not-built").textContent).toContain("are not built yet");
-    const names = ["Close and collect now", "Cancel the campaign", "Start another round", "Try the deadline early"];
-    for (const n of names) expect((screen.getByRole("button", { name: n }) as HTMLButtonElement).disabled, n).toBe(true);
+    const on = (n: string) => !(screen.getByRole("button", { name: new RegExp(n) }) as HTMLButtonElement).disabled;
+    expect([on("Close and collect now"), on("Cancel the campaign"), on("Start another round"), on("Try the deadline early")]).toEqual([true, true, false, true]);
+    expect(screen.queryByTestId("not-built")).toBeNull();
     expect(screen.getByTestId("honor").textContent).toBe("The earliest hold runs out Nov 13, 09:00 UTC.");
     expect(screen.queryByRole("form", { name: "Campaign terms" })).toBeNull();
   });
 
-  it("does not show a hold deadline or the not-built note while still setting up", async () => {
+  it("offers only 'Start another round' after a round that missed its goal, and nothing once it is funded", async () => {
+    await open("LEAD", campaignView({ state: "FAILED", lead: leadPart() }));
+    const on = (n: string) => !(screen.getByRole("button", { name: new RegExp(n) }) as HTMLButtonElement).disabled;
+    expect([on("Close and collect now"), on("Cancel the campaign"), on("Start another round"), on("Try the deadline early")]).toEqual([false, false, true, false]);
+    cleanup();
+    await open("LEAD", campaignView({ state: "CAPTURED", lead: leadPart() }));
+    for (const b of screen.getByRole("region", { name: "Organiser" }).querySelectorAll("[aria-label=Controls] button")) expect((b as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("does not show a hold deadline or the lead's buttons while still setting up", async () => {
     await open("LEAD", setup());
     expect(screen.queryByTestId("honor")).toBeNull();
-    expect(screen.queryByTestId("not-built")).toBeNull();
+    expect(screen.queryByRole("button", { name: /Close and collect now/ })).toBeNull();
   });
 });
 

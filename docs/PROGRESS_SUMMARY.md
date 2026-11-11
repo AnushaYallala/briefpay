@@ -4,6 +4,30 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Extra increment · Pledging, the campaign clock and the organiser's buttons · Thu Nov 12
+
+**What now exists**
+- **Pledging works end to end in code.** On an open campaign a signed-in supporter (not the builder) types an amount, presses PayPal's button, approves in PayPal's own window, and a **hold** is placed. Nothing is charged unless the goal is reached. The system only counts the hold if PayPal itself says it exists for exactly that amount.
+- **The clock.** Every minute (while the server is awake) it checks each open campaign. Goal held: it prepares the "collect the money" plan and the safety checker (Guardian) reviews it; if it says ALLOW the plan goes ahead on its own. Deadline missed: it prepares the "release every hold" plan the same way. It never prepares a second plan for the same campaign: if one exists, a person decides.
+- **The organiser's four buttons are live:** Close and collect now (only when the holds cover the goal), Cancel the campaign (asks you to confirm), Start another round (after a failed one), and for the demo only, Try the deadline early.
+- **PayPal events:** when PayPal says a hold was placed, or that a buyer cancelled one, the system now acts on it.
+- 70 new back-end tests and 22 new front-end tests. I deliberately broke the new code 70 ways (41 back end, 29 front end) and every break is caught. 1,707 back-end and 509 front-end tests pass.
+
+**What you must do to see it**
+1. Your `backend/.env` already has the PayPal sandbox keys. The web app needs the same client id: create `frontend/.env.local` with `NEXT_PUBLIC_PAYPAL_CLIENT_ID=<the PAYPAL_CLIENT_ID value>`.
+2. Restart the backend and `npm run dev`.
+3. Open an OPEN campaign signed in as a sponsor or supporter, type an amount, press the PayPal button, and approve with a PayPal sandbox buyer account.
+
+**Please note**
+- **No real PayPal pledge has been made yet.** Everything is tested against stand-ins that mirror PayPal's documented answers. If the button fails, send me what the page says.
+- PayPal cannot call a program on your own computer, so locally the system learns about holds from PayPal's direct answer and checks again every 30 seconds.
+- The pledge board still shows a "Held" status without the amount (the amounts are available from the server for later).
+- If PayPal ever places a hold with the wrong amount, it is not counted but is also not cancelled; it expires by itself.
+
+**Needed from you:** the `frontend/.env.local` line above and one real sandbox pledge; a Gemini key for the live evaluation; Render and Aiven accounts to deploy; the video and the submission.
+
+---
+
 ## Extra increment · Writing the brief with Groq (instead of Gemini) · Wed Nov 11
 
 **What now exists**

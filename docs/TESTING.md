@@ -87,8 +87,8 @@ Replace `2` with `1` where it says "round one". Pages take the project number in
 
 ## 4. What is NOT working yet (so you do not report it as a bug)
 
-* **Making a pledge.** The PayPal pledge button is shown as "Pledging is not switched on yet" (blocked piece BLK-01).
-* **Closing, cancelling or restarting a campaign** and the early-deadline demo (blocked piece BLK-02): greyed out.
+* **Making a pledge** works only once the PayPal sandbox client id is in `frontend/.env.local` (`NEXT_PUBLIC_PAYPAL_CLIENT_ID=...`, the same value as `PAYPAL_CLIENT_ID` in `backend/.env`) and both servers were restarted. Without it the box says "PayPal is not set up on this site yet". It has never been run against real PayPal, so tell us what you see.
+* **Closing, cancelling and restarting a campaign** work from the organiser panel; "Try the deadline early" appears only in demo mode. These also need PayPal to actually collect or release money.
 * **Anything that needs keys:** the real PayPal sandbox (paying out, "Check with PayPal"), the live AI (running the BA analysis, generating the brief, judging evidence, the Strategist's wording). The Strategist forecast works without a key and says "Worded by a template".
 * **Cloudinary** image uploads use local files in this setup.
 * **Not yet deployed** to the internet; this guide runs on your own computer.
