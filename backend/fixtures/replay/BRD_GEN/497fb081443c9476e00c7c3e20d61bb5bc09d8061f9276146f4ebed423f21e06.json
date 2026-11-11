@@ -1,0 +1,466 @@
+{
+  "agent": "BRD_GEN",
+  "input_hash": "497fb081443c9476e00c7c3e20d61bb5bc09d8061f9276146f4ebed423f21e06",
+  "output": {
+    "audience": "Tourists from Hyderabad, Bangalore and surrounding areas, primarily mobile users accessing via smartphones, using English language",
+    "business_goals": [
+      "Improve online visibility for Velugu Cove",
+      "Promote local businesses equally",
+      "Increase customer enquiries via WhatsApp",
+      "Improve visitor experience with accurate information",
+      "Support mobile visitors",
+      "Encourage tourists from Hyderabad and Bangalore"
+    ],
+    "content_responsibilities": [
+      {
+        "due": null,
+        "item": "Sea Breeze Homestay photos and room details",
+        "owner_member_id": 1
+      },
+      {
+        "due": null,
+        "item": "Ravi's Fish Kitchen menu and opening hours",
+        "owner_member_id": 2
+      },
+      {
+        "due": null,
+        "item": "Cove Boat Tours tour details and safety info",
+        "owner_member_id": 3
+      }
+    ],
+    "domain": null,
+    "executive_summary": "Velugu Cove Tourism Website is a single-page, mobile‑first site that showcases three local businesses – Sea Breeze Homestay, Ravi's Fish Kitchen and Cove Boat Tours – and encourages visitors to contact them via WhatsApp. The site will provide basic information, photos and WhatsApp enquiry buttons for each business. It is built to launch within five days and improve online visibility for the destination.",
+    "glossary": [
+      {
+        "definition": "A clickable element that opens a WhatsApp chat with a pre‑filled message to the business.",
+        "term": "WhatsApp button"
+      },
+      {
+        "definition": "A message automatically inserted into the WhatsApp chat when the button is clicked.",
+        "term": "pre‑filled message"
+      },
+      {
+        "definition": "A website that contains all content on one page, typically using anchors or sections.",
+        "term": "single‑page website"
+      }
+    ],
+    "hosting": null,
+    "non_functional": [
+      "Mobile‑first design",
+      "3‑second page load time on typical 4G connection",
+      "Basic search engine visibility",
+      "Accessibility compliance (WCAG 2.1 AA)",
+      "Supported browsers: Chrome, Safari, Firefox, Edge"
+    ],
+    "open_items": [],
+    "out_of_scope": [
+      "Online payments and payment gateway integration",
+      "Advance payment collection",
+      "Integrated room reservation and booking management",
+      "Automated boat tour reservation management",
+      "Customer accounts and authentication",
+      "Administrative dashboards or complex content management systems",
+      "Automatic menu, room availability, or tour schedule management",
+      "Telugu translation at initial launch",
+      "Advanced analytics dashboards"
+    ],
+    "requirements": [
+      {
+        "acceptance_criteria": [
+          {
+            "auto_check_hint": {
+              "path": "/",
+              "text": "wa.me",
+              "type": "PAGE_CONTAINS"
+            },
+            "evidence": [
+              "TEXT"
+            ],
+            "given": "a visitor is viewing a business section",
+            "then": "a WhatsApp conversation must open with the correct business number",
+            "when": "they click its WhatsApp button"
+          },
+          {
+            "auto_check_hint": {
+              "path": "/",
+              "text": "?text=",
+              "type": "PAGE_CONTAINS"
+            },
+            "evidence": [
+              "TEXT"
+            ],
+            "given": "a visitor is viewing a business section",
+            "then": "a relevant pre‑filled greeting or enquiry message must be displayed",
+            "when": "they click its WhatsApp button"
+          },
+          {
+            "auto_check_hint": null,
+            "evidence": [
+              "TEXT"
+            ],
+            "given": "a visitor is viewing a business section",
+            "then": "the visitor must be able to send the message after the chat opens",
+            "when": "they click its WhatsApp button"
+          },
+          {
+            "auto_check_hint": {
+              "path": null,
+              "text": null,
+              "type": "MOBILE_VIEWPORT"
+            },
+            "evidence": [
+              "TEXT"
+            ],
+            "given": "a visitor is viewing a business section",
+            "then": "the functionality must work on supported mobile and desktop environments",
+            "when": "they click its WhatsApp button"
+          }
+        ],
+        "description": "Provide a WhatsApp contact button for each business with pre‑filled enquiry messages.",
+        "from_temp_ids": [
+          "R1"
+        ],
+        "priority": "MUST",
+        "requested_by": [
+          1,
+          2,
+          3
+        ],
+        "source_refs": [
+          "L159-L182"
+        ],
+        "title": "WhatsApp Contact Button",
+        "weight": 5
+      },
+      {
+        "acceptance_criteria": [
+          {
+            "auto_check_hint": {
+              "path": "/",
+              "text": "English",
+              "type": "PAGE_CONTAINS"
+            },
+            "evidence": [
+              "TEXT"
+            ],
+            "given": "a visitor accesses the website",
+            "then": "the website must display English language content",
+            "when": "they view the content"
+          }
+        ],
+        "description": "Support English and Telugu to accommodate tourists and local visitors (English only at launch).",
+        "from_temp_ids": [
+          "R2"
+        ],
+        "priority": "SHOULD",
+        "requested_by": [
+          1,
+          2,
+          3
+        ],
+        "source_refs": [
+          "L183-L198"
+        ],
+        "title": "Multilingual Support",
+        "weight": 4
+      },
+      {
+        "acceptance_criteria": [
+          {
+            "auto_check_hint": {
+              "path": "/",
+              "text": "Sea Breeze Homestay",
+              "type": "PAGE_CONTAINS"
+            },
+            "evidence": [
+              "TEXT"
+            ],
+            "given": "a visitor opens the Homestay section",
+            "then": "they must be able to view available room photographs, descriptions, and basic amenities",
+            "when": "they view the section"
+          },
+          {
+            "auto_check_hint": {
+              "path": "/",
+              "text": "Lakshmi",
+              "type": "PAGE_CONTAINS"
+            },
+            "evidence": [
+              "TEXT"
+            ],
+            "given": "a visitor opens the Homestay section",
+            "then": "the correct business contact information must be displayed",
+            "when": "they view the section"
+          },
+          {
+            "auto_check_hint": {
+              "path": "/",
+              "text": "wa.me",
+              "type": "PAGE_CONTAINS"
+            },
+            "evidence": [
+              "TEXT"
+            ],
+            "given": "a visitor opens the Homestay section",
+            "then": "a conversation must open with Lakshmi's correct business number",
+            "when": "they click its WhatsApp enquiry button"
+          },
+          {
+            "auto_check_hint": {
+              "path": "/",
+              "text": "?text=",
+              "type": "PAGE_CONTAINS"
+            },
+            "evidence": [
+              "TEXT"
+            ],
+            "given": "a visitor opens the Homestay section",
+            "then": "a pre‑filled booking enquiry message must be displayed",
+            "when": "they click its WhatsApp enquiry button"
+          },
+          {
+            "auto_check_hint": {
+              "path": null,
+              "text": null,
+              "type": "MOBILE_VIEWPORT"
+            },
+            "evidence": [
+              "TEXT"
+            ],
+            "given": "a visitor opens the Homestay section",
+            "then": "the section must display correctly on desktop and mobile devices",
+            "when": "they view the section"
+          }
+        ],
+        "description": "Dedicated section promoting Sea Breeze Homestay with room photos, descriptions, amenities and WhatsApp booking enquiry.",
+        "from_temp_ids": [
+          "R3"
+        ],
+        "priority": "MUST",
+        "requested_by": [
+          1
+        ],
+        "source_refs": [
+          "L199-L224"
+        ],
+        "title": "Sea Breeze Homestay Section",
+        "weight": 5
+      },
+      {
+        "acceptance_criteria": [
+          {
+            "auto_check_hint": {
+              "path": "/",
+              "text": "Ravi's Fish Kitchen",
+              "type": "PAGE_CONTAINS"
+            },
+            "evidence": [
+              "TEXT"
+            ],
+            "given": "a visitor opens the restaurant section",
+            "then": "they must be able to view the menu, opening hours, location, and directions",
+            "when": "they view the section"
+          },
+          {
+            "auto_check_hint": {
+              "path": "/",
+              "text": "menu",
+              "type": "PAGE_CONTAINS"
+            },
+            "evidence": [
+              "TEXT"
+            ],
+            "given": "a visitor opens the restaurant section",
+            "then": "menu items and timings must be clearly readable on mobile and desktop",
+            "when": "they view the section"
+          },
+          {
+            "auto_check_hint": {
+              "path": "/",
+              "text": "maps.google.com",
+              "type": "PAGE_CONTAINS"
+            },
+            "evidence": [
+              "TEXT"
+            ],
+            "given": "a visitor opens the restaurant section",
+            "then": "the correct restaurant location must open in a map application",
+            "when": "they click the directions link"
+          },
+          {
+            "auto_check_hint": {
+              "path": "/",
+              "text": "wa.me",
+              "type": "PAGE_CONTAINS"
+            },
+            "evidence": [
+              "TEXT"
+            ],
+            "given": "a visitor opens the restaurant section",
+            "then": "a conversation must open with the restaurant's correct business number",
+            "when": "they click its WhatsApp enquiry button"
+          },
+          {
+            "auto_check_hint": {
+              "path": null,
+              "text": null,
+              "type": "MOBILE_VIEWPORT"
+            },
+            "evidence": [
+              "TEXT"
+            ],
+            "given": "a visitor opens the restaurant section",
+            "then": "the section must display correctly on desktop and mobile devices",
+            "when": "they view the section"
+          }
+        ],
+        "description": "Dedicated section displaying restaurant menu, opening hours, location, directions and WhatsApp enquiry.",
+        "from_temp_ids": [
+          "R4"
+        ],
+        "priority": "MUST",
+        "requested_by": [
+          2
+        ],
+        "source_refs": [
+          "L225-L250"
+        ],
+        "title": "Ravi's Fish Kitchen Section",
+        "weight": 5
+      },
+      {
+        "acceptance_criteria": [
+          {
+            "auto_check_hint": {
+              "path": "/",
+              "text": "Cove Boat Tours",
+              "type": "PAGE_CONTAINS"
+            },
+            "evidence": [
+              "TEXT"
+            ],
+            "given": "a visitor opens the Boat Tours section",
+            "then": "they must be able to view both morning and sunset tour details",
+            "when": "they view the section"
+          },
+          {
+            "auto_check_hint": {
+              "path": "/",
+              "text": "morning",
+              "type": "PAGE_CONTAINS"
+            },
+            "evidence": [
+              "TEXT"
+            ],
+            "given": "a visitor opens the Boat Tours section",
+            "then": "tour descriptions and timings must be clearly displayed",
+            "when": "they view the section"
+          },
+          {
+            "auto_check_hint": {
+              "path": "/",
+              "text": "price",
+              "type": "PAGE_CONTAINS"
+            },
+            "evidence": [
+              "TEXT"
+            ],
+            "given": "a visitor opens the Boat Tours section",
+            "then": "confirmed pricing must be displayed when supplied by the business owner",
+            "when": "they view the section"
+          },
+          {
+            "auto_check_hint": {
+              "path": "/",
+              "text": "safety",
+              "type": "PAGE_CONTAINS"
+            },
+            "evidence": [
+              "TEXT"
+            ],
+            "given": "a visitor opens the Boat Tours section",
+            "then": "relevant safety information must be accessible before visitors contact the business",
+            "when": "they view the section"
+          },
+          {
+            "auto_check_hint": {
+              "path": "/",
+              "text": "wa.me",
+              "type": "PAGE_CONTAINS"
+            },
+            "evidence": [
+              "TEXT"
+            ],
+            "given": "a visitor opens the Boat Tours section",
+            "then": "a conversation must open with Meena's correct business number with a pre‑filled boat tour enquiry message",
+            "when": "they click its WhatsApp button"
+          },
+          {
+            "auto_check_hint": {
+              "path": null,
+              "text": null,
+              "type": "MOBILE_VIEWPORT"
+            },
+            "evidence": [
+              "TEXT"
+            ],
+            "given": "a visitor opens the Boat Tours section",
+            "then": "the section must display correctly on desktop and mobile devices",
+            "when": "they view the section"
+          }
+        ],
+        "description": "Dedicated section displaying morning and sunset tour info, pricing, safety details and WhatsApp enquiry.",
+        "from_temp_ids": [
+          "R5"
+        ],
+        "priority": "MUST",
+        "requested_by": [
+          3
+        ],
+        "source_refs": [
+          "L251-L277"
+        ],
+        "title": "Cove Boat Tours Section",
+        "weight": 5
+      }
+    ],
+    "sitemap": [
+      {
+        "path": "/",
+        "purpose": "Home page containing sections for Sea Breeze Homestay, Ravi's Fish Kitchen, Cove Boat Tours, and contact information"
+      }
+    ],
+    "stakeholders": [
+      {
+        "business_name": "Sea Breeze Homestay",
+        "member_id": 1,
+        "needs": [
+          "Showcase available rooms",
+          "Receive booking enquiries"
+        ]
+      },
+      {
+        "business_name": "Ravi's Fish Kitchen",
+        "member_id": 2,
+        "needs": [
+          "Display menu",
+          "Show opening hours",
+          "Show location"
+        ]
+      },
+      {
+        "business_name": "Cove Boat Tours",
+        "member_id": 3,
+        "needs": [
+          "Promote tour options",
+          "Communicate safety information"
+        ]
+      }
+    ],
+    "success_measures": [
+      "Website launched within 5 days"
+    ],
+    "title": ""
+  },
+  "prompt_version": "brd-gen-v1"
+}

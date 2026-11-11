@@ -102,6 +102,47 @@ describe("the brief screen", () => {
     await open([{ member_id: 7, project_id: 2, role: "LEAD" }], brdView(), stranger);
     expect(screen.queryByRole("button", { name: /Approve BRD/ })).toBeNull();
   });
+
+  it("renders every chapter of the BRD specification like a structured book without leaking emails", async () => {
+    await open(lead);
+    expect(screen.getByRole("complementary", { name: "Table of contents" })).toBeTruthy();
+    const book = screen.getByRole("article", { name: "Specification book" });
+    const text = book.textContent ?? "";
+    for (const expected of [
+      "Executive summary",
+      "One website for the whole cove.",
+      "Business goals and success measures",
+      "More enquiries",
+      "20 enquiries a month",
+      "Stakeholders",
+      "Sea Breeze Homestay",
+      "Show the rooms",
+      "Audience",
+      "Tourists planning a trip",
+      "Site structure",
+      "/stay",
+      "Requirements",
+      "REQ-001",
+      "the page / loads",
+      "Non-functional requirements",
+      "Works on a phone",
+      "Who provides the content",
+      "Photos of the rooms",
+      "Constraints",
+      "$400.00",
+      "5 days",
+      "velugucove.example",
+      "Out of scope",
+      "Online payments",
+      "Open items",
+      "Hosting is not decided",
+      "Glossary",
+      "A message from a visitor",
+    ]) {
+      expect(text, expected).toContain(expected);
+    }
+    expect(text).not.toContain("@");
+  });
 });
 
 describe("the submit and verify screens", () => {

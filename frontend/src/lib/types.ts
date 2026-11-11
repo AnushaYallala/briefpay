@@ -401,6 +401,8 @@ export type BAResponse = {
   can_finalize: boolean;
 };
 
+export type AutoCheckHintRef = { type: string; path: string | null; text: string | null };
+
 export type BRDRequirementItem = {
   code: string;
   title: string;
@@ -408,7 +410,14 @@ export type BRDRequirementItem = {
   priority: "MUST" | "SHOULD" | "COULD";
   weight: number;
   requested_by: number[];
-  acceptance_criteria: { id: string; given: string; when: string; then: string; evidence: string[] }[];
+  acceptance_criteria: {
+    id: string;
+    given: string;
+    when: string;
+    then: string;
+    evidence: string[];
+    auto_check_hint?: AutoCheckHintRef | null;
+  }[];
   source_refs: string[];
 };
 
@@ -425,13 +434,22 @@ export type BRDResponse = {
   version: number;
   status: "DRAFT" | "PENDING_APPROVAL" | "APPROVED" | "SUPERSEDED";
   sha256: string;
-  score_at_generation: number;
+  score_at_generation: number | null;
   content: {
     title: string;
     executive_summary: string;
     business_goals: string[];
     success_measures: string[];
+    stakeholders?: { member_id: number; business_name: string | null; needs: string[] }[];
+    audience?: string;
+    sitemap?: { path: string; purpose: string }[];
+    non_functional?: string[];
+    content_responsibilities?: { item: string; owner_member_id: number | null; due: string | null }[];
+    out_of_scope?: string[];
+    open_items?: string[];
+    glossary?: { term: string; definition: string }[];
     requirements: BRDRequirementItem[];
+    constraints?: { budget_cents: number; currency: string; delivery_days: number | null; hosting: string | null; domain: string | null };
   };
   markdown: string;
   open_items: string[];

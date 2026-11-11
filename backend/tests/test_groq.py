@@ -314,3 +314,28 @@ def test_the_example_env_file_documents_the_new_settings_without_a_key():
         if line.startswith("GROQ_API_KEY="):
             assert line.strip() == "GROQ_API_KEY="                                  # never a real key in a committed file
     assert any(l.startswith("groq") for l in (Path(__file__).resolve().parents[1] / "requirements.txt").read_text(encoding="utf-8").lower().splitlines())
+
+
+def test_oversized_transcript_on_413_retries_once_condensed():
+    big_lines = "\n".join(f"L{i}: line content number {i} extra words" for i in range(1, 600))
+    transcript_part = TextPart(f'<untrusted source="transcript">{big_lines}</untrusted>')
+    b, client = backend(RuntimeError("Error code: 413 - rate_limit_exceeded"), reply('{"score": 4, "note": "ok"}'))
+    r = gen(b, parts=[TextPart("TRUSTED"), transcript_part])
+    assert r.data == {"score": 4, "note": "ok"}
+    assert len(client.requests) == 2
+    sent_first = client.requests[0]["messages"][1]["content"]
+    sent_retry = client.requests[1]["messages"][1]["content"]
+    assert len(sent_retry) < len(sent_first) // 2 and '<untrusted source="transcript">' in sent_retry and "L1:" in sent_retry
+
+
+def test_short_text_on_413_fails_immediately_without_extra_retry():
+    b, client = backend(RuntimeError("Error code: 413 - rate_limit_exceeded"))
+    with pytest.raises(AgentError, match="413"):
+        gen(b, parts=[TextPart("short prompt")])
+    assert len(client.requests) == 1
+
+
+def test_single_element_list_wrapping_object_is_unwrapped():
+    b, _ = backend(reply('[{"score": 5, "note": "wrapped"}]'))
+    r = gen(b)
+    assert r.data == {"score": 5, "note": "wrapped"}

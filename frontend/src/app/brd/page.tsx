@@ -2,8 +2,8 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState, useMemo, useEffect } from "react";
-import { AllCommunityModule, ModuleRegistry, themeQuartz, type ColDef } from "ag-grid-community";
-import { AgGridReact } from "ag-grid-react";
+import type { ColDef } from "ag-grid-community";
+import { BrdDocumentBook } from "@/components/BrdDocumentBook";
 import { WorkflowNav } from "@/components/WorkflowNav";
 import { Badge, Empty, ErrorBox, Loading } from "@/components/ui";
 import { api, apiPost, API_BASE } from "@/lib/api";
@@ -12,8 +12,6 @@ import type { BRDResponse, BRDRequirementItem, JobStatus, ProjectDetail } from "
 import { useApi } from "@/lib/useApi";
 import { brdIsOpen, brdStatus, leadName } from "@/lib/verifyview";
 import { FileText, Download, CheckCircle2, XCircle, ArrowRight, ShieldCheck, Sparkles } from "lucide-react";
-
-ModuleRegistry.registerModules([AllCommunityModule]);
 
 function BRDView({ id }: { id: number }) {
   const auth = useAuth();
@@ -50,11 +48,11 @@ function BRDView({ id }: { id: number }) {
           const rawErr = j.error || "";
           let cleanErr = "Generation failed. Please try again.";
           if (rawErr.includes("getaddrinfo") || rawErr.includes("ConnectError")) {
-            cleanErr = "Network connection error: Could not reach Google Gemini API. Please check your internet connection.";
+            cleanErr = "Network connection error: Could not reach the AI provider API. Please check your internet connection.";
           } else if (rawErr.includes("503") || rawErr.includes("UNAVAILABLE") || rawErr.includes("high demand")) {
-            cleanErr = "Google Gemini AI is temporarily experiencing high traffic (503). Spikes are temporary—please wait 1-2 minutes and try again.";
+            cleanErr = "The AI provider is temporarily experiencing high traffic (503). Spikes are temporary—please wait 1-2 minutes and try again.";
           } else if (rawErr.includes("429") || rawErr.includes("quota")) {
-            cleanErr = "Google Gemini AI rate limit reached. Please wait a moment and try again.";
+            cleanErr = "AI provider rate limit reached. Please wait a moment and try again.";
           } else if (j.error) {
             cleanErr = `Generation failed: ${j.error.replace(/^BRDError:\s*/, "").replace(/^The BRD Generator could not produce a valid draft:\s*/, "")}`;
           }
@@ -376,89 +374,15 @@ function BRDView({ id }: { id: number }) {
         )}
       </section>
 
-      {/* Executive Summary */}
-      <section aria-label="Executive Summary" className="card card-pad bg-white rounded-3xl border border-sand-200 shadow-card space-y-4">
-        <h2 className="text-base font-bold text-ink-900">{brd.content.title}</h2>
-        <p className="text-xs sm:text-sm text-ink-600 leading-relaxed">{brd.content.executive_summary}</p>
-
-        <div className="grid gap-4 sm:grid-cols-2 border-t border-sand-100 pt-3">
-          <div>
-            <h3 className="text-2xs font-bold uppercase tracking-wider text-ink-500 mb-2">Business Goals</h3>
-            <ul className="list-disc pl-5 space-y-1 text-xs text-ink-700">
-              {brd.content.business_goals.map((g, i) => (
-                <li key={i}>{g}</li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <h3 className="text-2xs font-bold uppercase tracking-wider text-ink-500 mb-2">Success Measures</h3>
-            <ul className="list-disc pl-5 space-y-1 text-xs text-ink-700">
-              {brd.content.success_measures.map((m, i) => (
-                <li key={i}>{m}</li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      {/* Requirements Matrix & Interactive Criterion Drawer */}
-      <section aria-label="Requirements Matrix" className="card card-pad bg-white rounded-3xl border border-sand-200 shadow-card space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="font-bold text-ink-900 text-base">Verified Requirements Matrix</h2>
-            <p className="text-xs text-ink-500">Click any row to inspect acceptance criteria and evidence requirements</p>
-          </div>
-          <span className="rounded-full bg-sand-100 px-3 py-1 text-2xs font-bold text-ink-700">
-            {brd.content.requirements.length} Requirements
-          </span>
-        </div>
-
-        <div className="rounded-2xl overflow-hidden border border-sand-200 shadow-2xs" style={{ height: "340px", width: "100%" }}>
-          <AgGridReact
-            theme={themeQuartz}
-            rowData={brd.content.requirements}
-            columnDefs={columns}
-            rowSelection="single"
-            onRowClicked={(e) => setSelectedReq(e.data ?? null)}
-            animateRows
-          />
-        </div>
-
-        {/* Selected Requirement Detail Accordion */}
-        {selectedReq && (
-          <div className="rounded-2xl border border-sea-200 bg-sea-50/50 p-4 space-y-3 animate-fade-up">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-xs font-bold text-sea-700 bg-sea-100 px-2 py-0.5 rounded-lg border border-sea-200">
-                  {selectedReq.code}
-                </span>
-                <h3 className="text-sm font-bold text-ink-900">{selectedReq.title}</h3>
-              </div>
-              <span className={`text-xs font-bold ${selectedReq.priority === "MUST" ? "text-red-700" : "text-sea-700"}`}>
-                Priority: {selectedReq.priority}
-              </span>
-            </div>
-            <p className="text-xs text-ink-700 leading-relaxed">{selectedReq.description}</p>
-
-            <div className="border-t border-sea-200/60 pt-2.5 space-y-2">
-              <span className="text-2xs font-bold uppercase tracking-wider text-ink-500">
-                Acceptance Criteria ({selectedReq.acceptance_criteria.length}):
-              </span>
-              {selectedReq.acceptance_criteria.map((ac) => (
-                <div key={ac.id} className="rounded-xl bg-white p-3 border border-sand-200 text-xs space-y-1 shadow-2xs">
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono font-bold text-ink-800">{ac.id}</span>
-                    <span className="text-2xs text-ink-400">Evidence: {ac.evidence.join(", ")}</span>
-                  </div>
-                  <p className="text-ink-800 leading-relaxed">
-                    <strong>Given</strong> {ac.given} <strong>When</strong> {ac.when} <strong>Then</strong> {ac.then}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </section>
+      {/* Full 12-Chapter Book Specification & Interactive Matrix */}
+      <BrdDocumentBook
+        brd={brd}
+        members={project?.members}
+        selectedReq={selectedReq}
+        onSelectReq={setSelectedReq}
+        columns={columns}
+        downloadHref={`${API_BASE}/projects/${id}/brd/${brd.version}.md`}
+      />
     </div>
   );
 }

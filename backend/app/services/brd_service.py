@@ -170,15 +170,16 @@ def generate_brd(db: Session, project: Project, generator: BRDGenerator) -> BRD:
     base, meta = ba_service.build_inputs(db, project, session)
     inp = BRDInputs(base=base, requirements=score.extracted_requirements_json, conflicts=score.conflicts_json,
                     out_of_scope=score.gates_json.get("observations", {}).get("out_of_scope", []))
-    log.info("[BRD] Calling Gemini AI with %s analysis requirements and %s transcript lines...",
-             len(score.extracted_requirements_json), meta["line_count"])
+    provider_label = generator.adapter.provider if generator.adapter else "unconfigured"
+    log.info("[BRD] Calling AI (%s) with %s analysis requirements and %s transcript lines...",
+             provider_label, len(score.extracted_requirements_json), meta["line_count"])
     try:
         draft, _ = generator.draft(inp, project.id)
     except AgentError as e:
-        log.error("[BRD] Gemini AI drafting failed: %s", e)
+        log.error("[BRD] AI drafting failed: %s", e)
         raise BRDError("AI_UNAVAILABLE", f"The BRD Generator could not produce a valid draft: {e}", 503) from e
 
-    log.info("[BRD] Gemini AI draft received with %s requirements. Assembling canonical BRD...",
+    log.info("[BRD] AI draft received with %s requirements. Assembling canonical BRD...",
              len(draft.requirements))
     sponsors = ba_service.sponsor_members(db, project.id)
     ctx = AssembleContext(

@@ -335,12 +335,47 @@ class GroqBackend:
 
             self._client = Groq(api_key=api_key)
 
+    @staticmethod
+    def _condense_for_tpm(user_text: str, budget_chars: int = 8000) -> str | None:
+        """Condense an oversized transcript block so a free-tier 8k-TPM Groq request can fit."""
+        start_tag = '<untrusted source="transcript">'
+        end_tag = "</untrusted>"
+        start_idx = user_text.find(start_tag)
+        if start_idx != -1:
+            end_idx = user_text.find(end_tag, start_idx + len(start_tag))
+            if end_idx != -1:
+                inner = user_text[start_idx + len(start_tag):end_idx]
+                if len(inner) > budget_chars:
+                    head_budget, tail_budget = int(budget_chars * 0.65), int(budget_chars * 0.25)
+                    head_lines, tail_lines = [], []
+                    used = 0
+                    for ln in inner.splitlines():
+                        if used + len(ln) + 1 > head_budget and head_lines:
+                            break
+                        head_lines.append(ln)
+                        used += len(ln) + 1
+                    used = 0
+                    for ln in reversed(inner.splitlines()):
+                        if used + len(ln) + 1 > tail_budget and tail_lines:
+                            break
+                        tail_lines.append(ln)
+                        used += len(ln) + 1
+                    tail_lines.reverse()
+                    marker = "\n[... middle lines condensed to fit Groq 8,000 TPM free-tier limit; rely on analysis facts and lines above/below ...]\n"
+                    condensed_inner = "\n".join(head_lines) + marker + "\n".join(tail_lines)
+                    return user_text[:start_idx + len(start_tag)] + condensed_inner + user_text[end_idx:]
+        if len(user_text) > budget_chars * 2:
+            head_c, tail_c = int(budget_chars * 0.65), int(budget_chars * 0.35)
+            return user_text[:head_c] + "\n[... condensed to fit Groq TPM limit ...]\n" + user_text[-tail_c:]
+        return None
+
     def generate(self, *, agent, in_hash, system, parts, schema, temperature) -> RawResult:
         if any(isinstance(p, ImagePart) for p in parts):
             raise AgentError(f"{agent}: Groq is text-only; this agent sends images, so it must use another provider")
         instructions = (f"{system}\n\nReply with ONE JSON object and nothing else (no markdown, no commentary) that matches this JSON Schema:\n"
-                        f"{json.dumps(schema.model_json_schema(), sort_keys=True)}")
+                        f"{json.dumps(schema.model_json_schema(), sort_keys=True, separators=(',', ':'))}")
         user = "\n\n".join(p.text for p in parts if isinstance(p, TextPart))
+        log.info("[Groq AI] Requesting '%s' for agent '%s'...", self.model, agent)
         try:
             resp = self._client.chat.completions.create(
                 model=self.model, temperature=temperature, max_completion_tokens=self.MAX_OUTPUT_TOKENS,
@@ -348,14 +383,36 @@ class GroqBackend:
                 messages=[{"role": "system", "content": instructions}, {"role": "user", "content": user}],
             )
         except Exception as e:
-            raise AgentError(f"groq call failed: {type(e).__name__}: {e}") from e
+            err_l = str(e).lower()
+            is_too_large = any(k in err_l for k in ("413", "request too large", "tokens per minute", "rate_limit_exceeded"))
+            condensed = self._condense_for_tpm(user) if is_too_large else None
+            if condensed is not None:
+                log.warning("[Groq AI] Request exceeded '%s' TPM cap on '%s'. Retrying once with condensed transcript...", self.model, agent)
+                try:
+                    resp = self._client.chat.completions.create(
+                        model=self.model, temperature=temperature, max_completion_tokens=self.MAX_OUTPUT_TOKENS,
+                        response_format={"type": "json_object"},
+                        messages=[{"role": "system", "content": instructions}, {"role": "user", "content": condensed}],
+                    )
+                except Exception as retry_err:
+                    log.error("[Groq AI] Condensed retry failed for '%s' on '%s': %s: %s", agent, self.model, type(retry_err).__name__, retry_err)
+                    raise AgentError(f"groq call failed: {type(retry_err).__name__}: {retry_err}") from retry_err
+            else:
+                log.error("[Groq AI] Request failed for '%s' on '%s': %s: %s", agent, self.model, type(e).__name__, e)
+                raise AgentError(f"groq call failed: {type(e).__name__}: {e}") from e
         try:
             data = json.loads(resp.choices[0].message.content or "")
+            if isinstance(data, list) and len(data) == 1 and isinstance(data[0], dict):
+                data = data[0]
         except (json.JSONDecodeError, IndexError, AttributeError) as e:
+            log.warning("[Groq AI] '%s' returned invalid JSON: %s. Surfacing to schema validator.", self.model, e)
             return RawResult(data={"__invalid_json__": str(e)}, provider=self.provider, model=self.model)    # the schema check rejects it and retries once
         usage = getattr(resp, "usage", None)
+        in_tok = getattr(usage, "prompt_tokens", None)
+        out_tok = getattr(usage, "completion_tokens", None)
+        log.info("[Groq AI] SUCCESS with '%s' for '%s' (Tokens: %s in, %s out)", self.model, agent, in_tok, out_tok)
         return RawResult(data=data, provider=self.provider, model=self.model,
-                         input_tokens=getattr(usage, "prompt_tokens", None), output_tokens=getattr(usage, "completion_tokens", None))
+                         input_tokens=in_tok, output_tokens=out_tok)
 
 
 class MissingBackend:
