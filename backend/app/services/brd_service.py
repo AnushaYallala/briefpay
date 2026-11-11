@@ -2,8 +2,11 @@
 REQ codes, AC ids, the 'every MUST is testable' rule, traceability to the analysis, constraints from the project record,
 open items from the real score gaps, the Markdown render and the sha256.
 """
+import logging
 import re
 from dataclasses import dataclass
+
+log = logging.getLogger("briefpay.brd")
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -162,15 +165,21 @@ def store_brd(db: Session, project: Project, content: BRDContent, *, score: int)
 
 def generate_brd(db: Session, project: Project, generator: BRDGenerator) -> BRD:
     """Draft, assemble, render, hash, store. On any failure nothing is stored and no state changes."""
+    log.info("[BRD] Preparing to generate BRD for project #%s ('%s')...", project.id, project.title)
     session, score = check_ready(db, project)
     base, meta = ba_service.build_inputs(db, project, session)
     inp = BRDInputs(base=base, requirements=score.extracted_requirements_json, conflicts=score.conflicts_json,
                     out_of_scope=score.gates_json.get("observations", {}).get("out_of_scope", []))
+    log.info("[BRD] Calling Gemini AI with %s analysis requirements and %s transcript lines...",
+             len(score.extracted_requirements_json), meta["line_count"])
     try:
         draft, _ = generator.draft(inp, project.id)
     except AgentError as e:
+        log.error("[BRD] Gemini AI drafting failed: %s", e)
         raise BRDError("AI_UNAVAILABLE", f"The BRD Generator could not produce a valid draft: {e}", 503) from e
 
+    log.info("[BRD] Gemini AI draft received with %s requirements. Assembling canonical BRD...",
+             len(draft.requirements))
     sponsors = ba_service.sponsor_members(db, project.id)
     ctx = AssembleContext(
         sponsor_ids={m.id for m in sponsors}, sponsor_business={m.id: m.business_name for m in sponsors},
@@ -187,6 +196,8 @@ def generate_brd(db: Session, project: Project, generator: BRDGenerator) -> BRD:
     session.state = "BRD_GENERATED"
     ProjectService.transition(db, project, "BRD_REVIEW", actor="agent:brd", reason=f"BRD v{version} generated")
     db.flush()
+    log.info("[BRD] Stored BRD v%s (SHA-256 fingerprint: %s...). Transitioned project to BRD_REVIEW.",
+             version, brd.sha256[:16])
     return brd
 
 

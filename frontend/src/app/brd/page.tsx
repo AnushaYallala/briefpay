@@ -46,7 +46,18 @@ function BRDView({ id }: { id: number }) {
           reload();
         } else if (j.state === "FAILED") {
           setGenJob(null);
-          setGenError(j.error ? `Generation failed: ${j.error}` : "Generation failed");
+          const rawErr = j.error || "";
+          let cleanErr = "Generation failed. Please try again.";
+          if (rawErr.includes("getaddrinfo") || rawErr.includes("ConnectError")) {
+            cleanErr = "Network connection error: Could not reach Google Gemini API. Please check your internet connection.";
+          } else if (rawErr.includes("503") || rawErr.includes("UNAVAILABLE") || rawErr.includes("high demand")) {
+            cleanErr = "Google Gemini AI is temporarily experiencing high traffic (503). Spikes are temporary—please wait 1-2 minutes and try again.";
+          } else if (rawErr.includes("429") || rawErr.includes("quota")) {
+            cleanErr = "Google Gemini AI rate limit reached. Please wait a moment and try again.";
+          } else if (j.error) {
+            cleanErr = `Generation failed: ${j.error.replace(/^BRDError:\s*/, "").replace(/^The BRD Generator could not produce a valid draft:\s*/, "")}`;
+          }
+          setGenError(cleanErr);
         }
       } catch (e) {
         if (alive) {

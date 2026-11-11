@@ -1,0 +1,27 @@
+{
+  "agent": "BA_QUESTIONS",
+  "input_hash": "e047ca8ad26bf83c49cd7b5446037b441f796ce82666244e7e41a1ea6c98d633",
+  "output": {
+    "questions": [
+      {
+        "addressed_to": [
+          3
+        ],
+        "dimension": "D6",
+        "question": "Meena, what exact test or condition must be met for you to consider the Cove Boat Tours section complete?",
+        "rationale": "Requirement R5 is a MUST but lacks acceptance criteria to satisfy the hard gate.",
+        "suggested_options": null
+      },
+      {
+        "addressed_to": [
+          "ALL"
+        ],
+        "dimension": "D9",
+        "question": "What is the maximum allowed loading time for the website on a mobile phone?",
+        "rationale": "Improves non-functional requirement details for mobile performance.",
+        "suggested_options": null
+      }
+    ]
+  },
+  "prompt_version": "ba-questions-v1"
+}

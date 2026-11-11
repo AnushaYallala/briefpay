@@ -1,0 +1,57 @@
+{
+  "agent": "BA_QUESTIONS",
+  "input_hash": "2ca79c807f79fa4f5130022dd8e23ae3c362171629cae7ea1e7c661fd75cca13",
+  "output": {
+    "questions": [
+      {
+        "addressed_to": [
+          1
+        ],
+        "dimension": "D6",
+        "question": "What specific test or condition must be met for you to consider the Sea Breeze Homestay section complete?",
+        "rationale": "Requirement R3 is marked MUST but lacks acceptance criteria to pass the gate.",
+        "suggested_options": null
+      },
+      {
+        "addressed_to": [
+          2
+        ],
+        "dimension": "D6",
+        "question": "What specific test or condition must be met for you to consider Ravi's Fish Kitchen section complete?",
+        "rationale": "Requirement R4 is marked MUST but lacks acceptance criteria to pass the gate.",
+        "suggested_options": null
+      },
+      {
+        "addressed_to": [
+          3
+        ],
+        "dimension": "D6",
+        "question": "What specific test or condition must be met for you to consider Cove Boat Tours section complete?",
+        "rationale": "Requirement R5 is marked MUST but lacks acceptance criteria to pass the gate.",
+        "suggested_options": null
+      },
+      {
+        "addressed_to": [
+          "ALL"
+        ],
+        "dimension": "D9",
+        "question": "What is the maximum allowed loading time for the website on a mobile phone?",
+        "rationale": "Non-functional performance criteria need to be defined for mobile users.",
+        "suggested_options": null
+      },
+      {
+        "addressed_to": [
+          "ALL"
+        ],
+        "dimension": "D8",
+        "question": "Should the website style use bright beach colors or a calm natural look?",
+        "rationale": "The look and feel dimension currently has low coverage.",
+        "suggested_options": [
+          "Bright beach colors",
+          "Calm natural look"
+        ]
+      }
+    ]
+  },
+  "prompt_version": "ba-questions-v1"
+}

@@ -70,16 +70,24 @@ def run_one(session_factory: Callable[[], Session]) -> bool:
 
     handler = HANDLERS.get(job_type)
     work = session_factory()
+    log.info("==> [Job #%s] Processing %s (attempt %s/%s)...", job_id, job_type, attempts, MAX_ATTEMPTS)
     try:
         if handler is None:
             raise LookupError(f"no handler registered for job type {job_type}")
         result = handler(work, payload)
         work.commit()
+        log.info("==> [Job #%s] %s COMPLETED successfully.", job_id, job_type)
         outcome = ("DONE", result, None)
     except Exception as e:  # noqa: BLE001 - a job must never kill the runner
         work.rollback()
-        log.exception("job %s (%s) failed on attempt %s", job_id, job_type, attempts)
         outcome = ("FAILED", None, f"{type(e).__name__}: {e}")
+        if attempts < MAX_ATTEMPTS:
+            delay = BACKOFF_SECONDS[min(attempts - 1, len(BACKOFF_SECONDS) - 1)]
+            log.warning("==> [Job #%s] %s attempt %s failed: %s. Retrying in %ss...",
+                        job_id, job_type, attempts, e, delay)
+        else:
+            log.error("==> [Job #%s] %s FAILED definitively after %s attempts: %s",
+                      job_id, job_type, attempts, e)
     finally:
         work.close()
 
