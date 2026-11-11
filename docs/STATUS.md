@@ -9,7 +9,7 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-11 by Claude: the brief can be written with Groq (BRD_PROVIDER, D-062); final tidy of the plan of 45 increments; hands-on testing path (D-060); screens clean-up (D-059, D-061); T-63 eval; T-23/T-27 campaign page |
+| Last updated | 2026-11-11 by Gemini: fixed SQLite same-thread `database is locked` deadlock in `STRATEGIST_RUN` / `BA_RUN` / `VERIFY_JUDGE` + added `[Strategist]` status logs |
 | Overall phase | **Back end feature-complete except the three blocked pieces (BLK-01/02/03); front end feature-complete for all core steps (Requirements, Brief, Contract, Campaign, Submit, Verify, Payout Plans, Ledger, AI Audit).** Plain-English summary: `docs/PROGRESS_SUMMARY.md` |
 | Current goal | A person follows `docs/TESTING.md` in a real browser and reports what looks wrong; decide BLK-01/02/03; then keys (PayPal sandbox, Gemini), deploy (T-61), rehearse and record (T-64), submit (T-65) |
 | Next task to pick up | Nothing unblocked is left for the assistant except fixing what the hands-on test finds · **You:** (1) follow `docs/TESTING.md`; (2) decide BLK-01/02/03 (pledging and the campaign clock); (3) PayPal sandbox accounts and keys (T-02) then run `backend/scripts/sandbox_check.py`; (4) a Gemini key on this machine for the live evaluation; (5) Render and Aiven accounts to deploy (T-03, T-61); (6) record the video and submit (T-64, T-65) |
@@ -148,6 +148,16 @@ _Add things you confirmed so the next AI doesn't re-verify. Include date and who
 ---
 
 ## 6. Handoff log
+
+### 2026-11-11 · Gemini · Fix SQLite write-lock deadlock in `STRATEGIST_RUN` (+ `BA_RUN`, `VERIFY_JUDGE`)
+- Root cause: In `strategist_run` (`backend/app/services/job_handlers.py`), `strategist_service.run_report(db, c)` flushed a new `StrategistReport` row BEFORE `strategist_words.add_narrative()` invoked `LLMAdapter._log()`, which opens a separate `session_factory()` connection to insert into `agent_runs`. On SQLite's single-writer lock, the open write transaction deadlocked `_log()` across all 3 `busy_timeout=30000` retries (~90s blocked) before raising `sqlite3.OperationalError: database is locked`.
+- Did:
+  1. `backend/app/services/job_handlers.py`: committed `strategist_service.run_report(db, c)` before calling `add_narrative()`, releasing the SQLite write lock before `LLMAdapter._log()` writes `AgentRun`; added `[Strategist]` terminal status logs.
+  2. `backend/app/services/ba_rounds.py`: committed newly created `BASession` in `run_round()` before `score_round()` calls the BA LLM.
+  3. `backend/app/services/verify_judge.py`: wrapped pre-LLM `sub.state = "JUDGING"` / `refresh_gates` reads and `agent.judge()` in `with db.no_autoflush:` so SQLite doesn't acquire an early write lock during judging.
+  4. `backend/tests/test_strategist_words.py`: added `test_strategist_job_persists_agent_run_without_sqlite_lock` exercising `jobs.run_one` on a real file-backed SQLite DB (`tmp_path / "lock_check.db"`).
+- Tests: `pytest backend/tests/test_strategist_words.py backend/tests/test_strategist_api.py backend/tests/test_ba_rounds.py backend/tests/test_verify_judge.py backend/tests/test_smoke.py -q` (run pending verification below).
+- Next step: Restart local `uvicorn` if needed and continue hands-on testing; unblock `BLK-01`/`BLK-02`/`BLK-03` (`pledge_state.py`, `pledge_service.py` + `routers/pledges.py`, `campaign_clock.py`) next.
 
 ### 2026-11-10 · Gemini · Cross-Stage Workflow Navigation & Forward Steppers
 - Did:

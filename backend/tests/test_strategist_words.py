@@ -369,3 +369,50 @@ def test_facts_reach_the_model_in_full_but_without_names(w):
     for key in ("goal_formatted", "pledged_formatted", "gap_formatted", "hours_left", "pledged_count", "pledged_pct", "probability_pct", "deadline_text", "label", "gap_cents"):
         assert f'"{key}"' in trusted, key
     assert '"name"' not in trusted
+
+
+def test_strategist_job_persists_agent_run_without_sqlite_lock(tmp_path):
+    """File-backed SQLite must release any write lock before add_narrative logs AgentRun on a second connection."""
+    from sqlalchemy import create_engine, event
+
+    from app.models import Base
+
+    eng = create_engine(f"sqlite:///{tmp_path / 'lock_check.db'}", connect_args={"check_same_thread": False, "timeout": 0.2})
+
+    @event.listens_for(eng, "connect")
+    def _wal(conn, _):
+        cur = conn.cursor()
+        cur.execute("PRAGMA journal_mode=WAL")
+        cur.execute("PRAGMA busy_timeout=100")
+        cur.close()
+
+    Base.metadata.create_all(eng)
+    FileSession = sessionmaker(bind=eng, expire_on_commit=False)
+    try:
+        with FileSession() as session:
+            world = World(session)
+            world.lead.expected_pledge_cents, world.lead.invite_status = 15000, "VIEWED"
+            world.pledge(15000)
+            jobs.enqueue(session, "STRATEGIST_RUN", {"campaign_id": world.campaign.id})
+            session.commit()
+            cid = world.campaign.id
+
+        with FileSession() as session:
+            adapter, _ = scripted_adapter(
+                session,
+                {"headline": "Roughly a coin toss, as an estimate", "explanation": "A rough estimate, not a promise.",
+                 "risk_factors": [], "nudges": []},
+            )
+            set_strategist(StrategistAgent(adapter))
+        try:
+            assert jobs.run_one(FileSession) is True
+        finally:
+            set_strategist(None)
+
+        with FileSession() as verify:
+            report = svc.latest_report(verify, cid)
+            runs = verify.scalars(select(AgentRun).where(AgentRun.agent == "STRATEGIST")).all()
+            assert len(runs) == 1
+            assert report is not None and report.agent_run_id == runs[0].id
+    finally:
+        eng.dispose()

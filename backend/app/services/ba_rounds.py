@@ -121,7 +121,10 @@ def generate_questions(db: Session, project: Project, session: BASession, row: B
 def run_round(db: Session, project: Project, agent: BAAgent, qagent: BAQuestionsAgent) -> dict:
     """One full BA step for the current round. Repeating it is safe: unchanged input is never re-scored
     and a round never gets a second set of questions, so a failed job can simply be retried."""
+    had_session = get_session(db, project.id) is not None
     session = get_or_create_session(db, project)
+    if not had_session:
+        db.commit()  # release SQLite write lock before score_round calls LLMAdapter._log on a second connection
     t = ops.latest_transcript(db, project.id)
     row = latest_score(db, session.id)
     fresh = (row is not None and row.round == session.round and t is not None

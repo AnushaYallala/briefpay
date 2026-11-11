@@ -184,62 +184,64 @@ def judge(db: Session, submission_id: int, agent: VerifierAgent, checker: AutoCh
     project = db.get(Project, contract.project_id)
     if project.state != "VERIFYING":                 # e.g. a refund started meanwhile: nothing to decide any more
         return {"effect": "SKIPPED", "why": f"project is {project.state}"}
-    sub.state = "JUDGING"
+    # Avoid autoflushing sub.state / refresh_gates before agent.judge() returns so SQLite does not hold a write lock while LLMAdapter._log writes AgentRun.
+    with db.no_autoflush:
+        sub.state = "JUDGING"
 
-    checks = list(db.scalars(select(AutoCheck).where(AutoCheck.submission_id == sub.id).order_by(AutoCheck.id)))
-    refresh_gates(checker, sub, checks)
-    questions = {q.id: q for q in db.scalars(select(VerificationQuestion).where(VerificationQuestion.submission_id == sub.id).order_by(VerificationQuestion.id))}
-    evidence = list(db.scalars(select(Evidence).where(Evidence.submission_id == sub.id).order_by(Evidence.id)))
-    followup_done = any(q.round >= FOLLOWUP_ROUND for q in questions.values())
+        checks = list(db.scalars(select(AutoCheck).where(AutoCheck.submission_id == sub.id).order_by(AutoCheck.id)))
+        refresh_gates(checker, sub, checks)
+        questions = {q.id: q for q in db.scalars(select(VerificationQuestion).where(VerificationQuestion.submission_id == sub.id).order_by(VerificationQuestion.id))}
+        evidence = list(db.scalars(select(Evidence).where(Evidence.submission_id == sub.id).order_by(Evidence.id)))
+        followup_done = any(q.round >= FOLLOWUP_ROUND for q in questions.values())
 
-    flagged, facts = snippet_facts(sub, evidence, questions, checker)
-    try:
-        images, shown_images, image_facts = load_images(db, evidence)
-    except ImageStoreUnavailable as e:
-        sub.state = "EVIDENCE_RECEIVED"
-        return {"effect": "JUDGE_UNAVAILABLE", "why": f"images could not be read: {e}"}
-    facts += image_facts
-    visible = {e.id for e in evidence if e.kind != "SCREENSHOT" or e.id in shown_images}
-
-    # what each asked criterion is judged on: all evidence given for it, in every round, that the reviewer can actually see
-    asked: dict[tuple[str, str], set[int]] = {}
-    evidence_of: dict[tuple[str, str], list[dict]] = {}
-    qtext: dict[tuple[str, str], VerificationQuestion] = {}
-    for q in questions.values():
-        key = (q.requirement_code, q.criterion_id)
-        qtext[key] = q
-        asked.setdefault(key, set())
-        evidence_of.setdefault(key, [])
-    for e in evidence:
-        q = questions.get(e.question_id)
-        if q is not None and e.id in visible:
-            key = (q.requirement_code, q.criterion_id)
-            asked[key].add(e.id)
-            evidence_of[key].append({"id": e.id, "kind": e.kind, "text": e.text, "url": e.url})
-
-    reqs = brd.content_json.get("requirements", [])
-    criteria = []
-    for req in reqs:
-        for crit in req.get("acceptance_criteria", []):
-            key = (req["code"], crit["id"])
-            if key not in asked:
-                continue
-            hint = crit.get("auto_check_hint") or {}
-            result = next((c["result"] for c in check_dicts(checks) if c["requirement_code"] == req["code"] and c["criterion_id"] == crit["id"]
-                           and c["check_type"] == hint.get("type")), None)
-            criteria.append({"requirement_code": req["code"], "requirement_title": req["title"], "criterion_id": crit["id"], "given": crit["given"],
-                             "when": crit["when"], "then": crit["then"], "auto_check": {"type": hint.get("type"), "result": result or "NOT_RUN"} if hint else None,
-                             "evidence": evidence_of[key]})
-
-    verdicts: list[ACVerdict] = []
-    ai_summary, run_id = "", None
-    if criteria:
+        flagged, facts = snippet_facts(sub, evidence, questions, checker)
         try:
-            out, run_id = agent.judge(JudgeInputs(criteria=criteria, images=images, facts=facts, notes=sub.notes), contract.project_id)
-        except AgentError as e:                    # nothing is decided on a model failure: the freelancer may ask again
+            images, shown_images, image_facts = load_images(db, evidence)
+        except ImageStoreUnavailable as e:
             sub.state = "EVIDENCE_RECEIVED"
-            return {"effect": "JUDGE_UNAVAILABLE", "why": str(e)[:200], "agent_run_id": getattr(e, "run_id", None)}
-        verdicts, ai_summary = out.verdicts, out.summary_for_sponsors
+            return {"effect": "JUDGE_UNAVAILABLE", "why": f"images could not be read: {e}"}
+        facts += image_facts
+        visible = {e.id for e in evidence if e.kind != "SCREENSHOT" or e.id in shown_images}
+
+        # what each asked criterion is judged on: all evidence given for it, in every round, that the reviewer can actually see
+        asked: dict[tuple[str, str], set[int]] = {}
+        evidence_of: dict[tuple[str, str], list[dict]] = {}
+        qtext: dict[tuple[str, str], VerificationQuestion] = {}
+        for q in questions.values():
+            key = (q.requirement_code, q.criterion_id)
+            qtext[key] = q
+            asked.setdefault(key, set())
+            evidence_of.setdefault(key, [])
+        for e in evidence:
+            q = questions.get(e.question_id)
+            if q is not None and e.id in visible:
+                key = (q.requirement_code, q.criterion_id)
+                asked[key].add(e.id)
+                evidence_of[key].append({"id": e.id, "kind": e.kind, "text": e.text, "url": e.url})
+
+        reqs = brd.content_json.get("requirements", [])
+        criteria = []
+        for req in reqs:
+            for crit in req.get("acceptance_criteria", []):
+                key = (req["code"], crit["id"])
+                if key not in asked:
+                    continue
+                hint = crit.get("auto_check_hint") or {}
+                result = next((c["result"] for c in check_dicts(checks) if c["requirement_code"] == req["code"] and c["criterion_id"] == crit["id"]
+                               and c["check_type"] == hint.get("type")), None)
+                criteria.append({"requirement_code": req["code"], "requirement_title": req["title"], "criterion_id": crit["id"], "given": crit["given"],
+                                 "when": crit["when"], "then": crit["then"], "auto_check": {"type": hint.get("type"), "result": result or "NOT_RUN"} if hint else None,
+                                 "evidence": evidence_of[key]})
+
+        verdicts: list[ACVerdict] = []
+        ai_summary, run_id = "", None
+        if criteria:
+            try:
+                out, run_id = agent.judge(JudgeInputs(criteria=criteria, images=images, facts=facts, notes=sub.notes), contract.project_id)
+            except AgentError as e:                    # nothing is decided on a model failure: the freelancer may ask again
+                sub.state = "EVIDENCE_RECEIVED"
+                return {"effect": "JUDGE_UNAVAILABLE", "why": str(e)[:200], "agent_run_id": getattr(e, "run_id", None)}
+            verdicts, ai_summary = out.verdicts, out.summary_for_sponsors
 
     agg = aggregate(reqs, check_dicts(checks), verdicts, asked, flagged, attempt_no=sub.attempt_no, followup_done=followup_done,
                     max_attempts=failure_decisions.allowed_attempts(db, contract.id))

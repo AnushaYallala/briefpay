@@ -1,0 +1,31 @@
+{
+  "agent": "STRATEGIST",
+  "input_hash": "01b70688c9b2868b6544bdc8cece155bd1ec364c12c97d7f8ccbf7a90d3ed7d7",
+  "output": {
+    "explanation": "We have 70 hours left to reach our $400 goal. Currently, we have $0 pledged. Please remember that a pledge is just a PayPal hold; you are only charged if we reach our goal. Our current 6% chance of success is just a rough estimate.",
+    "headline": "We need $400 in the next 70 hours to fund the Velugu Cove tourism website.",
+    "nudges": [
+      {
+        "channel": "WHATSAPP",
+        "member_id": 1,
+        "message": "Hi Lakshmi, I am reaching out to see if you are still interested in supporting our Velugu Cove project. You mentioned a possible pledge of $150. Just a reminder that this is a hold, so you are only charged if we hit our goal."
+      },
+      {
+        "channel": "WHATSAPP",
+        "member_id": 2,
+        "message": "Hi Ravi, we are working hard to fund the Velugu Cove tourism website. You previously mentioned a $150 pledge. If you are still able to help, please know that it is only a hold and you are only charged if we reach the full goal."
+      },
+      {
+        "channel": "WHATSAPP",
+        "member_id": 3,
+        "message": "Hi Meena, I hope you are doing well. We are still aiming for our goal for the Velugu Cove project and were wondering if you might still pledge the $100 you mentioned. It is just a hold, so no money is taken unless we succeed."
+      }
+    ],
+    "risk_factors": [
+      "Slow community engagement",
+      "Limited time remaining",
+      "Low initial pledge volume"
+    ]
+  },
+  "prompt_version": "strategist-v1"
+}

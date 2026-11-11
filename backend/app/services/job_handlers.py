@@ -1,10 +1,14 @@
 """Job handlers registered with the runner (imported once at startup)."""
+import logging
+
 from sqlalchemy.orm import Session
 
 from app.agents.ba_agent import get_ba_agents
 from app.agents.brd_generator import get_brd_generator
 from app.models import Campaign, Project
 from app.services import ba_rounds, brd_service, jobs, money_executor, paypal_io, strategist_service
+
+log = logging.getLogger("briefpay.jobs")
 
 
 @jobs.register("EXECUTE_PLAN")
@@ -35,9 +39,16 @@ def strategist_run(db: Session, payload: dict) -> dict:
     from app.agents.strategist import get_strategist
     from app.services import strategist_words
     c = db.get(Campaign, payload["campaign_id"])
+    project = db.get(Project, c.project_id)
+    log.info("[Strategist] Computing forecast & deadline advice for campaign #%s (project #%s)...", c.id, c.project_id)
     r = strategist_service.run_report(db, c)
-    words = strategist_words.add_narrative(db, r, c, db.get(Project, c.project_id), get_strategist(),
+    # Commit the forecast row so SQLite's write lock is released before add_narrative() logs AgentRun on a second session.
+    db.commit()
+    log.info("[Strategist] Drafting narrative & nudges for campaign #%s report #%s...", c.id, r.id)
+    words = strategist_words.add_narrative(db, r, c, project, get_strategist(),
                                            {"forecast": r.forecast_json, "suggestions": r.suggestions_json})
+    log.info("[Strategist] Report #%s ready (wording=%s, flags=%s, agent_run_id=%s).",
+             r.id, words["source"], words["flags"], words["agent_run_id"])
     return {"report_id": r.id, "probability": r.forecast_json["probability"], "wording": words["source"], "flags": words["flags"]}
 
 
