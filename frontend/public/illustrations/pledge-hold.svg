@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 72" width="72" height="72">
+  <defs>
+    <linearGradient id="ph-gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#fbbf24"/>
+    </linearGradient>
+  </defs>
+  <!-- Outer coin -->
+  <circle cx="36" cy="36" r="30" fill="url(#ph-gold)"/>
+  <circle cx="36" cy="36" r="25" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+  <!-- Pause / Hold symbol -->
+  <rect x="27" y="24" width="6" height="24" rx="2" fill="#b45309"/>
+  <rect x="39" y="24" width="6" height="24" rx="2" fill="#b45309"/>
+  <!-- Safety shield badge in corner -->
+  <circle cx="54" cy="54" r="14" fill="#0d9488"/>
+  <path d="M49 54 L53 58 L59 51" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

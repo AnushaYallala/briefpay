@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="80" height="80">
+  <rect width="80" height="80" rx="16" fill="#f0fdfa"/>
+  <!-- Paper agreement -->
+  <rect x="18" y="14" width="38" height="50" rx="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
+  <line x1="26" y1="24" x2="48" y2="24" stroke="#e2e8f0" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="26" y1="32" x2="48" y2="32" stroke="#e2e8f0" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Signature squiggle -->
+  <path d="M26 48 Q32 42 36 48 T46 47" fill="none" stroke="#0d9488" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Stylized fountain pen -->
+  <g transform="translate(42, 28) rotate(40)">
+    <rect x="0" y="0" width="7" height="28" rx="2" fill="#0f766e"/>
+    <polygon points="0,28 7,28 3.5,36" fill="#facc15"/>
+    <circle cx="3.5" cy="30" r="1" fill="#0f172a"/>
+  </g>
+</svg>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="80" height="80">
+  <rect width="80" height="80" rx="16" fill="#f0fdfa"/>
+  <!-- Guardian Shield -->
+  <path d="M40 16 L60 24 C60 46 40 58 40 58 C40 58 20 46 20 24 Z" fill="#0f766e"/>
+  <!-- Gold coin overlay -->
+  <circle cx="40" cy="36" r="12" fill="#fbbf24" stroke="#d97706" stroke-width="1.5"/>
+  <text x="40" y="41" font-family="system-ui, sans-serif" font-size="13" font-weight="900" fill="#78350f" text-anchor="middle">$</text>
+</svg>

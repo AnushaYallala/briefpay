@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
-import { AllCommunityModule, ModuleRegistry, type ColDef } from "ag-grid-community";
+import { AllCommunityModule, ModuleRegistry, themeQuartz, type ColDef } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
 import { Stepper } from "@/components/Stepper";
 import { WorkflowNav } from "@/components/WorkflowNav";
@@ -532,9 +532,9 @@ function VerificationStudio({ projectId, initialSubId }: { projectId: number; in
             </div>
 
             {criteriaRows.length > 0 ? (
-              <div className="ag-theme-alpine w-full" style={{ height: "380px" }}>
+              <div className="w-full rounded-2xl overflow-hidden border border-slate-200" style={{ height: "380px" }}>
                 <AgGridReact
-                  theme="legacy"
+                  theme={themeQuartz}
                   rowData={criteriaRows}
                   columnDefs={columns}
                   defaultColDef={{ resizable: true, sortable: true, filter: true }}

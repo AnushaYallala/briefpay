@@ -27,8 +27,8 @@ function ContractStudio({ projectId }: { projectId: number }) {
   const [offering, setOffering] = useState<boolean>(false);
   const [offerError, setOfferError] = useState<string | null>(null);
 
-  // Freelancer accept state
-  const [paypalEmail, setPaypalEmail] = useState<string>(auth.user?.email || "arjun@velugudev.com");
+  // Freelancer accept state - start empty or with authed user email (no fake default)
+  const [paypalEmail, setPaypalEmail] = useState<string>(auth.user?.email || "");
   const [accepting, setAccepting] = useState<boolean>(false);
   const [acceptError, setAcceptError] = useState<string | null>(null);
   const [signedSuccess, setSignedSuccess] = useState<boolean>(false);
