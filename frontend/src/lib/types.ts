@@ -423,7 +423,7 @@ export type BRDApprovalItem = {
 export type BRDResponse = {
   id: number;
   version: number;
-  status: "DRAFT" | "LOCKED" | "APPROVED" | "REJECTED";
+  status: "DRAFT" | "PENDING_APPROVAL" | "APPROVED" | "SUPERSEDED";
   sha256: string;
   score_at_generation: number;
   content: {
@@ -462,10 +462,10 @@ export type ContractResponse = {
 export type AutoCheckItem = {
   id: number;
   check_type: string;
-  target: string;
+  requirement_code: string | null;
+  input: Record<string, unknown>;
   result: "PASS" | "FAIL" | "ERROR";
-  latency_ms: number;
-  details: Record<string, unknown>;
+  detail: Record<string, unknown>;
   created_at: string;
 };
 
@@ -487,7 +487,7 @@ export type VerificationQuestionItem = {
   question: string;
   expected_evidence: string[];
   round: number;
-  status: "PENDING" | "ANSWERED" | "WAIVED";
+  status: "OPEN" | "ANSWERED";
 };
 
 export type VerificationReportItem = {

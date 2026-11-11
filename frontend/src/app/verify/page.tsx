@@ -15,6 +15,7 @@ import type {
   SubmissionListItem,
 } from "@/lib/types";
 import { useApi } from "@/lib/useApi";
+import { checkTarget } from "@/lib/verifyview";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -554,7 +555,7 @@ function VerificationStudio({ projectId, initialSubId }: { projectId: number; in
                         <div key={chk.id} className="flex items-center justify-between bg-white p-2 rounded border border-slate-200">
                           <div>
                             <span className="font-bold text-slate-800">{chk.check_type}</span>
-                            <span className="text-slate-500 font-mono text-2xs ml-2">{chk.target}</span>
+                            <span className="text-slate-500 font-mono text-2xs ml-2">{checkTarget(chk.input)}</span>
                           </div>
                           <span className={`font-bold px-2 py-0.5 rounded text-2xs ${
                             chk.result === "PASS" ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-800"

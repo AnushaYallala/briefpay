@@ -105,6 +105,21 @@ export const brdView = (over: Record<string, unknown> = {}) => ({
   versions: [{ version: 1, status: "PENDING_APPROVAL", sha256: "a".repeat(64) }], ...over,
 }) as import("@/lib/types").BrdView;
 
+export const autoCheck = (over: Record<string, unknown> = {}) => ({
+  id: 1, check_type: "PAGE_CONTAINS", requirement_code: "REQ-002", input: { deployed_url: "https://velugu.example.com", path: "/menu", text: "Fish" }, result: "PASS", detail: { status: 200 },
+  created_at: "2026-11-11T10:00:00", ...over,
+}) as import("@/lib/types").AutoCheckItem;
+
+export const subItem = (over: Record<string, unknown> = {}) => ({
+  id: 5, attempt_no: 1, state: "NEEDS_CHANGES", commit_sha: "abc1234", deployed_url: "https://velugu.example.com", created_at: "2026-11-11T10:00:00", ...over,
+}) as import("@/lib/types").SubmissionListItem;
+
+export const subDetail = (over: Record<string, unknown> = {}) => ({
+  ...subItem(), contract_id: 1, repo_url: "https://github.com/arjun/velugu", notes: null,
+  auto_checks: [autoCheck(), autoCheck({ id: 2, check_type: "REPO_PUBLIC", requirement_code: null, input: {} }), autoCheck({ id: 3, check_type: "URL_REACHABLE", input: { deployed_url: "https://velugu.example.com", path: "/stay" }, result: "FAIL" })],
+  auto_check_summary: { PASS: 2, FAIL: 1, ERROR: 0 }, questions: [], evidence: [], report: null, ...over,
+}) as import("@/lib/types").SubmissionDetail;
+
 export const baDim = (over: Record<string, unknown> = {}) => ({
   dimension: "D1", name: "Business goals & success measures", weight: 12, coverage_claimed: 0.5, coverage_effective: 0.5, downgraded: false,
   justification: "Goals are clear, no measure yet", source_refs: ["L3-L5"], ...over,

@@ -416,3 +416,59 @@ def test_the_campaign_and_strategist_types_match_real_responses_and_the_words_co
 def keys_of_plain(text: str) -> set[str]:
     """Keys of an `export const X: Record<string, string> = { KEY: "words", ... }` block, one per line."""
     return set(re.findall(r"^  ([A-Z_]+): ", text, re.M))
+
+
+def union_of(type_source: str, name: str, field: str) -> set[str]:
+    """The quoted words of a field declared like `status: "A" | "B";` inside `export type NAME`."""
+    body = body_of(type_source, name)
+    m = re.search(rf'\b{field}: ((?:"[A-Z_]+"(?: \| )?)+)', body)
+    assert m, f"{name}.{field} is not a union of words"
+    return set(re.findall(r'"([A-Z_]+)"', m.group(1)))
+
+
+def test_the_brief_contract_and_submission_types_match_real_responses(client, seeded):  # noqa: F811
+    types = read("lib/types.ts")
+    pid = seeded["payout_ready_project_id"]
+    for headers in (None, auth_header(client)):
+        brd = client.get(f"/api/projects/{pid}/brd", headers=headers).json()
+        assert set(brd) == fields_of(types, "BRDResponse")
+        body = body_of(types, "BRDResponse")
+        start = body.index("{", body.index("content: {"))
+        declared_content = set(re.findall(r"(\w+)\??:", re.sub(r"\{[^{}]*\}", "", body[start + 1: matching(body, start)])))
+        assert declared_content <= set(brd["content"])                                  # the page reads only part of the document
+        req = brd["content"]["requirements"][0]
+        assert fields_of(types, "BRDRequirementItem") <= set(req)
+        crit_body = body_of(types, "BRDRequirementItem")
+        c_start = crit_body.index("{", crit_body.index("acceptance_criteria: {"))
+        assert set(re.findall(r"(\w+)\??:", crit_body[c_start + 1: matching(crit_body, c_start)])) <= set(req["acceptance_criteria"][0])
+        assert all(set(a) == fields_of(types, "BRDApprovalItem") for a in brd["approvals"])
+        assert brd["status"] in union_of(types, "BRDResponse", "status")
+    from app.services.verify_aggregate import AcResult  # noqa: F401  (the verification module is importable)
+    assert union_of(types, "BRDResponse", "status") == {"DRAFT", "PENDING_APPROVAL", "APPROVED", "SUPERSEDED"}
+    assert keys_of(block(read("lib/verifyview.ts"), "export const BRD_STATUS")) == union_of(types, "BRDResponse", "status")
+
+    headers = auth_header(client)
+    contract = client.get(f"/api/projects/{pid}/contract", headers=headers).json()
+    assert set(contract) - {"freelancer_paypal_email"} <= fields_of(types, "ContractResponse") and fields_of(types, "ContractResponse") - {"freelancer_paypal_email"} <= set(contract)
+    assert contract["status"] in union_of(types, "ContractResponse", "status") == {"OFFERED", "SIGNED"}
+
+    listing = client.get(f"/api/projects/{pid}/submissions", headers=headers).json()
+    assert set(listing) == {"submissions"} and listing["submissions"]
+    assert all(set(s) == fields_of(types, "SubmissionListItem") for s in listing["submissions"])
+    saw = {"questions": 0, "evidence": 0, "report": 0}
+    for item in listing["submissions"]:
+        detail = client.get(f"/api/submissions/{item['id']}", headers=headers).json()
+        assert set(detail) == fields_of(types, "SubmissionDetail")
+        assert set(detail["auto_check_summary"]) == {"PASS", "FAIL", "ERROR"}
+        assert all(set(c) == fields_of(types, "AutoCheckItem") for c in detail["auto_checks"]) and detail["auto_checks"]
+        assert all(isinstance(c["input"], dict) and isinstance(c["detail"], dict) for c in detail["auto_checks"])
+        for key, name in (("questions", "VerificationQuestionItem"), ("evidence", "EvidenceItem")):
+            assert all(set(x) == fields_of(types, name) for x in detail[key])
+            saw[key] += len(detail[key])
+        assert all(q["status"] in union_of(types, "VerificationQuestionItem", "status") for q in detail["questions"])
+        if detail["report"]:
+            saw["report"] += 1
+            assert set(detail["report"]) == fields_of(types, "VerificationReportItem")
+            assert detail["report"]["overall"] in union_of(types, "VerificationReportItem", "overall")
+    assert all(saw.values()), saw                                                          # the seed exercises every shape checked above
+    assert union_of(types, "VerificationQuestionItem", "status") == {"OPEN", "ANSWERED"}

@@ -4,6 +4,28 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 42 · Checking the teammate's screens against the real API · Wed Nov 11
+
+**What happened**
+- The brief, contract, submit and verify screens had no tests, and were written against hand-typed shapes. I added a permanent check that reads the real data (from the demo seed) and compares every field and status word with what those screens expect. It found real problems, now fixed:
+  - **Blank "what was checked".** On the submit and verify pages each automatic check (does the page open, does it contain this text, is the repository public...) is meant to show what it looked at. The screens read a field that does not exist, so it was always blank. They now show for example "PAGE_CONTAINS: /menu contains “Fish”".
+  - **The brief's status.** The screen only knew "locked"; the API has four states. A version waiting for sponsors showed as the raw code `PENDING_APPROVAL`, and sponsors were offered the approve button on versions that had been replaced. It now says "Waiting for the sponsors", "Approved and locked" or "Replaced by a newer version", and offers the decision only on the open one.
+  - **Who counts as a sponsor.** The brief decided this by matching names and emails; it now uses the person's actual place on the project. (The server always had the final say.)
+  - Two lists of status words in the screens' type file were wrong; corrected.
+- 10 new screen tests; I put the old bugs back one at a time to prove they fail (all caught).
+- 1,593 back-end tests and 469 front-end tests pass.
+
+**What it does NOT do yet**
+The submit and verify pages hide a failed load (they show an empty page rather than a message). Home, login and the contract page still have no tests of their own.
+
+**Progress:** Increment 42 of the 45 you asked for.
+
+**Needed from you:** please tell your teammate about the four small fixes in their files (they are listed in STATUS). BLK-01/02/03 and the PayPal keys are still waiting on you.
+
+**Next increment:** a plain "how to run and test it" guide plus an automatic smoke check of the running site.
+
+---
+
 ## Increment 41 · The AI evaluation table (T-63) · Wed Nov 11
 
 **What now exists**

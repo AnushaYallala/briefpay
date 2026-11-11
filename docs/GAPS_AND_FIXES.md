@@ -6,7 +6,7 @@ A running list of everything that is **missing, risky, unverified, or was found 
 - **Fixes** are problems that were found and already resolved, kept so the reasoning is not lost.
 - IDs are permanent. When a gap is closed, move it to Fixes (keep the ID) and say how.
 
-_Last updated: 2026-11-11, end of T-63._
+_Last updated: 2026-11-11, after the contract test for the teammate's screens._
 
 ---
 
@@ -153,6 +153,8 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | GAP-115 | Medium | The eval does not measure the live model: BA and Verifier rows use recorded outputs. | Run the three BA transcripts and ten Verifier cases against Gemini once a key is on the machine; add a second column. |
 | GAP-116 | Low | The Strategist eval uses 20 invented campaigns; it shows direction and sanity, not real accuracy. | Re-check with real campaign results after the demo. |
 | GAP-117 | Low | Switching off one Guardian rule still blocks every tamper plan because other rules also fire; the eval cannot tell which single rule was removed. | Per-rule fixtures exist in `test_guardian_rules.py`. |
+| GAP-118 | Low | The submit and verify pages ignore load failures (`catch {}`), so a failed load shows an empty page with no message. | Show the server's reason like the other screens. |
+| GAP-119 | Low | Home, login and the contract (offer and sign) screens have no tests of their own beyond the shared ones. | Add screen tests. |
 
 ---
 
@@ -230,6 +232,10 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | FIX-68 | T-23 | I removed a date-format check as 'redundant' and the tests failed: without it an empty deadline box read as the year 2000. | Check restored with a comment. |
 | FIX-69 | T-23 | A mutation run came back to life after the machine slept and overwrote my edits. | Stopped it, restored from a backup, and added the process rule to STATUS. |
 | FIX-70 | T-63 | The first Strategist synthetic set gave every campaign under 50% (average 6%), so the calibration rows were empty and meaningless. | Generator varies goal, existing holds and number of invitees; the test now requires predictions below 10% and above 90% and a better success rate in the high group. |
+| FIX-71 | D-059 | Submit and verify showed a blank where each automatic check should say what it looked at (they read `target`; the API sends `input`). | `checkTarget` helper, tested; types corrected. |
+| FIX-72 | D-059 | The brief screen knew only 'locked': a pending version showed the raw code and replaced versions offered the approve button. | Four statuses in words; decision only on the open version. |
+| FIX-73 | D-059 | The brief decided who is a sponsor by matching display names and emails. | Uses the signed-in person's memberships on that project. |
+| FIX-74 | D-059 | Type unions for brief status and question status did not match the API. | Corrected and pinned by the new contract test. |
 
 ---
 

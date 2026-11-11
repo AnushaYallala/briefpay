@@ -10,6 +10,7 @@ import { api, apiPost, API_BASE } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { BRDResponse, BRDRequirementItem, JobStatus, ProjectDetail } from "@/lib/types";
 import { useApi } from "@/lib/useApi";
+import { brdIsOpen, brdStatus } from "@/lib/verifyview";
 import { FileText, Download, CheckCircle2, XCircle, ArrowRight, ShieldCheck, Sparkles } from "lucide-react";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -118,11 +119,9 @@ function BRDView({ id }: { id: number }) {
     []
   );
 
-  const userMembership = project?.members?.find(
-    (m) =>
-      (m.email && auth.user?.email && m.email.toLowerCase() === auth.user.email.toLowerCase()) ||
-      (m.display_name && auth.user?.display_name && m.display_name.toLowerCase() === auth.user.display_name.toLowerCase())
-  );
+  // who the signed-in person is on THIS project comes from their memberships, never from matching names
+  const mine = auth.memberships.find((m) => m.project_id === id);
+  const userMembership = mine ? { id: mine.member_id, role: mine.role } : undefined;
   const isLead = userMembership?.role === "LEAD";
   const isSponsor = isLead || userMembership?.role === "SPONSOR";
 
@@ -190,9 +189,9 @@ function BRDView({ id }: { id: number }) {
   if (error) return <ErrorBox error={error} onRetry={reload} />;
   if (!brd) return null;
 
-  const isApproved = brd.status === "APPROVED" || brd.status === "LOCKED";
+  const isApproved = brd.status === "APPROVED";
   const userDecision = brd.approvals.find((a) => a.member_id === userMembership?.id);
-  const canDecide = isSponsor && brd.status !== "LOCKED" && !userDecision;
+  const canDecide = isSponsor && brdIsOpen(brd.status) && !userDecision;
 
   return (
     <div className="space-y-6 animate-fade-up">
@@ -256,8 +255,8 @@ function BRDView({ id }: { id: number }) {
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-ink-900">
                 Business Requirements Document
               </h1>
-              <Badge tone={brd.status === "APPROVED" || brd.status === "LOCKED" ? "green" : "teal"}>
-                {brd.status}
+              <Badge tone={brdStatus(brd.status).tone}>
+                {brdStatus(brd.status).label}
               </Badge>
             </div>
             <p className="text-xs text-ink-500">

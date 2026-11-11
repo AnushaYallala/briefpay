@@ -9,7 +9,7 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-11 by Claude: T-63 eval table (REVIEW). Earlier today: T-23 campaign page and T-27 organiser panel (REVIEW) |
+| Last updated | 2026-11-11 by Claude: tests and fixes for the teammate's brief, submit and verify screens (D-059); T-63 eval table; T-23/T-27 campaign page |
 | Overall phase | **Back end feature-complete except the three blocked pieces (BLK-01/02/03); front end feature-complete for all core steps (Requirements, Brief, Contract, Campaign, Submit, Verify, Payout Plans, Ledger, AI Audit).** Plain-English summary: `docs/PROGRESS_SUMMARY.md` |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
 | Next task to pick up | Not blocked: tests for the teammate's screens (contract, submit, verify, brief) against the real API shapes; a live-model eval run (needs the Gemini key on the machine); rehearsal and video (T-64) · **Human:** decide BLK-01/02/03 (pledging and the campaign clock) · PayPal sandbox keys · Cloudinary · deploy accounts · run `backend/scripts/sandbox_check.py` once keys exist |
@@ -191,6 +191,13 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-11 · Claude · tests for the brief, contract, submit and verify screens (DONE)
+- Did: `backend/tests/test_frontend_contract.py` (new contract test: real brief, contract, submissions, questions, evidence, checks and report against `types.ts`, including every status word), `frontend/tests/screens.test.tsx` (10 tests), `frontend/src/lib/verifyview.ts` (tested helpers). Fixed in the teammate's files (small edits, nothing restyled): submit and verify now show what each automatic check looked at (the field they read, `target`, never existed); the brief shows its four statuses in words and offers a decision only on the open version; the brief decides who is a sponsor from memberships, not names; two type unions corrected (brief status, question status). Committed straight to `main`.
+- Tests: back end `cd backend && .venv/Scripts/python.exe -m pytest -q` -> 1593 passed; front end `cd frontend && npm run check` -> typecheck clean, 469 tests, static build clean. Planted the original bugs back (21 variations): all caught except one redundant condition, which I simplified.
+- Contract changes: D-059 (no SPEC changes).
+- Next step: the remaining screens with no tests of their own are home, login and contract (offer and sign); a click-through of the whole demo in a browser; the live-model eval (needs a Gemini key on this machine).
+- Gotchas: (1) Tell the teammate about these four fixes (they own those files): pull before editing them. (2) The submit and verify pages swallow load errors silently (`catch {}`); a failed load shows an empty page, not a message.
 
 ### 2026-11-11 · Claude · T-63 AI eval mini-set (REVIEW)
 - Did: `backend/tests/test_eval.py` (23 tests: Guardian 8 plans, BA 3 transcripts, Verifier 10 criteria, Strategist 20 synthetic campaigns, a size-and-pass check) and `docs/EVAL_RESULTS.md` (the table, regenerated with `WRITE_EVAL=1`); README "What we measured" now shows the headline numbers. Committed straight to `main`.
