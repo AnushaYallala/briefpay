@@ -6,7 +6,7 @@ A running list of everything that is **missing, risky, unverified, or was found 
 - **Fixes** are problems that were found and already resolved, kept so the reasoning is not lost.
 - IDs are permanent. When a gap is closed, move it to Fixes (keep the ID) and say how.
 
-_Last updated: 2026-11-11, after the testing guide and smoke check._
+_Last updated: 2026-11-11, after the contract, brief, submit and verify clean-up._
 
 ---
 
@@ -157,6 +157,8 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | GAP-119 | Low | Home, login and the contract (offer and sign) screens have no tests of their own beyond the shared ones. | Add screen tests. |
 | GAP-120 | Medium | Nobody has used the screens in a real browser: the tests simulate one (jsdom), the smoke check only confirms pages are served. | A person follows `docs/TESTING.md`; consider a browser-driven check later. |
 | GAP-121 | Low | The smoke check needs the demo seed; it does not check anything that needs PayPal or AI keys. | Extend after keys are available. |
+| GAP-122 | Low | A load error shown on the submit page is cleared on the next load but this is not tested; the amount box takes whole dollars only. | Add a retry test; allow cents if the lead needs them. |
+| GAP-123 | Low | The create-project window and the sample transcript button use the demo cast (Ravi, Meena, Arjun) on purpose; they are demo helpers, not real flows. | Hide them outside demo mode when the site is deployed for real use. |
 
 ---
 
@@ -240,6 +242,9 @@ What already exists for them: `pledge_gate.py` (56 tests), `campaign_outcome.py`
 | FIX-74 | D-059 | Type unions for brief status and question status did not match the API. | Corrected and pinned by the new contract test. |
 | FIX-75 | D-060 | The first draft of the testing guide said the person drop-down appears after setup, but Next.js only reads `NEXT_PUBLIC_*` from the `frontend` folder, so a plain `npm run dev` had no demo mode. | `frontend/.env.development` added (public values only), pinned by a test; the claim was then checked in the dev server's own log. |
 | FIX-76 | D-060 | The smoke script's first tests broke one fact per check, so 18 of 22 planted weakenings survived (each check holds several assertions). | A replay test records the real answers once and spoils one field at a time (29 cases): all 22 weakenings are caught. |
+| FIX-77 | D-061 | Contract banner always said 'Arjun accepted'; brief said 'Awaiting project lead (Lakshmi)'. | Real names from the project's members, with fallbacks; tested. |
+| FIX-78 | D-061 | The lead's contract offer started at a fixed $400 on every project. | Starts at the project's own budget; tested with two budgets. |
+| FIX-79 | D-061 | Submit and verify showed a blank page when a load failed. | The server's reason is shown in a red message; tested for both screens and both loads. |
 
 ---
 

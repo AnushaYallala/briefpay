@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/auth";
 import { formatMoney } from "@/lib/money";
 import type { BRDResponse, ContractResponse, ProjectDetail } from "@/lib/types";
 import { useApi } from "@/lib/useApi";
+import { memberName } from "@/lib/verifyview";
 
 function ContractStudio({ projectId }: { projectId: number }) {
   const auth = useAuth();
@@ -22,7 +23,7 @@ function ContractStudio({ projectId }: { projectId: number }) {
   const { data: brd } = useApi<BRDResponse>(`/projects/${projectId}/brd`);
 
   // Lead offer state
-  const [amountDollars, setAmountDollars] = useState<string>("400");
+  const [amountDollars, setAmountDollars] = useState<string | null>(null);      // null = not typed yet: the form starts at the project's own budget
   const [deliveryDays, setDeliveryDays] = useState<number>(5);
   const [offering, setOffering] = useState<boolean>(false);
   const [offerError, setOfferError] = useState<string | null>(null);
@@ -42,13 +43,14 @@ function ContractStudio({ projectId }: { projectId: number }) {
   const isLead = project.viewer?.role === "LEAD";
   const isFreelancer = project.viewer?.role === "FREELANCER";
   const isSigned = contract?.status === "SIGNED" || Boolean(contract?.signed_at);
+  const budgetDollars = String(project.budget_cents / 100);
 
   const handleOffer = async (e: React.FormEvent) => {
     e.preventDefault();
     setOffering(true);
     setOfferError(null);
     try {
-      const cents = Math.round(parseFloat(amountDollars) * 100);
+      const cents = Math.round(parseFloat(amountDollars ?? budgetDollars) * 100);
       if (isNaN(cents) || cents <= 0) {
         throw new Error("Please enter a valid positive dollar amount.");
       }
@@ -116,7 +118,7 @@ function ContractStudio({ projectId }: { projectId: number }) {
                 </h2>
               </div>
               <p className="text-xs sm:text-sm text-slate-600 max-w-2xl">
-                Arjun accepted the delivery terms ({contract?.delivery_days} days, {formatMoney(contract?.amount_cents ?? 0, contract?.currency ?? "USD")}) and locked their PayPal payout address ({contract?.freelancer_paypal_email}). You can now proceed to the Pledge Campaign to collect pledge holds from sponsors.
+                {memberName(project.members, contract?.freelancer_member_id, "The builder")} accepted the delivery terms ({contract?.delivery_days} days, {formatMoney(contract?.amount_cents ?? 0, contract?.currency ?? "USD")}) and locked their PayPal payout address ({contract?.freelancer_paypal_email}). You can now proceed to the Pledge Campaign to collect pledge holds from sponsors.
               </p>
             </div>
             <Link
@@ -324,7 +326,7 @@ function ContractStudio({ projectId }: { projectId: number }) {
                       step="1"
                       min="1"
                       max="10000"
-                      value={amountDollars}
+                      value={amountDollars ?? budgetDollars}
                       onChange={(e) => setAmountDollars(e.target.value)}
                       className="w-full rounded-lg border border-slate-300 bg-white pl-7 pr-3 py-2 text-sm text-slate-900 focus:border-sea-500 focus:ring-1 focus:ring-sea-500 font-semibold"
                     />

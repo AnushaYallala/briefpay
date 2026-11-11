@@ -4,6 +4,27 @@ Written after every increment so you can see the state without reading code. The
 
 ---
 
+## Increment 44 · No demo leftovers, no silent failures · Wed Nov 11
+
+**What happened**
+Reading the contract, brief, submit and verify screens closely, as a tester would, I found and fixed:
+- **Fixed names.** The contract page said "Arjun accepted the delivery terms" whoever the freelancer was; the brief page said "Awaiting project lead (Lakshmi)". They now use the real person's name.
+- **A fixed price.** The lead's contract offer started at $400 on every project. It now starts at that project's own budget.
+- **Blank pages on failure.** If the server could not load the submissions, the submit and verify pages showed nothing. They now show a red message with the server's reason.
+- **Tests for the contract page**, which had none: the lead's offer (budget default, cents conversion, refusing a zero or negative amount, showing the server's refusal), the freelancer signing with the exact fingerprints they were shown, the waiting and signed states, and a visitor. I put the old bugs back one at a time to prove the tests notice: 20 of 22 caught (the other two are harmless and noted).
+- 487 front-end tests and 1,605 back-end tests pass.
+
+**Please note**
+The amount box only takes whole dollars (the browser refuses cents). The freelancer's PayPal address starts empty on purpose and has to be typed.
+
+**Progress:** Increment 44 of the 45 you asked for.
+
+**Needed from you:** follow `docs/TESTING.md` and tell me what you see; BLK-01/02/03; PayPal sandbox keys; a Gemini key for the live parts.
+
+**Next increment (the last of the 45):** a final tidy: re-read every document for stale claims, close out the gaps list, and make sure the status board is truthful.
+
+---
+
 ## Increment 43 · Ready to test by hand · Wed Nov 11
 
 **What now exists**
@@ -14,7 +35,7 @@ Written after every increment so you can see the state without reading code. The
 - 1,605 back-end tests and 469 front-end tests pass. The check script itself is proven: 22 deliberate weakenings were each caught.
 
 **Please note**
-This is the first time a person (you) will look at it in a real browser; my tests simulate one. The live copy I started is still running on this computer: the web app at http://localhost:8766 and the server at http://localhost:8765 (demo database; stop them when you are done, or follow the guide to start your own).
+This is the first time a person (you) will look at it in a real browser; my tests simulate one. (I had started a live copy to check it; it has been stopped and its temporary database deleted. Follow the guide to start your own.)
 
 **Progress:** Increment 43 of the 45 you asked for.
 

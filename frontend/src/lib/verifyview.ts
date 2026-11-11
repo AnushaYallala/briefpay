@@ -21,3 +21,18 @@ export function checkTarget(input: Record<string, unknown> | null | undefined): 
   if (path && text) return `${path} contains “${text}”`;
   return path;
 }
+
+/** The server's own words when it refused, otherwise a plain fallback. Used to show a failed load instead of a blank page. */
+export function problemText(err: unknown, fallback = "Could not load this just now."): string {
+  const message = err instanceof Error ? err.message : "";
+  return message || fallback;
+}
+
+/** The display name of a project member, for sentences that must name the real person, never a demo one. */
+export function memberName(members: { id: number; display_name: string }[] | undefined, id: number | null | undefined, fallback: string): string {
+  return members?.find((m) => m.id === id)?.display_name || fallback;
+}
+
+export function leadName(members: { role: string; display_name: string }[] | undefined): string {
+  return members?.find((m) => m.role === "LEAD")?.display_name || "the project lead";
+}

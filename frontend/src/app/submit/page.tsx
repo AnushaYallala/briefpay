@@ -16,7 +16,7 @@ import type {
   VerificationQuestionItem,
 } from "@/lib/types";
 import { useApi } from "@/lib/useApi";
-import { checkTarget } from "@/lib/verifyview";
+import { checkTarget, problemText } from "@/lib/verifyview";
 
 function SubmitStudio({ projectId }: { projectId: number }) {
   const auth = useAuth();
@@ -29,6 +29,7 @@ function SubmitStudio({ projectId }: { projectId: number }) {
   const [selectedSubId, setSelectedSubId] = useState<number | null>(null);
   const [currentSub, setCurrentSub] = useState<SubmissionDetail | null>(null);
   const [subLoading, setSubLoading] = useState<boolean>(false);
+  const [loadProblem, setLoadProblem] = useState<string | null>(null);
 
   // New submission form - starts empty with quick paste helper (no fake defaults)
   const [repoUrl, setRepoUrl] = useState<string>("");
@@ -52,6 +53,7 @@ function SubmitStudio({ projectId }: { projectId: number }) {
   const [judgeMsg, setJudgeMsg] = useState<string | null>(null);
 
   const loadSubmissions = async () => {
+    setLoadProblem(null);
     try {
       const res = await apiGet<{ submissions: SubmissionListItem[] }>(`/projects/${projectId}/submissions`);
       setSubmissions(res.submissions || []);
@@ -62,8 +64,8 @@ function SubmitStudio({ projectId }: { projectId: number }) {
           setSelectedSubId(latest.id);
         }
       }
-    } catch {
-      // Submissions may be empty initially
+    } catch (err) {
+      setLoadProblem(problemText(err, "Could not load the submissions."));
     }
   };
 
@@ -84,7 +86,7 @@ function SubmitStudio({ projectId }: { projectId: number }) {
         setCurrentSub(data);
       })
       .catch((err: unknown) => {
-        console.error(err);
+        setLoadProblem(problemText(err, "Could not load this submission."));
       })
       .finally(() => {
         setSubLoading(false);
@@ -177,6 +179,7 @@ function SubmitStudio({ projectId }: { projectId: number }) {
 
   return (
     <div className="space-y-6">
+      {loadProblem && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{loadProblem}</p>}
       <WorkflowNav
         projectId={projectId}
         projectTitle={project.title}

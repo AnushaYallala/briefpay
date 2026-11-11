@@ -10,7 +10,7 @@ import { api, apiPost, API_BASE } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { BRDResponse, BRDRequirementItem, JobStatus, ProjectDetail } from "@/lib/types";
 import { useApi } from "@/lib/useApi";
-import { brdIsOpen, brdStatus } from "@/lib/verifyview";
+import { brdIsOpen, brdStatus, leadName } from "@/lib/verifyview";
 import { FileText, Download, CheckCircle2, XCircle, ArrowRight, ShieldCheck, Sparkles } from "lucide-react";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -178,7 +178,7 @@ function BRDView({ id }: { id: number }) {
             </div>
           ) : (
             <div className="rounded-xl border border-sand-200 bg-sand-50 p-3 text-xs text-ink-600">
-              Awaiting project lead (Lakshmi) to generate the official BRD.
+              Awaiting {leadName(project?.members)} to generate the official BRD.
             </div>
           )}
         </div>

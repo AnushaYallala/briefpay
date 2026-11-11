@@ -9,7 +9,7 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-11 by Claude: testing guide, smoke check and dev demo mode (D-060); tests and fixes for the teammate's screens (D-059); T-63 eval table; T-23/T-27 campaign page |
+| Last updated | 2026-11-11 by Claude: demo leftovers removed and failures made visible on the contract, brief, submit and verify screens (D-061); testing guide and smoke check (D-060); tests for the teammate's screens (D-059); T-63 eval; T-23/T-27 campaign page |
 | Overall phase | **Back end feature-complete except the three blocked pieces (BLK-01/02/03); front end feature-complete for all core steps (Requirements, Brief, Contract, Campaign, Submit, Verify, Payout Plans, Ledger, AI Audit).** Plain-English summary: `docs/PROGRESS_SUMMARY.md` |
 | Current day goal (Sun Nov 8) | `/healthz` live on Render; a sandbox script proves authorize→capture, authorize→void and a payout |
 | Next task to pick up | Not blocked: tests for the teammate's screens (contract, submit, verify, brief) against the real API shapes; a live-model eval run (needs the Gemini key on the machine); rehearsal and video (T-64) · **Human:** decide BLK-01/02/03 (pledging and the campaign clock) · PayPal sandbox keys · Cloudinary · deploy accounts · run `backend/scripts/sandbox_check.py` once keys exist |
@@ -191,6 +191,13 @@ Template:
 - Next step for whoever picks up: …
 - Gotchas: …
 ```
+
+### 2026-11-11 · Claude · screens: real names, budget default, visible failures (DONE)
+- Did: in the teammate's files, small edits: `contract/page.tsx` (banner names the real freelancer; the offer starts at the project's budget, not 400), `brd/page.tsx` (names the real lead), `submit/page.tsx` and `verify/page.tsx` (a red message with the server's reason when a load fails). Helpers `problemText`, `memberName`, `leadName` in `lib/verifyview.ts`. Tests: `frontend/tests/screens-more.test.tsx` (18). Committed straight to `main`.
+- Tests: front end `cd frontend && npm run check` -> typecheck clean, 487 tests, build clean; back end 1605 (unchanged). Planted the old bugs back (22 variations): 20 caught, 2 left on purpose (a harmless `.trim()` on an email input, which browsers already trim; clearing an old load error on a successful retry in the submit page is not tested).
+- Contract changes: D-061 (no SPEC changes).
+- Next step: a person follows `docs/TESTING.md` in a real browser. Then BLK-01/02/03, keys, deploy.
+- Gotchas: (1) `npm run check` rebuilds `frontend/out` with the default API address; a hand-started copy of the built site pointing elsewhere stops working: rebuild it with `NEXT_PUBLIC_API_BASE_URL` set. (2) The amount box has `step="1"`, so cents cannot be typed (browsers refuse `300.50`): whole dollars only. (3) Tell the teammate: these are their files, pull before editing.
 
 ### 2026-11-11 · Claude · hands-on testing path (DONE)
 - Did: `docs/TESTING.md` (guide), `backend/scripts/smoke.py` (10 data checks + one per web page), `backend/tests/test_smoke.py` (12 tests), `frontend/.env.development` (demo mode for `npm run dev`), README run section points to both. Started the real stack (throwaway SQLite database, API on 8765, built web app served on 8766): 22/22 checks pass, CORS right. Walked the payout flow by hand: a payout plan reaches HOLD without keys (AI card unavailable, G-08 skipped) and the swap-recipient test is BLOCKED by G-01, G-03, G-12. Committed straight to `main`.
