@@ -12,7 +12,7 @@ export function Stepper({ state, projectId }: { state: string; projectId?: numbe
       case "Requirements": return `/ba?id=${projectId}`;
       case "Brief": return `/brd?id=${projectId}`;
       case "Contract": return `/contract?id=${projectId}`;
-      case "Campaign": return `/project?id=${projectId}`;
+      case "Campaign": return `/campaign?project=${projectId}`;
       case "Build": return `/submit?id=${projectId}`;
       case "Verify": return `/verify?id=${projectId}`;
       case "Payout": return `/plans?id=${projectId}`;

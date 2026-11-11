@@ -100,7 +100,7 @@ function ContractStudio({ projectId }: { projectId: number }) {
         currentStep="Contract"
         nextAction={isSigned ? {
           label: "Proceed to Pledge Campaign",
-          href: `/project?id=${projectId}`,
+          href: `/campaign?project=${projectId}`,
           badge: "Contract Signed",
           description: "Builder signed and PayPal locked! Open pledges from sponsors.",
         } : null}
@@ -122,7 +122,7 @@ function ContractStudio({ projectId }: { projectId: number }) {
               </p>
             </div>
             <Link
-              href={`/project?id=${projectId}`}
+              href={`/campaign?project=${projectId}`}
               className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 px-5 py-3 text-sm font-bold text-white shadow-md hover:from-emerald-700 hover:to-teal-800 transition hover:scale-[1.02] hover:shadow-lg"
             >
               <span>Proceed to Pledge Campaign</span>

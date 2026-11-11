@@ -51,6 +51,10 @@ describe("the public campaign page", () => {
     expect(screen.getByText(/Pledged \$150\.00 of \$400\.00 by 1 person/)).toBeTruthy();
     expect(screen.getByTestId("money-note").textContent).toBe("Held, not charged. Nothing is charged unless the goal is reached. A pledge is only a hold on your PayPal account.");
     expect(screen.getByText("Back to the project").getAttribute("href")).toBe("/project?id=1");
+    const stepBar = screen.getByRole("navigation", { name: "Project lifecycle progress" });
+    expect(within(stepBar).getByRole("link", { name: /Requirements/i }).getAttribute("href")).toBe("/ba?id=1");
+    expect(within(stepBar).getByRole("link", { name: /Brief/i }).getAttribute("href")).toBe("/brd?id=1");
+    expect(within(stepBar).getByRole("link", { name: /Campaign/i }).getAttribute("href")).toBe("/campaign?project=1");
   });
 
   it("lists the goal, what is still needed, the smallest pledge, the deadline and how it closes", async () => {

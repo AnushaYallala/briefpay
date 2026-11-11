@@ -9,7 +9,7 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-11 by Gemini: fixed SQLite same-thread `database is locked` deadlock in `STRATEGIST_RUN` / `BA_RUN` / `VERIFY_JUDGE` + added `[Strategist]` status logs |
+| Last updated | 2026-11-11 by Gemini: Campaign page UI/UX & wording redesign + `WorkflowNav` 8-step bar enforced across all project screens |
 | Overall phase | **Back end feature-complete except the three blocked pieces (BLK-01/02/03); front end feature-complete for all core steps (Requirements, Brief, Contract, Campaign, Submit, Verify, Payout Plans, Ledger, AI Audit).** Plain-English summary: `docs/PROGRESS_SUMMARY.md` |
 | Current goal | A person follows `docs/TESTING.md` in a real browser and reports what looks wrong; decide BLK-01/02/03; then keys (PayPal sandbox, Gemini), deploy (T-61), rehearse and record (T-64), submit (T-65) |
 | Next task to pick up | Nothing unblocked is left for the assistant except fixing what the hands-on test finds · **You:** (1) follow `docs/TESTING.md`; (2) decide BLK-01/02/03 (pledging and the campaign clock); (3) PayPal sandbox accounts and keys (T-02) then run `backend/scripts/sandbox_check.py`; (4) a Gemini key on this machine for the live evaluation; (5) Render and Aiven accounts to deploy (T-03, T-61); (6) record the video and submit (T-64, T-65) |
@@ -148,6 +148,15 @@ _Add things you confirmed so the next AI doesn't re-verify. Include date and who
 ---
 
 ## 6. Handoff log
+
+### 2026-11-11 · Gemini · Campaign UI/UX Redesign + Universal 8-Step `WorkflowNav` Bar
+- Did:
+  1. Added `<WorkflowNav>` (Requirements -> Brief -> Contract -> Campaign -> Build -> Verify -> Payout -> Ledger) to every project-scoped screen that was missing it (`frontend/src/app/campaign/page.tsx`, `frontend/src/app/project/page.tsx`, and `frontend/src/app/audit/page.tsx`); verified all 10 project-scoped screens (`/project`, `/ba`, `/brd`, `/contract`, `/campaign`, `/submit`, `/verify`, `/plans`, `/ledger`, `/audit`) render `<WorkflowNav>`.
+  2. Fixed `WorkflowNav.tsx`, `Stepper.tsx`, `lib/steps.ts` (`CTA_OF`), and `contract/page.tsx` so step 4 (`Campaign · Pledge-If`) and Contract's `Proceed to Pledge Campaign` navigate directly to `/campaign?project=${id}` instead of looping back to `/project?id=${id}`. Made `WorkflowNav` `currentStep` optional so neutral screens like `/audit` display the bar without falsely highlighting a milestone.
+  3. Redesigned `/campaign` (`campaign/page.tsx`, `LeadPanel.tsx`, `StrategistCard.tsx`, `PledgeBoard.tsx`) with an Executive Header card (`hero-mesh`), 12-column responsive split dashboard (`lg:grid-cols-12`), structured metric KPI tiles, clear Lead control cards (`Campaign Terms & Launch Controls`), spinner-animated Strategist card (`Campaign Strategist`, `Success probability`, risk strip, `Stakeholder Outreach Drafts` with Copy/WhatsApp pills), and full-width AG Grid columns.
+  4. Updated `frontend/tests/campaign-page.test.tsx` to assert `WorkflowNav` links on `/campaign`.
+- Tests: `npm run check` (`tsc --noEmit`, 19/19 Vitest files / 488/488 tests, Next.js static export 15/15 pages) — passed cleanly.
+- Next step: Refresh `/campaign/?id=1` in the browser and unblock `BLK-03` (`pledge_state.py`), `BLK-01` (`pledge_service.py` + `routers/pledges.py`), and `BLK-02` (`campaign_clock.py`) if desired.
 
 ### 2026-11-11 · Gemini · Fix SQLite write-lock deadlock in `STRATEGIST_RUN` (+ `BA_RUN`, `VERIFY_JUDGE`)
 - Root cause: In `strategist_run` (`backend/app/services/job_handlers.py`), `strategist_service.run_report(db, c)` flushed a new `StrategistReport` row BEFORE `strategist_words.add_narrative()` invoked `LLMAdapter._log()`, which opens a separate `session_factory()` connection to insert into `agent_runs`. On SQLite's single-writer lock, the open write transaction deadlocked `_log()` across all 3 `busy_timeout=30000` retries (~90s blocked) before raising `sqlite3.OperationalError: database is locked`.

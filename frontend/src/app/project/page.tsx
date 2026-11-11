@@ -5,11 +5,12 @@ import { Suspense } from "react";
 import { MembersPanel } from "@/components/MembersPanel";
 import { MoneyBox } from "@/components/MoneyBox";
 import { Stepper } from "@/components/Stepper";
+import { WorkflowNav, type StepName } from "@/components/WorkflowNav";
 import { Badge, Empty, ErrorBox, Loading, PledgeProgress } from "@/components/ui";
 import { useAuth } from "@/lib/auth";
 import { formatMoney } from "@/lib/money";
 import { campaignState, projectState } from "@/lib/states";
-import { WHAT_NEXT, CTA_OF } from "@/lib/steps";
+import { STEP_OF, STEPS, WHAT_NEXT, CTA_OF } from "@/lib/steps";
 import type { ProjectDetail } from "@/lib/types";
 import { useApi } from "@/lib/useApi";
 import { MapPin, ArrowRight, ShieldCheck, Lock, Calendar, FileText, CheckCircle2 } from "lucide-react";
@@ -78,8 +79,18 @@ function Workspace({ id }: { id: number }) {
     }
   })();
 
+  const stepIdx = STEP_OF[p.state];
+  const activeStep: StepName | null = stepIdx !== undefined && stepIdx !== null ? (STEPS[stepIdx] as StepName) : null;
+
   return (
     <div className="space-y-6 animate-fade-up">
+      <WorkflowNav
+        projectId={p.id}
+        projectTitle={p.title}
+        projectState={p.state}
+        currentStep={activeStep}
+      />
+
       {/* Executive Project Hub Header */}
       <div className="card card-pad bg-white rounded-3xl border border-sand-200 shadow-card">
         <div className="mb-3">

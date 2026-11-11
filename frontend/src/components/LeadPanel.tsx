@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { CalendarClock, CheckCircle2, Lock, Rocket, ShieldAlert, SlidersHorizontal } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { CLOSE_POLICY_WORDS, centsToDollars, deadlineProblem, deadlineToIso, dollarsToCents, isoToLocalInput, mayLaunch } from "@/lib/campaign";
 import { formatMoney } from "@/lib/money";
@@ -45,56 +46,179 @@ export function LeadPanel({ projectId, campaign, onChanged }: { projectId: numbe
   }
 
   return (
-    <section aria-label="Organiser" className="space-y-4 rounded-2xl border border-sea-200 bg-sea-50/50 p-5">
-      <h2 className="font-bold text-slate-900">For the organiser</h2>
-      {problem && <p role="alert" className="rounded bg-red-50 p-2 text-sm text-red-800">{problem}</p>}
-      {message && <p role="status" className="rounded bg-white p-2 text-sm text-sea-700">{message}</p>}
-
-      {setup && (
-        <form onSubmit={(e) => { e.preventDefault(); void save(); }} className="space-y-3 text-sm" aria-label="Campaign terms">
-          <p className="text-gray-700">
-            The goal is the price in the signed contract{campaign ? `: ${formatMoney(campaign.goal_cents, campaign.currency)}` : ""}. It cannot be changed here.
-          </p>
-          <label className="block">
-            <span className="font-medium">Deadline (UTC)</span>
-            <input type="datetime-local" value={deadline} onChange={(e) => setDeadline(e.target.value)} className="mt-1 block rounded border border-gray-300 p-2" />
-          </label>
-          {lead && <p className="text-xs text-gray-600" data-testid="window">It must be between {formatDateTime(lead.deadline_earliest)} and {formatDateTime(lead.deadline_latest)}: PayPal only guarantees a hold for three days, so a pledge must still be safe when the campaign closes.</p>}
-          <fieldset>
-            <legend className="font-medium">When it closes</legend>
-            {Object.entries(CLOSE_POLICY_WORDS).map(([key, words]) => (
-              <label key={key} className="mt-1 flex items-start gap-2"><input type="radio" name="policy" checked={policy === key} onChange={() => setPolicy(key)} /><span>{words}</span></label>
-            ))}
-          </fieldset>
-          <label className="block"><span className="font-medium">Smallest pledge (dollars, optional)</span>
-            <input inputMode="decimal" value={minPledge} onChange={(e) => setMinPledge(e.target.value)} className="mt-1 block w-32 rounded border border-gray-300 p-2" /></label>
-          <label className="block"><span className="font-medium">Suggested share (dollars, optional)</span>
-            <input inputMode="decimal" value={share} onChange={(e) => setShare(e.target.value)} className="mt-1 block w-32 rounded border border-gray-300 p-2" /></label>
-          <button type="submit" disabled={busy !== null} className="rounded bg-sea-600 px-3 py-1.5 text-white hover:bg-sea-700 disabled:opacity-60">{busy === "save" ? "Saving..." : "Save the terms"}</button>
-        </form>
-      )}
-
-      {campaign?.state === "SETUP" && lead && (
-        <div className="space-y-2 text-sm" aria-label="Opening">
-          {lead.launch_blockers.length > 0 && (
-            <div data-testid="blockers"><p className="font-medium">Before it can open:</p><ul className="list-disc pl-5 text-amber-800">{lead.launch_blockers.map((b, i) => <li key={i}>{b}</li>)}</ul></div>
-          )}
-          <button disabled={busy !== null || !mayLaunch(campaign)} onClick={() => void launch()} className="rounded bg-green-700 px-3 py-1.5 text-white hover:bg-green-800 disabled:opacity-50">{busy === "launch" ? "Opening..." : "Open for pledges"}</button>
-        </div>
-      )}
-
-      {campaign && lead?.earliest_honor_until && <p className="text-sm text-amber-800" data-testid="honor">The earliest hold runs out {formatDateTime(lead.earliest_honor_until)}.</p>}
-
-      {campaign && campaign.state !== "SETUP" && (
-        <div className="space-y-2 text-sm" aria-label="Controls">
-          <p className="text-gray-700" data-testid="not-built">Closing and collecting, cancelling, starting another round and trying the deadline early are not built yet. They will appear here.</p>
-          <div className="flex flex-wrap gap-2">
-            {["Close and collect now", "Cancel the campaign", "Start another round", "Try the deadline early"].map((label) => (
-              <button key={label} disabled className="rounded border border-gray-300 bg-white px-3 py-1.5 text-gray-500 opacity-60">{label}</button>
-            ))}
+    <section aria-label="Organiser" className="rounded-2xl border border-sea-200/90 bg-white shadow-card overflow-hidden">
+      <div className="border-b border-sea-100 bg-gradient-to-r from-sea-50/90 via-emerald-50/40 to-white px-5 py-4 flex items-start justify-between gap-3">
+        <div className="flex items-start gap-2.5">
+          <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-sea-100 text-sea-700">
+            <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
+          </span>
+          <div>
+            <h2 className="text-base font-bold text-slate-900">Campaign Terms &amp; Launch Controls</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Configure the funding deadline, minimum backing, and launch readiness</p>
           </div>
         </div>
-      )}
+        <span className="inline-flex items-center gap-1 rounded-full border border-sea-200 bg-white px-2.5 py-0.5 text-[11px] font-semibold text-sea-700 shrink-0">
+          Lead only
+        </span>
+      </div>
+
+      <div className="p-5 sm:p-6 space-y-4">
+        {problem && (
+          <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm font-medium text-red-800">
+            {problem}
+          </p>
+        )}
+        {message && (
+          <p role="status" className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2.5 text-sm font-semibold text-emerald-800">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" aria-hidden="true" />
+            <span>{message}</span>
+          </p>
+        )}
+
+        {setup && (
+          <form onSubmit={(e) => { e.preventDefault(); void save(); }} className="space-y-4 text-sm" aria-label="Campaign terms">
+            <div className="flex items-start gap-2.5 rounded-xl border border-slate-200 bg-slate-50/80 p-3 text-xs sm:text-sm text-slate-700">
+              <Lock className="h-4 w-4 text-slate-500 mt-0.5 shrink-0" aria-hidden="true" />
+              <p>
+                The goal is the price in the signed contract{campaign ? `: ${formatMoney(campaign.goal_cents, campaign.currency)}` : ""}. It cannot be changed here.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+                  <CalendarClock className="h-3.5 w-3.5 text-sea-600" aria-hidden="true" />
+                  <span>Deadline (UTC)</span>
+                </span>
+                <input
+                  type="datetime-local"
+                  value={deadline}
+                  onChange={(e) => setDeadline(e.target.value)}
+                  className="input mt-1.5"
+                />
+              </label>
+              {lead && (
+                <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600 border border-slate-100 leading-relaxed" data-testid="window">
+                  It must be between <span className="font-semibold text-slate-800">{formatDateTime(lead.deadline_earliest)}</span> and{" "}
+                  <span className="font-semibold text-slate-800">{formatDateTime(lead.deadline_latest)}</span>: PayPal only guarantees a hold for three days, so a pledge must still be safe when the campaign closes.
+                </p>
+              )}
+            </div>
+
+            <fieldset className="space-y-2">
+              <legend className="text-xs font-bold uppercase tracking-wider text-slate-600">When it closes</legend>
+              <div className="space-y-2 pt-1">
+                {Object.entries(CLOSE_POLICY_WORDS).map(([key, words]) => {
+                  const active = policy === key;
+                  return (
+                    <label
+                      key={key}
+                      className={`flex items-start gap-2.5 rounded-xl border p-3 cursor-pointer transition text-xs sm:text-sm ${
+                        active
+                          ? "border-sea-500 bg-sea-50/60 text-slate-900 ring-1 ring-sea-500/20"
+                          : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="policy"
+                        checked={active}
+                        onChange={() => setPolicy(key)}
+                        className="mt-0.5 accent-sea-600"
+                      />
+                      <span className="leading-snug">{words}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <label className="block">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-600">Smallest pledge (dollars, optional)</span>
+                <input
+                  inputMode="decimal"
+                  placeholder="e.g. 5.00"
+                  value={minPledge}
+                  onChange={(e) => setMinPledge(e.target.value)}
+                  className="input mt-1.5 tabular-nums"
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-600">Suggested share (dollars, optional)</span>
+                <input
+                  inputMode="decimal"
+                  placeholder="e.g. 100.00"
+                  value={share}
+                  onChange={(e) => setShare(e.target.value)}
+                  className="input mt-1.5 tabular-nums"
+                />
+              </label>
+            </div>
+
+            <div className="pt-1 flex flex-wrap items-center gap-3">
+              <button type="submit" disabled={busy !== null} className="btn-primary">
+                {busy === "save" ? "Saving..." : "Save the terms"}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {campaign?.state === "SETUP" && lead && (
+          <div className="border-t border-slate-100 pt-4 space-y-3 text-sm" aria-label="Opening">
+            {lead.launch_blockers.length > 0 && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3.5" data-testid="blockers">
+                <p className="font-semibold text-amber-900 flex items-center gap-1.5 text-xs uppercase tracking-wider">
+                  <ShieldAlert className="h-4 w-4 text-amber-600 shrink-0" aria-hidden="true" />
+                  <span>Before it can open:</span>
+                </p>
+                <ul className="mt-1.5 list-disc pl-5 text-amber-900 space-y-0.5 text-xs sm:text-sm">
+                  {lead.launch_blockers.map((b, i) => <li key={i}>{b}</li>)}
+                </ul>
+              </div>
+            )}
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-200/80 bg-emerald-50/50 p-3.5">
+              <div className="text-xs text-slate-600">
+                <p className="font-semibold text-slate-800">Ready to accept PayPal holds?</p>
+                <p>Opening starts the 72-hour Pledge-If backing window.</p>
+              </div>
+              <button
+                disabled={busy !== null || !mayLaunch(campaign)}
+                onClick={() => void launch()}
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:from-emerald-700 hover:to-teal-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Rocket className="h-4 w-4" aria-hidden="true" />
+                <span>{busy === "launch" ? "Opening..." : "Open for pledges"}</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {campaign && lead?.earliest_honor_until && (
+          <p className="rounded-xl border border-amber-200 bg-amber-50/80 px-3.5 py-2.5 text-xs sm:text-sm font-medium text-amber-900" data-testid="honor">
+            The earliest hold runs out {formatDateTime(lead.earliest_honor_until)}.
+          </p>
+        )}
+
+        {campaign && campaign.state !== "SETUP" && (
+          <div className="border-t border-slate-100 pt-4 space-y-3 text-sm" aria-label="Controls">
+            <p className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs text-slate-600 leading-relaxed" data-testid="not-built">
+              Closing and collecting, cancelling, starting another round and trying the deadline early are not built yet. They will appear here.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {["Close and collect now", "Cancel the campaign", "Start another round", "Try the deadline early"].map((label) => (
+                <button
+                  key={label}
+                  disabled
+                  className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-400 cursor-not-allowed text-left"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </section>
   );
 }

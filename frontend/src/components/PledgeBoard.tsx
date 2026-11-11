@@ -10,18 +10,18 @@ import { formatDateTime } from "@/lib/time";
 ModuleRegistry.registerModules([AllCommunityModule]);
 
 const COLUMNS = (currency: string): ColDef<BoardRow>[] => [
-  { field: "name", headerName: "Supporter", width: 220 },
+  { field: "name", headerName: "Supporter", minWidth: 160, flex: 1.4 },
   {
-    field: "status", headerName: "Status", width: 150,
+    field: "status", headerName: "Status", minWidth: 130, flex: 1,
     cellRenderer: (p: ICellRendererParams<BoardRow>) => <Badge tone={(BOARD_STATUS[p.value] ?? { tone: "grey" }).tone}>{(BOARD_STATUS[p.value] ?? { label: p.value }).label}</Badge>,
   },
-  { field: "amount_cents", headerName: "Collected", width: 140, type: "rightAligned", valueFormatter: (p) => (p.value === null ? "held" : formatMoney(p.value, currency)) },
-  { field: "at", headerName: "When", width: 170, valueFormatter: (p) => formatDateTime(p.value) },
+  { field: "amount_cents", headerName: "Collected", minWidth: 120, flex: 1, type: "rightAligned", valueFormatter: (p) => (p.value === null ? "held" : formatMoney(p.value, currency)) },
+  { field: "at", headerName: "Updated", minWidth: 155, flex: 1.2, valueFormatter: (p) => formatDateTime(p.value) },
 ];
 
 export function PledgeBoard({ rows, currency }: { rows: BoardRow[]; currency: string }) {
   return (
-    <div data-testid="pledge-board">
+    <div data-testid="pledge-board" className="overflow-hidden rounded-xl border border-slate-200/80">
       <AgGridReact<BoardRow>
         theme={themeQuartz}
         rowData={rows}

@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { AuditGrid } from "@/components/AuditGrid";
 import { RunDialog } from "@/components/RunDialog";
+import { WorkflowNav } from "@/components/WorkflowNav";
 import { Empty, ErrorBox, Loading } from "@/components/ui";
 import { useAuth } from "@/lib/auth";
 import { AUDIT_REFRESH_MS, agentLabel, agentsPresent, filterRuns, latencyText, summarize } from "@/lib/audit";
@@ -32,28 +33,38 @@ function Audit({ id }: { id: number }) {
   if (!data) return null;
   const sum = summarize(runs);
   return (
-    <div className="space-y-4">
-      <div>
-        <Link href={`/project?id=${id}`} className="text-sm text-sea-700 hover:underline">Back to the project</Link>
-        <h1 className="mt-1 text-2xl font-bold">AI audit trail</h1>
-        <p className="text-sm text-gray-600">Every call to an AI helper on this project: which one, which model and prompt version, how long it took and what came back. The AI only suggests; fixed rules decide.</p>
+    <div className="space-y-5 animate-fade-up">
+      <WorkflowNav projectId={id} />
+
+      <div className="card-pad hero-mesh space-y-2">
+        <Link href={`/project?id=${id}`} className="inline-flex items-center gap-1 text-xs font-semibold text-sea-700 hover:text-sea-800 hover:underline">
+          <span aria-hidden="true">&larr;</span> Back to the project
+        </Link>
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">AI audit trail</h1>
+        <p className="text-sm text-slate-600 max-w-3xl leading-relaxed">
+          Every call to an AI helper on this project: which agent ran, which model and prompt version answered, how long it took, and what came back. The AI only suggests; fixed deterministic rules decide.
+        </p>
       </div>
-      {error && <p role="alert" className="rounded bg-amber-50 p-2 text-sm text-amber-800">Could not refresh just now ({error.message}). Showing the last calls we have.</p>}
+      {error && <p role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">Could not refresh just now ({error.message}). Showing the last calls we have.</p>}
       {data.rows.length === 0 ? <Empty title="No AI calls yet">Calls appear as the helpers work on the project.</Empty> : (
-        <>
-          <div className="flex flex-wrap items-center gap-2">
-            {agentsPresent(data.rows).map((a) => (
-              <button key={a} aria-pressed={agent === a} onClick={() => setAgent(agent === a ? null : a)}
-                      className={`rounded-full border px-3 py-1 text-sm ${agent === a ? "border-sea-600 bg-sea-600 text-white" : "border-gray-300 bg-white text-gray-700"}`}>{agentLabel(a)}</button>
-            ))}
-            <input aria-label="Search the audit trail" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} className="rounded border border-gray-300 px-3 py-1.5 text-sm" />
-            <button onClick={reload} className="rounded border border-gray-300 bg-white px-3 py-1.5 text-sm hover:bg-gray-50">Refresh</button>
+        <section className="card-pad space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              {agentsPresent(data.rows).map((a) => (
+                <button key={a} aria-pressed={agent === a} onClick={() => setAgent(agent === a ? null : a)}
+                        className={`rounded-full border px-3 py-1 text-xs sm:text-sm font-medium transition ${agent === a ? "border-sea-600 bg-sea-600 text-white shadow-xs" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"}`}>{agentLabel(a)}</button>
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <input aria-label="Search the audit trail" placeholder="Search runs..." value={search} onChange={(e) => setSearch(e.target.value)} className="input w-48 sm:w-56 py-1.5" />
+              <button onClick={reload} className="btn-secondary py-1.5 px-3 text-xs sm:text-sm">Refresh</button>
+            </div>
           </div>
-          <p className="text-sm text-gray-700" data-testid="audit-summary">
+          <p className="text-sm font-medium text-slate-700" data-testid="audit-summary">
             {sum.runs} call{sum.runs === 1 ? "" : "s"} · {sum.failed} failed · average {latencyText(sum.avgLatencyMs)} · {sum.tokens} tokens
           </p>
           <AuditGrid runs={runs} quickFilter={search} onOpen={setOpen} />
-        </>
+        </section>
       )}
       {open && <RunDialog run={open} onClose={close} />}
     </div>

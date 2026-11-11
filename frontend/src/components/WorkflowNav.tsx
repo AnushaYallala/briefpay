@@ -9,7 +9,7 @@ export interface WorkflowNavProps {
   projectId: number;
   projectTitle?: string;
   projectState?: string;
-  currentStep: StepName;
+  currentStep?: StepName | null;
   nextAction?: {
     label: string;
     href: string;
@@ -22,7 +22,7 @@ const STEP_LINKS: Record<StepName, (id: number) => string> = {
   Requirements: (id) => `/ba?id=${id}`,
   Brief: (id) => `/brd?id=${id}`,
   Contract: (id) => `/contract?id=${id}`,
-  Campaign: (id) => `/project?id=${id}`,
+  Campaign: (id) => `/campaign?project=${id}`,
   Build: (id) => `/submit?id=${id}`,
   Verify: (id) => `/verify?id=${id}`,
   Payout: (id) => `/plans?id=${id}`,
@@ -44,7 +44,7 @@ export function WorkflowNav({
   projectId,
   projectTitle,
   projectState,
-  currentStep,
+  currentStep = null,
   nextAction,
 }: WorkflowNavProps) {
   const state = projectState || "REQUIREMENTS";
