@@ -94,13 +94,21 @@ export function PledgeBox({ campaign, role, signedIn, userName, onPledged, clien
     );
   }
   if (done) {
+    const more = campaign.remaining_need_cents >= campaign.min_pledge_cents;
     return (
-      <div role="status" className="flex items-start gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 p-3.5 text-sm text-emerald-900" data-testid="pledge-done">
-        <CheckCircle2 className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" aria-hidden="true" />
-        <p>
-          <strong>Thank you, {done.display_name}.</strong> {formatMoney(done.amount_cents, campaign.currency)} is held on your PayPal account.
-          It is only a hold: you are charged only if the goal is reached before the deadline.
-        </p>
+      <div className="space-y-2.5">
+        <div role="status" className="flex items-start gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 p-3.5 text-sm text-emerald-900" data-testid="pledge-done">
+          <CheckCircle2 className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" aria-hidden="true" />
+          <p>
+            <strong>Thank you, {done.display_name}.</strong> {formatMoney(done.amount_cents, campaign.currency)} is held on your PayPal account.
+            It is only a hold: you are charged only if the goal is reached before the deadline.
+          </p>
+        </div>
+        {more && (
+          <button type="button" onClick={() => { setDone(null); setAmount(""); setProblem(null); setNote(null); }} className="text-xs font-semibold text-sea-700 underline">
+            Hold another amount
+          </button>
+        )}
       </div>
     );
   }

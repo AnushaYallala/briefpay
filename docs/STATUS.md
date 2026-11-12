@@ -168,6 +168,7 @@ _Add things you confirmed so the next AI doesn't re-verify. Include date and who
 - Contract changes: D-063; new types `PledgeResult`, `PledgeListRow`, `PlanSummary`, `CampaignActionResult` (contract tests compare them with real responses). No SPEC change needed (the endpoints were already listed).
 - To use it: backend `.env` already has the sandbox keys; add `NEXT_PUBLIC_PAYPAL_CLIENT_ID=<the same client id>` to `frontend/.env.local`, restart both servers, open an OPEN campaign signed in as a non-builder, type an amount, press PayPal's button.
 - Next step: one real sandbox pledge (GAP-126); then a real-browser walk through `docs/TESTING.md`.
+- Follow-up fix (found by the user in the browser): the pledge box kept the previous person's "Thank you" after switching demo person, and gave no way to hold more. It is now keyed by person and campaign, and offers "Hold another amount" while money is still needed. Front end 512 tests.
 - Gotchas: (1) The clock never builds a second plan for a campaign: if a plan exists a person decides (Plans page). (2) The lead's close/cancel refuse while another plan for the campaign is in flight. (3) Webhooks cannot reach localhost, so locally only the synchronous answer and the poll fallback confirm things. (4) A stray hold PayPal places with the wrong amount is not counted and not voided (GAP-127). (5) The early-deadline button and `/demo/*` endpoints exist only with `DEMO_MODE`.
 
 ### 2026-11-11 · Gemini · Campaign UI/UX Redesign + Universal 8-Step `WorkflowNav` Bar

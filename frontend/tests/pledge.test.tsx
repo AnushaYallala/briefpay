@@ -2,7 +2,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-libra
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import CampaignPage from "@/app/campaign/page";
 import { PledgeBox, amountProblem } from "@/components/PledgeBox";
-import { AuthProvider } from "@/lib/auth";
+import { AuthProvider, useAuth } from "@/lib/auth";
 import { clearToken, setToken } from "@/lib/token";
 import type { CampaignView } from "@/lib/types";
 import { campaignView, lakshmi, leadPart, ledger, mockFetch } from "./helpers";
@@ -111,6 +111,53 @@ describe("the pledge box", () => {
     await waitFor(() => expect(m.calls.filter((c) => c.path === "/campaigns/1").length).toBeGreaterThan(before));
     expect(screen.queryByTestId("pledge-form")).toBeNull();
     expect(h.closed).toHaveBeenCalled();                                  // PayPal's button is taken down once the hold exists
+  });
+
+  it("offers to hold another amount while money is still needed, and not once the goal is covered", async () => {
+    await openPage("SPONSOR", campaignView(), {
+      "POST /campaigns/1/pledges/order": { status: 201, body: order }, "POST /campaigns/1/pledges/authorize": { body: held },
+    });
+    type(/Amount to hold/, "25");
+    await waitFor(() => expect(h.options).toHaveLength(1));
+    await act(async () => { await h.options[0].onApprove({ orderID: "ORDER-7" }); });
+    fireEvent.click(await screen.findByRole("button", { name: "Hold another amount" }));
+    expect((screen.getByLabelText(/Amount to hold/) as HTMLInputElement).value).toBe("");
+    expect(screen.queryByTestId("pledge-done")).toBeNull();
+    cleanup();
+    let covered = false;                                                    // the last $5 needed: after it is held nothing is still needed
+    await openPage("SPONSOR", campaignView(), {
+      "GET /campaigns/1": () => ({ body: campaignView({ remaining_need_cents: covered ? 0 : 500 }) }),
+      "POST /campaigns/1/pledges/order": { status: 201, body: order },
+      "POST /campaigns/1/pledges/authorize": () => { covered = true; return { body: held }; },
+    });
+    type(/Amount to hold/, "5");
+    await waitFor(() => expect(h.options.length).toBeGreaterThan(0));
+    await act(async () => { await h.options[h.options.length - 1].onApprove({ orderID: "ORDER-7" }); });
+    await screen.findByTestId("pledge-done");
+    expect(screen.queryByRole("button", { name: "Hold another amount" })).toBeNull();
+  });
+
+  it("forgets the last pledge's thank-you when a different person is signed in", async () => {
+    const ravi = { id: 2, email: "ravi@velugu.example.com", display_name: "Ravi" };
+    let who = lakshmi;
+    function Switch() { const a = useAuth(); return <button onClick={() => void a.login(ravi.email, ravi.display_name)}>switch to Ravi</button>; }
+    setToken("tok");
+    mockFetch({
+      "GET /auth/me": () => ({ body: { user: who, memberships: [{ member_id: 1, project_id: 1, role: "SPONSOR" }] } }),
+      "POST /auth/login": () => { who = ravi; return { body: { token: "tok2", user: ravi } }; },
+      "GET /campaigns/1": { body: campaignView() }, "GET /projects/1/ledger": { body: ledger([]) },
+      "GET /campaigns/1/strategist": { status: 404, body: { error: { code: "NO_REPORT", message: "none" } } },
+      "POST /campaigns/1/pledges/order": { status: 201, body: order }, "POST /campaigns/1/pledges/authorize": { body: held },
+    } as never);
+    render(<AuthProvider><Switch /><CampaignPage /></AuthProvider>);
+    await screen.findByTestId("title");
+    type(/Amount to hold/, "25");
+    await waitFor(() => expect(h.options).toHaveLength(1));
+    await act(async () => { await h.options[0].onApprove({ orderID: "ORDER-7" }); });
+    expect((await screen.findByTestId("pledge-done")).textContent).toContain("Thank you, Lakshmi.");
+    fireEvent.click(screen.getByRole("button", { name: "switch to Ravi" }));
+    await waitFor(() => expect(screen.queryByTestId("pledge-done")).toBeNull());
+    expect((screen.getByLabelText(/Name on the board/) as HTMLInputElement).value).toBe("Ravi");
   });
 
   it("shows the server's reason when the order cannot be started, and when the hold is declined", async () => {

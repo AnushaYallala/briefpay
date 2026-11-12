@@ -241,7 +241,7 @@ function Campaign({ idParam, projectParam }: { idParam: number | null; projectPa
                   Zero charge until goal met
                 </span>
               </div>
-              <PledgeBox campaign={v} role={role} signedIn={auth.user !== null} userName={auth.user?.display_name ?? null} onPledged={changed} />
+              <PledgeBox key={`${auth.user?.id ?? "guest"}-${v.id}`} campaign={v} role={role} signedIn={auth.user !== null} userName={auth.user?.display_name ?? null} onPledged={changed} />
               {v.state === "OPEN" && <p className="text-xs text-slate-500">PayPal shows its own window for your approval. We never see your card or password.</p>}
               <div>
                 <button
