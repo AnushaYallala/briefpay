@@ -202,3 +202,49 @@ def test_a_payout_review_survives_paypal_being_down_and_bad_refund_reasons_are_r
     assert got["decision"] == "ALLOW"
     refund = client.post(f"/api/projects/{w.project.id}/plans", json={"kind": "REFUND_CAPTURED", "reason": "X"}, headers=h)
     assert refund.status_code == 409                                                 # bad reason is refused up front
+
+
+def test_partial_capture_can_be_repaired_by_refunding_captured_pledges(client, w, db):
+    """GAP-09: a PARTIAL capture leaves campaign CAPTURING & project PLEDGING; Lead can build/execute REFUND_CAPTURED."""
+    from app.models import MoneyPlan, MoneyPlanStep, Pledge
+    from app.services import ledger, plan_lifecycle as lc
+
+    p1, p2 = w.pledge(25000), w.pledge(15000)
+    plan = MoneyPlan(
+        project_id=w.project.id, campaign_id=w.campaign.id, kind="CAPTURE_PLEDGES",
+        plan_json={"steps": []}, plan_hash="cap-hash", state="EXECUTING",
+        proposed_by="system", release_policy="AUTO_ON_ALLOW",
+    )
+    db.add(plan)
+    db.flush()
+    s1 = MoneyPlanStep(plan_id=plan.id, seq=1, phase=1, op="CAPTURE_AUTH", target_type="PLEDGE",
+                       target_id=p1.id, amount_cents=25000, bucket="POOL", idempotency_key="k1", state="SENT", paypal_ref="CAP-1")
+    s2 = MoneyPlanStep(plan_id=plan.id, seq=2, phase=1, op="CAPTURE_AUTH", target_type="PLEDGE",
+                       target_id=p2.id, amount_cents=15000, bucket="POOL", idempotency_key="k2", state="SENT")
+    db.add_all([s1, s2])
+    w.campaign.state = "CAPTURING"
+    db.commit()
+
+    lc.confirm_step(db, s1, paypal_ref="CAP-1")
+    lc.fail_step(db, s2, {"reason": "DECLINED"})
+    db.commit()
+    assert plan.state == "PARTIAL" and w.campaign.state == "CAPTURING" and w.project.state == "PLEDGING"
+    assert ledger.pool_balance(db, w.project.id) == 25000
+
+    h = hdr(lead_user(w))
+    created = client.post(f"/api/projects/{w.project.id}/plans",
+                          json={"kind": "REFUND_CAPTURED", "reason": "CANCEL_BEFORE_WORK"}, headers=h)
+    assert created.status_code == 201
+    refund_id = created.json()["id"]
+    reviewed = client.post(f"/api/plans/{refund_id}/review", headers=h)
+    assert reviewed.status_code == 200 and reviewed.json()["decision"] == "ALLOW"
+
+    refund_plan = db.get(MoneyPlan, refund_id)
+    for st in db.scalars(select(MoneyPlanStep).where(MoneyPlanStep.plan_id == refund_id)):
+        st.state = "SENT"
+        refund_plan.state = "EXECUTING"
+        lc.confirm_step(db, st, paypal_ref="REF-1")
+    db.commit()
+    db.expire_all()
+    assert refund_plan.state == "DONE" and w.campaign.state == "CANCELLED" and w.project.state == "CANCELLED"
+    assert ledger.pool_balance(db, w.project.id) == 0

@@ -78,7 +78,7 @@ def test_the_whole_conversation_from_58_to_93_through_the_api(t, client):
     r = t.post_run()
     assert r.status_code == 202
     t.run_job()
-    job = client.get(f"/api/jobs/{r.json()['job_id']}").json()
+    job = client.get(f"/api/jobs/{r.json()['job_id']}", headers=t.lakshmi).json()
     assert job["state"] == "DONE" and job["result"] == {"score": 58, "round": 0, "state": "ACTIVE", "questions": 2}
 
     view = t.ba(t.ravi)
@@ -192,7 +192,7 @@ def test_a_broken_ai_shows_up_as_a_retrying_job_not_a_corrupted_analysis(t, clie
     set_ba_agents((BAAgent(None), BAQuestionsAgent(None)))
     job_id = t.post_run().json()["job_id"]
     t.run_job()
-    j = client.get(f"/api/jobs/{job_id}").json()
+    j = client.get(f"/api/jobs/{job_id}", headers=t.lakshmi).json()
     assert j["state"] == "QUEUED" and "not configured" in j["error"] and j["attempts"] == 1
     assert t.ba(t.lakshmi)["score"] is None and t.ba(t.lakshmi)["questions"] == []
     # fix the AI, make the retry due, and it completes normally
@@ -200,7 +200,7 @@ def test_a_broken_ai_shows_up_as_a_retrying_job_not_a_corrupted_analysis(t, clie
     t.db.query(Job).filter(Job.id == job_id).update({"run_after": datetime.now(timezone.utc) - timedelta(seconds=1)})
     t.db.commit()
     t.run_job()
-    assert client.get(f"/api/jobs/{job_id}").json()["state"] == "DONE" and t.ba(t.lakshmi)["score"]["total"] == 58
+    assert client.get(f"/api/jobs/{job_id}", headers=t.lakshmi).json()["state"] == "DONE" and t.ba(t.lakshmi)["score"]["total"] == 58
 
 
 # ---------------- finalize ----------------

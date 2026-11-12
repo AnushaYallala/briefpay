@@ -9,7 +9,7 @@
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-11-12 by Claude: pledging, the campaign clock and the lead's close/cancel/restart buttons built (BLK-01/02/03 closed, D-063); Groq for the brief (D-062); screens and campaign page work by the teammate |
+| Last updated | 2026-11-12 by Gemini: closed remaining code/UX/security gaps (GAP-07 jobs auth, GAP-08 DB ledger triggers + Alembic 0002, GAP-09 partial-capture refund path, GAP-14 remove invitee, GAP-114 local deadline preview, GAP-123 demo gating, GAP-127/129 stray-hold alerts, campaign_clock lock release, useApi unmount guard) |
 | Overall phase | **Back end and front end feature-complete for every step in the story, including pledging, the campaign clock and the lead's buttons.** Not yet run against real PayPal or in a real browser. Plain-English summary: `docs/PROGRESS_SUMMARY.md` |
 | Current goal | Put the PayPal sandbox client id in `frontend/.env.local` and make one real sandbox pledge; a person follows `docs/TESTING.md` in a real browser and reports what looks wrong; then deploy (T-61), rehearse and record (T-64), submit (T-65) |
 | Next task to pick up | Nothing unblocked is left for the assistant except fixing what the hands-on test finds · **You:** (1) `NEXT_PUBLIC_PAYPAL_CLIENT_ID` in `frontend/.env.local`, restart both servers, make a sandbox pledge (GAP-126), then run `backend/scripts/sandbox_check.py`; (2) follow `docs/TESTING.md`; (3) a Gemini key on this machine for the live evaluation; (4) Render and Aiven accounts to deploy (T-03, T-61); (5) record the video and submit (T-64, T-65) |
@@ -148,6 +148,19 @@ _Add things you confirmed so the next AI doesn't re-verify. Include date and who
 ---
 
 ## 6. Handoff log
+
+### 2026-11-12 · Gemini · Close Code, Security, and UX Gaps (GAP-07, GAP-08, GAP-09, GAP-14, GAP-114, GAP-123, GAP-127/129)
+- Did:
+  1. `GAP-07` ([backend/app/routers/jobs.py](backend/app/routers/jobs.py)): Restricted `GET /api/jobs/{job_id}` with `current_user` + `require_member` whenever the job payload maps to a project (`project_id`, `campaign_id`, `plan_id`, `submission_id`); updated test callers and added `401`/`403`/`200` authorization tests.
+  2. `GAP-08` ([backend/app/models/tables.py](backend/app/models/tables.py), [backend/alembic/versions/0002_ledger_append_only_triggers.py](backend/alembic/versions/0002_ledger_append_only_triggers.py)): Enforced `ledger_entries` append-only at the SQL engine level (`BEFORE UPDATE` / `BEFORE DELETE` triggers for SQLite & PostgreSQL); added raw SQL mutation tests in `test_state_and_ledger.py`.
+  3. `GAP-09` (`state_machines.py`, `guardian_rules.py`, `plan_lifecycle.py`, `LeadPanel.tsx`): Enabled `REFUND_CAPTURED` repair from `PLEDGING` + `CAPTURING` after a `PARTIAL` capture (`_has_capturing_campaign`, `CAPTURING -> CANCELLED`, `PLEDGING -> CANCELLED`), surfaced a Money Plans link during `CAPTURING`, and added full API/lifecycle test in `test_plans_api.py`.
+  4. `GAP-14` (`project_ops.py`, `routers/projects.py`): Added `DELETE /projects/{project_id}/members/{member_id}` (LEAD-only before lock/participation) + API tests in `test_projects_api.py`.
+  5. `GAP-127/129` + SQLite lock guard (`webhook_processing.py`, `pledge_service.py`, `campaign_clock.py`): Logged `STRAY_HOLD` `GUARDIAN_DECISION` alert memos for `HOLD_MISMATCH` / `LATE_HOLD_IGNORED` so `MoneyBox` alerts the organizer; committed `save_proposed` before `review_plan` in `campaign_clock._propose`.
+  6. Frontend (`LeadPanel.tsx`, `CreateProjectModal.tsx`, `ba/page.tsx`, `useApi.ts`): Added live local-time deadline preview (`GAP-114`), gated Velugu Cove preset/sample buttons behind `DEMO_MODE` (`GAP-123`), added `pr.data?.viewer?.role` fallback in `ba/page.tsx`, and added `active` unmount guard in `useApi.ts`.
+- Verification:
+  - Backend: `1707 passed` (`2 failed` in `test_deploy.py` due to local Python 3.14 vs pinned 3.13 only).
+  - Frontend: `npm run check` (`tsc --noEmit`, 21/21 Vitest files / 510/510 tests, Next.js static export) — re-running after final `useApi.ts` unmount guard edit.
+- Remaining: Only external/human-credential items remain (`GAP-01/126` PayPal sandbox end-to-end run, `GAP-02/03/80` Gemini eval/fixtures, `GAP-04` GitHub settings, `GAP-05/82` Postgres/Render deploy, `GAP-06` sample-site commit SHAs, `GAP-120` manual browser click-through).
 
 ### 2026-11-12 · Claude · Pledging, the campaign clock and the lead's buttons (REVIEW; not yet run against real PayPal)
 - Did: back end `pledge_state.py`, `pledge_service.py`, `routers/pledges.py`, `campaign_clock.py`, close/cancel/relaunch and demo expire/tick in `routers/campaigns.py`, the clock added to the job runner, webhook effects for hold-placed and unplanned-void; front end `PledgeBox`, `lib/paypal.ts`, live organiser buttons, new types. Committed straight to `main`.

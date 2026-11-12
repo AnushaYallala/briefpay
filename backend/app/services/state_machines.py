@@ -19,7 +19,7 @@ PROJECT_TRANSITIONS: dict[str, set[str]] = {
     "BRD_REVIEW": {"CONTRACTING", "REQUIREMENTS"},  # REQUIREMENTS = a sponsor rejected the BRD
     "CONTRACTING": {"CAMPAIGN_SETUP"},
     "CAMPAIGN_SETUP": {"PLEDGING"},
-    "PLEDGING": {"IN_PROGRESS", "CAMPAIGN_FAILED"},
+    "PLEDGING": {"IN_PROGRESS", "CAMPAIGN_FAILED", "CANCELLED"},
     "CAMPAIGN_FAILED": {"CAMPAIGN_SETUP"},  # relaunch
     "IN_PROGRESS": {"VERIFYING", "REFUNDING"},
     "VERIFYING": {"PAYOUT_READY", "IN_PROGRESS", "REFUNDING"},  # IN_PROGRESS = NEEDS_CHANGES
@@ -34,7 +34,7 @@ PROJECT_TRANSITIONS: dict[str, set[str]] = {
 CAMPAIGN_TRANSITIONS: dict[str, set[str]] = {
     "SETUP": {"OPEN", "CANCELLED"},
     "OPEN": {"CAPTURING", "FAILING"},  # FAILING = deadline missed or lead cancel
-    "CAPTURING": {"CAPTURED"},
+    "CAPTURING": {"CAPTURED", "CANCELLED"},
     "FAILING": {"FAILED"},
     "CAPTURED": set(),
     "FAILED": set(),

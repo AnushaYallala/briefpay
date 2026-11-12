@@ -66,6 +66,7 @@ def _propose(db: Session, c: Campaign, action: str, reason: str, *, proposed_by:
     except pb.PlanBuildError as e:
         raise ops.CampaignError("CANNOT_BUILD_PLAN", str(e)) from e
     plan = pb.save_proposed(db, built, proposed_by=proposed_by)
+    db.commit()  # release SQLite write lock before review_plan invokes GuardianLLM._log on a second session
     lc.review_plan(db, plan, reader=reader, params=_guardian_params(), now=now, llm=llm)
     return plan
 

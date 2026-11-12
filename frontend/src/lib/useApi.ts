@@ -16,20 +16,21 @@ export function useApi<T>(path: string | null, refreshKey?: unknown): Loaded<T> 
 
   useEffect(() => {
     if (path === null) return;
+    let active = true;
     const mine = ++latest.current;
     const ctl = new AbortController();
     setLoading(true);
     setError(null);
     setSlow(false);
-    watchSlow(api<T>(path, { signal: ctl.signal }), () => latest.current === mine && setSlow(true))
-      .then((d) => latest.current === mine && (setData(d), setLoading(false), setSlow(false)))
+    watchSlow(api<T>(path, { signal: ctl.signal }), () => active && latest.current === mine && setSlow(true))
+      .then((d) => active && latest.current === mine && (setData(d), setLoading(false), setSlow(false)))
       .catch((e: unknown) => {
-        if (latest.current !== mine || (e instanceof DOMException && e.name === "AbortError")) return;
+        if (!active || latest.current !== mine || ctl.signal.aborted || (e instanceof DOMException && e.name === "AbortError")) return;
         setError(e instanceof ApiError ? e : new ApiError(0, "UNKNOWN", String(e)));
         setLoading(false);
         setSlow(false);
       });
-    return () => ctl.abort();
+    return () => { active = false; ctl.abort(); };
   }, [path, tick, refreshKey]);
 
   const reload = useCallback(() => setTick((t) => t + 1), []);

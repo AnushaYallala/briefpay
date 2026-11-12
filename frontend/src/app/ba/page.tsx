@@ -10,6 +10,7 @@ import { Badge, Empty, ErrorBox, Loading } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { BA_REFRESH_MS, JOB_POLL_MS, canUpload, groupQuestions, percent, points, refLines, refWords } from "@/lib/ba";
+import { DEMO_MODE } from "@/lib/personas";
 import { roleOn } from "@/lib/plans";
 import type { BaView, JobStatus, ProjectDetail, TranscriptResponse } from "@/lib/types";
 import { useApi } from "@/lib/useApi";
@@ -142,6 +143,7 @@ function Studio({ id }: { id: number }) {
   const role = (() => {
     const fromMem = roleOn(auth.memberships, id);
     if (fromMem) return fromMem;
+    if (pr.data?.viewer?.role) return pr.data.viewer.role;
     if (!auth.user || !pr.data?.members) return null;
     const pm = pr.data.members.find(
       (m) =>
@@ -338,16 +340,18 @@ function Studio({ id }: { id: number }) {
                 <p className="text-xs text-ink-500">
                   Paste the meeting transcript. Each line gets a number the analyst can point at.
                 </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSourceName("velugu_cove_meeting_transcript.txt");
-                    setPaste(SAMPLE_TRANSCRIPT);
-                  }}
-                  className="rounded-xl border border-sea-200 bg-sea-50 px-3 py-1.5 text-xs font-semibold text-sea-800 hover:bg-sea-100 transition shadow-2xs"
-                >
-                  Paste Sample Meeting Transcript (Velugu Cove)
-                </button>
+                {DEMO_MODE && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSourceName("velugu_cove_meeting_transcript.txt");
+                      setPaste(SAMPLE_TRANSCRIPT);
+                    }}
+                    className="rounded-xl border border-sea-200 bg-sea-50 px-3 py-1.5 text-xs font-semibold text-sea-800 hover:bg-sea-100 transition shadow-2xs"
+                  >
+                    Paste Sample Meeting Transcript (Velugu Cove)
+                  </button>
+                )}
               </div>
 
               <input

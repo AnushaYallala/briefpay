@@ -201,6 +201,9 @@ def test_a_hold_that_is_not_exactly_what_we_asked_for_is_not_counted(w, orders, 
     assert e.status == status and e.keep and p.status == "DENIED" and p.paypal_authorization_id is None
     assert svc.facts(w.db, w.campaign).held_cents == 0
     assert w.db.query(LedgerEntry).filter(LedgerEntry.type == "PLEDGE_AUTHORIZED").count() == 0
+    if code == "HOLD_MISMATCH":
+        alerts = w.db.scalars(select(LedgerEntry).where(LedgerEntry.type == "GUARDIAN_DECISION")).all()
+        assert len(alerts) == 1 and alerts[0].meta_json.get("alert") == "STRAY_HOLD"
 
 
 def test_no_authorization_in_the_answer_is_a_decline(w, orders):

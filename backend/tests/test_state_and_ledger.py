@@ -2,7 +2,8 @@ from datetime import datetime, timedelta, timezone
 from itertools import product
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import select, text
+from sqlalchemy.exc import DBAPIError
 
 from app.models import Campaign, LedgerEntry, Project, ProjectMember, User
 from app.services import ledger
@@ -168,6 +169,14 @@ def test_ledger_is_append_only(db, project):
     db.delete(row)
     with pytest.raises(ledger.LedgerError):
         db.flush()
+    db.rollback()
+
+    # Raw SQL mutations are also blocked by DB-level triggers (GAP-08).
+    with pytest.raises(DBAPIError, match="append-only"):
+        db.execute(text("UPDATE ledger_entries SET amount_cents = 999 WHERE id = :id"), {"id": row.id})
+    db.rollback()
+    with pytest.raises(DBAPIError, match="append-only"):
+        db.execute(text("DELETE FROM ledger_entries WHERE id = :id"), {"id": row.id})
     db.rollback()
 
 

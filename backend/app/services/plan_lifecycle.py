@@ -240,6 +240,11 @@ def _on_done(db: Session, plan: MoneyPlan, now: datetime) -> None:
     elif plan.kind == "FREELANCER_PAYOUT":
         ProjectService.transition(db, project, "PAID", actor="system")
     elif plan.kind == "REFUND_CAPTURED":
+        if campaign is None:
+            campaign = db.scalars(select(Campaign).where(Campaign.project_id == project.id, Campaign.state == "CAPTURING")
+                                  .order_by(Campaign.number.desc())).first()
+        if campaign is not None and campaign.state == "CAPTURING":
+            CampaignService.transition(db, campaign, "CANCELLED", actor="system")
         ProjectService.transition(db, project, "CANCELLED", actor="system", reason=plan.reason)
 
 

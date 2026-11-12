@@ -135,9 +135,17 @@ def _authorization_created(db: Session, resource: dict, now: datetime) -> dict:
         return {"effect": "ALREADY_APPLIED", "pledge_id": pledge.id}
     got = _amount_cents(resource)
     if resource.get("status") not in (None, "CREATED") or (got is not None and got != pledge.amount_cents):
+        if resource.get("status") in (None, "CREATED"):
+            _memo_once(db, pledge.project_id, "pledge", pledge.id, {
+                "alert": "STRAY_HOLD", "authorization_id": resource.get("id"), "why": "HOLD_MISMATCH",
+                "paypal_cents": got, "expected_cents": pledge.amount_cents,
+            })
         return {"effect": "HOLD_MISMATCH", "pledge_id": pledge.id, "paypal_cents": got, "expected_cents": pledge.amount_cents}
     campaign = db.get(Campaign, pledge.campaign_id)
     if campaign is None or campaign.state != "OPEN":
+        _memo_once(db, pledge.project_id, "pledge", pledge.id, {
+            "alert": "STRAY_HOLD", "authorization_id": resource.get("id"), "why": "LATE_HOLD_IGNORED",
+        })
         return {"effect": "LATE_HOLD_IGNORED", "pledge_id": pledge.id}
     pledge_state.mark_authorized(db, pledge, resource.get("id"), now)
     return {"effect": "PLEDGE_AUTHORIZED", "pledge_id": pledge.id}

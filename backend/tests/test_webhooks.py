@@ -342,6 +342,8 @@ def test_a_hold_that_does_not_match_is_never_counted(w):
     assert run(w, event("PAYMENT.AUTHORIZATION.CREATED", created_resource(p, cents=14000)))["effect"] == "HOLD_MISMATCH"
     assert run(w, event("PAYMENT.AUTHORIZATION.CREATED", created_resource(p, status="DENIED")))["effect"] == "HOLD_MISMATCH"
     assert p.status == "CREATED" and p.paypal_authorization_id is None
+    alerts = w.db.scalars(select(LedgerEntry).where(LedgerEntry.type == "GUARDIAN_DECISION")).all()
+    assert len(alerts) == 1 and alerts[0].meta_json.get("alert") == "STRAY_HOLD"
 
 
 def test_a_hold_that_arrives_after_the_campaign_closed_is_not_counted(w):
@@ -349,6 +351,8 @@ def test_a_hold_that_arrives_after_the_campaign_closed_is_not_counted(w):
     w.campaign.state = "FAILED"
     assert run(w, event("PAYMENT.AUTHORIZATION.CREATED", created_resource(p)))["effect"] == "LATE_HOLD_IGNORED"
     assert p.status == "CREATED"
+    alerts = w.db.scalars(select(LedgerEntry).where(LedgerEntry.type == "GUARDIAN_DECISION")).all()
+    assert len(alerts) == 1 and alerts[0].meta_json.get("why") == "LATE_HOLD_IGNORED"
 
 
 def test_a_hold_event_for_something_we_never_started(w):

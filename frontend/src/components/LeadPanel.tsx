@@ -151,6 +151,14 @@ export function LeadPanel({ projectId, campaign, onChanged, onRound }: { project
                   className="input mt-1.5"
                 />
               </label>
+              {(() => {
+                const iso = deadlineToIso(deadline);
+                return iso ? (
+                  <p className="text-[11px] font-medium text-slate-500" data-testid="local-deadline">
+                    Local time: {new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
+                  </p>
+                ) : null;
+              })()}
               {lead && (
                 <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600 border border-slate-100 leading-relaxed" data-testid="window">
                   It must be between <span className="font-semibold text-slate-800">{formatDateTime(lead.deadline_earliest)}</span> and{" "}
@@ -260,6 +268,12 @@ export function LeadPanel({ projectId, campaign, onChanged, onRound }: { project
               <p className="rounded-xl border border-sea-200 bg-sea-50/70 px-3.5 py-2.5 text-xs text-sea-900" data-testid="plan-link">
                 A money plan was prepared.{" "}
                 <Link href={`/plans?id=${projectId}&plan=${plan.id}`} className="font-semibold underline">See the plan and the Guardian&apos;s checks</Link>
+              </p>
+            )}
+            {campaign.state === "CAPTURING" && (
+              <p className="rounded-xl border border-amber-200 bg-amber-50/80 px-3.5 py-2.5 text-xs text-amber-900" data-testid="partial-repair-link">
+                Collecting pledges. If any capture failed and stopped as partial,{" "}
+                <Link href={`/plans?id=${projectId}`} className="font-semibold underline">review or refund captured pledges on Money Plans</Link>.
               </p>
             )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

@@ -16,6 +16,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models import Campaign, Pledge, Project, ProjectMember, User
+from app.services import ledger
 from app.services import pledge_gate as gate
 from app.services import pledge_state
 from app.services.campaign_rules import as_utc
@@ -119,6 +120,9 @@ def authorize_pledge(db: Session, c: Campaign, user: User, *, order_id: str, ord
         gate.check_hold(pledge_amount_cents=p.amount_cents, campaign_currency=c.currency, auth=auth)
     except gate.GateError as e:
         p.status = "DENIED"
+        if e.code == "HOLD_MISMATCH" and auth and auth.get("id"):
+            ledger.append(db, c.project_id, "GUARDIAN_DECISION", actor="agent:guardian", ref_type="pledge", ref_id=p.id,
+                          meta={"alert": "STRAY_HOLD", "authorization_id": auth.get("id"), "why": "HOLD_MISMATCH"})
         log.warning("pledge %s: hold not counted (%s)", p.id, e.code)
         raise PledgeError(e.code, e.message, e.status, keep=True) from e
     pledge_state.mark_authorized(db, p, auth["id"], now, payer_email=r.get("payer_email"), payer_id=r.get("payer_id"))

@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { useOptionalAuth } from "@/lib/auth";
+import { DEMO_MODE } from "@/lib/personas";
 import type { ProjectDetail } from "@/lib/types";
 
 interface Invitee {
@@ -168,19 +169,21 @@ export function CreateProjectModal({
           </button>
         </div>
 
-        <div className="mb-6 rounded-xl border border-sea-200/80 bg-sea-50/60 p-3.5 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <div className="text-xs font-bold text-sea-900">Need a quick walkthrough?</div>
-            <div className="text-xs text-sea-700">Pre-fill the Velugu Cove tourism website story with 3 local sponsors and a builder in 1 click.</div>
+        {DEMO_MODE && (
+          <div className="mb-6 rounded-xl border border-sea-200/80 bg-sea-50/60 p-3.5 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div className="text-xs font-bold text-sea-900">Need a quick walkthrough?</div>
+              <div className="text-xs text-sea-700">Pre-fill the Velugu Cove tourism website story with 3 local sponsors and a builder in 1 click.</div>
+            </div>
+            <button
+              type="button"
+              onClick={loadPreset}
+              className="rounded-lg bg-sea-700 px-3 py-1.5 text-xs font-semibold text-white shadow-2xs hover:bg-sea-800 transition"
+            >
+              Pre-fill Velugu Cove Initiative
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={loadPreset}
-            className="rounded-lg bg-sea-700 px-3 py-1.5 text-xs font-semibold text-white shadow-2xs hover:bg-sea-800 transition"
-          >
-            Pre-fill Velugu Cove Initiative
-          </button>
-        </div>
+        )}
 
         {error && (
           <div role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-800">

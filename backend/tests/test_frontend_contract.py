@@ -336,7 +336,7 @@ def test_the_ba_studio_types_match_real_responses_and_the_words_cover_every_stat
     from app.models import Job
     from sqlalchemy import select
     job = t.db.scalars(select(Job).order_by(Job.id.desc())).first()
-    assert set(client.get(f"/api/jobs/{job.id}").json()) == fields_of(types, "JobStatus")
+    assert set(client.get(f"/api/jobs/{job.id}", headers=t.lakshmi).json()) == fields_of(types, "JobStatus")
     missing = client.get(f"/api/projects/{t.pid + 99}/transcript", headers=t.lakshmi)
     assert missing.status_code in (403, 404)
 

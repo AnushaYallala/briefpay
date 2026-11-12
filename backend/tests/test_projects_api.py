@@ -310,3 +310,27 @@ def test_transcript_is_for_members_only_and_not_in_the_public_detail(client, lak
     member_view = client.get(f"/api/projects/{pid}", headers=ravi).json()
     assert member_view["transcript"]["line_count"] == 1 and "lines" not in member_view["transcript"]
     assert member_view["state"] == "REQUIREMENTS"
+
+
+def test_lead_can_remove_invitee_before_lock_and_participation(client, lakshmi, db):
+    """GAP-14: Lead can delete an invitee typo before sponsor lock/participation."""
+    from app.models import ProjectMember
+
+    created = make_project(client, lakshmi, members=TEAM)
+    pid = created["id"]
+    ravi_row = next(m for m in created["members"] if m["role"] == "SPONSOR")
+    lead_row = next(m for m in created["members"] if m["role"] == "LEAD")
+    arjun_row = next(m for m in created["members"] if m["role"] == "FREELANCER")
+    ravi_hdr = login(client, "ravi@example.com", "Ravi")[0]
+
+    assert client.delete(f"/api/projects/{pid}/members/{ravi_row['id']}", headers=ravi_hdr).status_code == 403
+    assert client.delete(f"/api/projects/{pid}/members/{lead_row['id']}", headers=lakshmi).status_code == 409
+
+    removed = client.delete(f"/api/projects/{pid}/members/{ravi_row['id']}", headers=lakshmi)
+    assert removed.status_code == 200
+    assert all(m["id"] != ravi_row["id"] for m in removed.json()["members"])
+    assert db.get(ProjectMember, ravi_row["id"]) is None
+
+    db.get(Project, pid).state = "CONTRACTING"
+    db.commit()
+    assert client.delete(f"/api/projects/{pid}/members/{arjun_row['id']}", headers=lakshmi).status_code == 200

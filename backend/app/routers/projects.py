@@ -141,6 +141,19 @@ def put_members(project_id: int, body: MembersIn, user: User = Depends(current_u
     return project_detail(db, p, viewer_member(db, p.id, user))
 
 
+@router.delete("/projects/{project_id}/members/{member_id}")
+def delete_member(project_id: int, member_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)) -> dict:
+    require_member(db, project_id, user, ("LEAD",))
+    p = db.get(Project, project_id)
+    try:
+        ops.remove_invitee(db, p, member_id)
+    except ops.ProjectError as e:
+        db.rollback()
+        raise_project_error(e)
+    db.commit()
+    return project_detail(db, p, viewer_member(db, p.id, user))
+
+
 # ---------------- transcripts ----------------
 
 async def read_transcript_request(request: Request) -> tuple[str, bytes | str]:

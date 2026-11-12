@@ -42,7 +42,7 @@ def test_generate_then_anyone_can_read_and_download_the_brd(t, client):
     r = generate(t)
     assert r.status_code == 202
     t.run_job()
-    job = client.get(f"/api/jobs/{r.json()['job_id']}").json()
+    job = client.get(f"/api/jobs/{r.json()['job_id']}", headers=t.lakshmi).json()
     assert job["state"] == "DONE" and job["result"]["version"] == 1 and job["result"]["already_generated"] is False
 
     pub = client.get(f"/api/projects/{t.pid}/brd")                                       # no token at all
@@ -116,8 +116,8 @@ def test_two_queued_jobs_still_make_only_one_brd(t, client, db):
     t.run_job()
     from app.models import BRD
     assert db.query(BRD).count() == 1 and len(backend.calls) == 1
-    assert client.get(f"/api/jobs/{second}").json()["result"]["already_generated"] is True
-    assert client.get(f"/api/jobs/{first}").json()["result"]["already_generated"] is False
+    assert client.get(f"/api/jobs/{second}", headers=t.lakshmi).json()["result"]["already_generated"] is True
+    assert client.get(f"/api/jobs/{first}", headers=t.lakshmi).json()["result"]["already_generated"] is False
 
 
 def test_a_broken_ai_leaves_a_retrying_job_and_no_brd(t, client):
@@ -125,7 +125,7 @@ def test_a_broken_ai_leaves_a_retrying_job_and_no_brd(t, client):
     set_brd_generator(BRDGenerator(None))
     job_id = generate(t).json()["job_id"]
     t.run_job()
-    j = client.get(f"/api/jobs/{job_id}").json()
+    j = client.get(f"/api/jobs/{job_id}", headers=t.lakshmi).json()
     assert j["state"] == "QUEUED" and "not configured" in j["error"]
     assert client.get(f"/api/projects/{t.pid}/brd").status_code == 404
     assert client.get(f"/api/projects/{t.pid}", headers=t.lakshmi).json()["state"] == "REQUIREMENTS"
@@ -136,6 +136,6 @@ def test_an_invalid_draft_is_reported_on_the_job_and_creates_no_brd(t, client):
     script_brd(t, {"nonsense": 1}, {"nonsense": 2})                                       # schema-invalid twice
     job_id = generate(t).json()["job_id"]
     t.run_job()
-    j = client.get(f"/api/jobs/{job_id}").json()
+    j = client.get(f"/api/jobs/{job_id}", headers=t.lakshmi).json()
     assert j["state"] == "QUEUED" and "could not produce a valid draft" in j["error"]
     assert client.get(f"/api/projects/{t.pid}/brd").status_code == 404

@@ -119,11 +119,39 @@ def test_running_jobs_are_requeued_after_a_crash(factory):
 
 
 def test_jobs_endpoint(client, db):
-    j = jobs.enqueue(db, "T", {})
+    from app.auth import create_token
+    from app.models import Campaign, Project, ProjectMember, User
+
+    lead = User(email="lead@jobs.example.com", display_name="Lead")
+    outsider = User(email="out@jobs.example.com", display_name="Out")
+    db.add_all([lead, outsider])
+    db.flush()
+    proj = Project(title="Job Auth Project", lead_user_id=lead.id)
+    db.add(proj)
+    db.flush()
+    db.add(ProjectMember(project_id=proj.id, user_id=lead.id, role="LEAD"))
+    db.flush()
+    camp = Campaign(project_id=proj.id, number=1, proposer_member_id=1, goal_cents=10000,
+                    deadline_at=datetime.now(timezone.utc) + timedelta(hours=24))
+    db.add(camp)
+    db.flush()
+
+    j = jobs.enqueue(db, "T", {"project_id": proj.id})
     j.state, j.result_json = "DONE", {"ok": True}
+    j_camp = jobs.enqueue(db, "STRATEGIST_RUN", {"campaign_id": camp.id})
     db.commit()
-    r = client.get(f"/api/jobs/{j.id}")
+
+    lead_hdr = {"Authorization": f"Bearer {create_token(lead)}"}
+    out_hdr = {"Authorization": f"Bearer {create_token(outsider)}"}
+
+    assert client.get(f"/api/jobs/{j.id}").status_code == 401
+    assert client.get(f"/api/jobs/{j.id}", headers=out_hdr).status_code == 403
+    assert client.get(f"/api/jobs/{j_camp.id}", headers=out_hdr).status_code == 403
+
+    r = client.get(f"/api/jobs/{j.id}", headers=lead_hdr)
     assert r.status_code == 200
     assert r.json() == {"state": "DONE", "result": {"ok": True}, "error": None, "attempts": 0}
-    r = client.get("/api/jobs/9999")
+    assert client.get(f"/api/jobs/{j_camp.id}", headers=lead_hdr).status_code == 200
+
+    r = client.get("/api/jobs/9999", headers=lead_hdr)
     assert r.status_code == 404 and r.json()["error"]["code"] == "JOB_NOT_FOUND"

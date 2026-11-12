@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.models import Campaign, Pledge, Project, ProjectMember, Transcript, User
+from app.models import BAAnswer, BRDApproval, Campaign, Contract, Pledge, Project, ProjectMember, Transcript, User
 from app.services import transcripts as tx
 from app.services.state_machines import ProjectService
 
@@ -84,6 +84,28 @@ def upsert_invitees(db: Session, project: Project, invitees: list[dict]) -> list
         out.append(m)
     db.flush()
     return out
+
+
+def remove_invitee(db: Session, project: Project, member_id: int) -> None:
+    """Remove an invited sponsor or freelancer before lock / participation (GAP-14)."""
+    m = db.scalars(select(ProjectMember).where(ProjectMember.id == member_id, ProjectMember.project_id == project.id)).first()
+    if m is None:
+        raise ProjectError("MEMBER_NOT_FOUND", "No such member on this project", 404)
+    if m.role == "LEAD":
+        raise ProjectError("CANNOT_REMOVE_LEAD", "The project lead cannot be removed")
+    allowed = SPONSOR_EDITABLE if m.role == "SPONSOR" else FREELANCER_EDITABLE
+    if project.state not in allowed:
+        raise ProjectError("PROJECT_STATE", f"{m.role.lower()}s cannot be removed while the project is {project.state}")
+    has_activity = (
+        db.scalars(select(BAAnswer.id).where(BAAnswer.member_id == m.id)).first() is not None
+        or db.scalars(select(BRDApproval.id).where(BRDApproval.member_id == m.id)).first() is not None
+        or db.scalars(select(Contract.id).where(Contract.freelancer_member_id == m.id)).first() is not None
+        or db.scalars(select(Pledge.id).where(Pledge.member_id == m.id)).first() is not None
+    )
+    if has_activity:
+        raise ProjectError("MEMBER_HAS_ACTIVITY", "This member has already participated and cannot be removed")
+    db.delete(m)
+    db.flush()
 
 
 def touch_member(db: Session, project_id: int, user_id: int) -> None:

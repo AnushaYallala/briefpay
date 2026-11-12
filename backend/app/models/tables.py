@@ -1,7 +1,7 @@
 """All SPEC section 6.2 tables. This is a contract: change SPEC + DECISIONS together."""
 from datetime import datetime
 
-from sqlalchemy import JSON, Boolean, ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import DDL, JSON, Boolean, ForeignKey, String, Text, UniqueConstraint, event
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, BigInt, created, pk, utcnow
@@ -450,6 +450,38 @@ class LedgerEntry(Base):
     actor: Mapped[str] = mapped_column(String(48))
     meta_json: Mapped[dict] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = created()
+
+
+event.listen(
+    LedgerEntry.__table__,
+    "after_create",
+    DDL(
+        "CREATE TRIGGER IF NOT EXISTS ledger_no_update BEFORE UPDATE ON ledger_entries "
+        "BEGIN SELECT RAISE(ABORT, 'ledger_entries is append-only'); END"
+    ).execute_if(dialect="sqlite"),
+)
+event.listen(
+    LedgerEntry.__table__,
+    "after_create",
+    DDL(
+        "CREATE TRIGGER IF NOT EXISTS ledger_no_delete BEFORE DELETE ON ledger_entries "
+        "BEGIN SELECT RAISE(ABORT, 'ledger_entries is append-only'); END"
+    ).execute_if(dialect="sqlite"),
+)
+event.listen(
+    LedgerEntry.__table__,
+    "after_create",
+    DDL(
+        "CREATE OR REPLACE FUNCTION forbid_ledger_mutation() RETURNS trigger AS $$ "
+        "BEGIN RAISE EXCEPTION 'ledger_entries is append-only'; END; $$ LANGUAGE plpgsql; "
+        "DROP TRIGGER IF EXISTS ledger_no_update ON ledger_entries; "
+        "CREATE TRIGGER ledger_no_update BEFORE UPDATE ON ledger_entries "
+        "FOR EACH ROW EXECUTE FUNCTION forbid_ledger_mutation(); "
+        "DROP TRIGGER IF EXISTS ledger_no_delete ON ledger_entries; "
+        "CREATE TRIGGER ledger_no_delete BEFORE DELETE ON ledger_entries "
+        "FOR EACH ROW EXECUTE FUNCTION forbid_ledger_mutation();"
+    ).execute_if(dialect="postgresql"),
+)
 
 
 class WebhookEvent(Base):

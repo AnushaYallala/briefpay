@@ -108,7 +108,7 @@ def test_the_job_reports_the_probability(t, client, db):
     cid = staged(t, db)
     job_id = client.post(f"/api/campaigns/{cid}/strategist/run", headers=t.lakshmi).json()["job_id"]
     t.run_job()
-    res = client.get(f"/api/jobs/{job_id}").json()
+    res = client.get(f"/api/jobs/{job_id}", headers=t.lakshmi).json()
     assert res["state"] == "DONE" and res["result"]["probability"] == client.get(f"/api/campaigns/{cid}/strategist", headers=t.lakshmi).json()["forecast"]["probability"]
 
 
@@ -234,7 +234,7 @@ def test_a_report_job_that_runs_after_the_campaign_ended_fails_cleanly(t, client
     db.get(Campaign, cid).state = "FAILED"
     db.commit()
     t.run_job()
-    job = client.get(f"/api/jobs/{job_id}").json()
+    job = client.get(f"/api/jobs/{job_id}", headers=t.lakshmi).json()
     assert job["state"] == "QUEUED" and "StrategistError" in job["error"] and "FAILED" in job["error"]      # queued for a retry
     assert db.query(StrategistReport).count() == 0
     from app.services import strategist_service as svc

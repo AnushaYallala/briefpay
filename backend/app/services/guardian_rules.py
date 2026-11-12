@@ -187,6 +187,14 @@ def g01(c: Ctx) -> RuleResult:
     return _r("G-01", *_ok(f, "rebuilding from the database gives exactly this plan hash"))
 
 
+def _has_capturing_campaign(c: Ctx) -> bool:
+    if c.campaign is not None:
+        return c.campaign.state == "CAPTURING"
+    return c.db.scalars(
+        select(Campaign.id).where(Campaign.project_id == c.project.id, Campaign.state == "CAPTURING")
+    ).first() is not None
+
+
 STATE_RULES = {
     "CAPTURE_PLEDGES": (lambda c: c.campaign and c.campaign.state == "OPEN" and c.project.state == "PLEDGING",
                         "campaign must be OPEN and project PLEDGING"),
@@ -194,8 +202,9 @@ STATE_RULES = {
                       "campaign must be OPEN/FAILING and project PLEDGING"),
     "FREELANCER_PAYOUT": (lambda c: c.project.state in ("PAYOUT_READY", "PAYOUT_FAILED"),
                           "project must be PAYOUT_READY (or PAYOUT_FAILED for a retry)"),
-    "REFUND_CAPTURED": (lambda c: c.project.state in ("IN_PROGRESS", "VERIFYING", "PAYOUT_READY", "REFUNDING"),
-                        "project must be IN_PROGRESS, VERIFYING, PAYOUT_READY or REFUNDING"),
+    "REFUND_CAPTURED": (lambda c: c.project.state in ("IN_PROGRESS", "VERIFYING", "PAYOUT_READY", "REFUNDING")
+                        or (c.project.state == "PLEDGING" and _has_capturing_campaign(c)),
+                        "project must be IN_PROGRESS, VERIFYING, PAYOUT_READY, REFUNDING (or PLEDGING while a capture is CAPTURING)"),
     "REAUTH_PLEDGES": (lambda c: c.campaign and c.campaign.state == "OPEN", "campaign must be OPEN"),
 }
 

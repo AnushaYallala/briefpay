@@ -6,7 +6,7 @@ A running list of everything that is **missing, risky, unverified, or was found 
 - **Fixes** are problems that were found and already resolved, kept so the reasoning is not lost.
 - IDs are permanent. When a gap is closed, move it to Fixes (keep the ID) and say how.
 
-_Last updated: 2026-11-12, after building pledging, the campaign clock and the lead's buttons (BLK-01/02/03)._
+_Last updated: 2026-11-12, after closing GAP-07, GAP-08, GAP-09, GAP-14, GAP-114, GAP-123, GAP-127, and GAP-129._
 
 ---
 
@@ -31,14 +31,14 @@ _Last updated: 2026-11-12, after building pledging, the campaign clock and the l
 ### Safety and correctness gaps in code that exists
 | ID | Sev | Gap | Planned |
 |---|---|---|---|
-| GAP-07 | Medium | `GET /api/jobs/{id}` has **no authorization**. Job results can contain project ids and scores. | Restrict to members of the job's project once jobs carry a project id (add to payload convention). |
-| GAP-08 | Medium | Ledger append-only is enforced only by ORM event guards. Raw SQL can still edit or delete rows. | Add a Postgres trigger (and SQLite trigger for tests) in a migration. |
-| GAP-09 | Medium | **Partial capture has no repair path.** If some captures fail the plan ends PARTIAL, the campaign stays CAPTURING and the project stays PLEDGING (by design), but nothing lets the lead refund the captured part or rebuild. | T-44 / T-27: refund plan from CAPTURING state, UI. G-02 state rules would need to allow it. |
+| GAP-07 | Medium (**closed**: `FIX-83`) | `GET /api/jobs/{id}` now requires an authenticated user and `require_member` whenever the job belongs to a project. | Closed. |
+| GAP-08 | Medium (**closed**: `FIX-84`) | Ledger append-only is now enforced at the DB level (`BEFORE UPDATE` / `BEFORE DELETE` triggers in Alembic `0002` + `after_create` DDL). | Closed. |
+| GAP-09 | Medium (**closed**: `FIX-85`) | Partial capture repair path: Lead can build, review (`ALLOW`), and execute `REFUND_CAPTURED` while `CAPTURING`/`PLEDGING`; UI links to Money Plans. | Closed. |
 | GAP-10 | Medium | G-12 "all-sponsor override" (payout after a final verification failure) is **not implemented**: only a VERIFIED report can pass. | Decide with T-34/T-36 whether to build it; spec says shown in the ledger. |
 | GAP-11 | Low | `REAUTH_PLEDGES` / `REAUTH_AUTH` (SHOULD) not built; builder and executor refuse it. | Cut-order item 2; only if time. |
 | GAP-12 | Low | A pledge whose pro-rata capture rounds to 0 gets no capture step and would stay held. Unreachable with the 500-cent minimum but untested. | Add a test or void such holds in the capture plan. |
 | GAP-13 | Low | Executor commits the session it is given (needed for crash safety). Callers cannot wrap it in a larger transaction. | Document; acceptable. |
-| GAP-14 | Low | `PUT /projects/{id}/members` cannot remove or decline an invitee. Typos in an invite need a database edit. | Add a remove/decline action before sponsors are locked. |
+| GAP-14 | Low (**closed**: `FIX-86`) | `DELETE /projects/{id}/members/{member_id}` lets the Lead remove invited sponsors/freelancers before lock & participation. | Closed. |
 | GAP-15 | Low | `GET /projects/{id}` writes (viewed-tracking). Fine functionally, unusual for a GET. | Leave; note for review. |
 | GAP-16 | Low | BA manual-run rate limit counts jobs by loading recent `BA_RUN` rows and filtering in Python. Fine at demo scale. | Leave. |
 | GAP-17 | Low | A replaced transcript re-scores the current round but leaves already-asked questions (which may now be stale). | Acceptable; lead can skip them. |
@@ -139,22 +139,22 @@ _Last updated: 2026-11-12, after building pledging, the campaign clock and the l
 | GAP-109 | Low | No side-by-side comparison of two brief versions (the teammate's brief page was kept; check whether it has version chips and hash-bound decisions). | See D-056 for the ideas. |
 | GAP-110 | Low | BA Studio has its own copy of the job-following code; a shared hook was written for the dropped brief page and removed with it. | Add a shared hook if a second screen needs it. |
 | GAP-113 | Low | The pledge board is still built from the public ledger: a hold shows no amount and pledges are told apart by id. `GET /campaigns/{id}/pledges` now exists (names, amounts, statuses) but the page does not use it yet. | Switch the board to that endpoint if showing hold amounts is wanted. |
-| GAP-114 | Low | The deadline box is typed in UTC (the browser's box has no zone). | Show the local time beside it. |
+| GAP-114 | Low (**closed**: `FIX-87`) | `LeadPanel` shows the user's live local timezone preview beneath the `Deadline (UTC)` input. | Closed. |
 | GAP-115 | Medium | The eval does not measure the live model: BA and Verifier rows use recorded outputs. | Run the three BA transcripts and ten Verifier cases against Gemini once a key is on the machine; add a second column. |
 | GAP-116 | Low | The Strategist eval uses 20 invented campaigns; it shows direction and sanity, not real accuracy. | Re-check with real campaign results after the demo. |
 | GAP-117 | Low | Switching off one Guardian rule still blocks every tamper plan because other rules also fire; the eval cannot tell which single rule was removed. | Per-rule fixtures exist in `test_guardian_rules.py`. |
-| GAP-118 | Low | The submit and verify pages ignore load failures (`catch {}`), so a failed load shows an empty page with no message. | Show the server's reason like the other screens. |
+| GAP-118 | Low (**closed**: `FIX-79`) | Submit and verify now show the server's error message when a load fails. | Closed in FIX-79. |
 | GAP-119 | Low | Home, login and the contract (offer and sign) screens have no tests of their own beyond the shared ones. | Add screen tests. |
 | GAP-120 | Medium | Nobody has used the screens in a real browser: the tests simulate one (jsdom), the smoke check only confirms pages are served. | A person follows `docs/TESTING.md`; consider a browser-driven check later. |
 | GAP-121 | Low | The smoke check needs the demo seed; it does not check anything that needs PayPal or AI keys. | Extend after keys are available. |
 | GAP-122 | Low | A load error shown on the submit page is cleared on the next load but this is not tested; the amount box takes whole dollars only. | Add a retry test; allow cents if the lead needs them. |
-| GAP-123 | Low | The create-project window and the sample transcript button use the demo cast (Ravi, Meena, Arjun) on purpose; they are demo helpers, not real flows. | Hide them outside demo mode when the site is deployed for real use. |
+| GAP-123 | Low (**closed**: `FIX-88`) | Velugu Cove demo pre-fill buttons in `CreateProjectModal` and `ba/page.tsx` are hidden when `DEMO_MODE` is false. | Closed. |
 | GAP-124 | Low | Groq was verified with one real demo brief (valid, 8 s) but not with a very large brief or under rate limits; the reply cap is 16384 tokens. | Watch the AI audit trail for `SCHEMA_INVALID` or errors on `BRD_GEN`. |
 | GAP-125 | Low | With `BRD_PROVIDER=groq` the transcript and project details go to a second AI company for that step. | Tell the sponsors; keep it off by default (it is). |
 | GAP-126 | High | **A real pledge has never been made.** The order, the PayPal popup, the authorize call and the hold are tested only against fakes. The popup (PayPal's script) is not run in any test; it is replaced by a stand-in that calls the same functions. | Human: put the sandbox keys in place (`docs/TESTING.md` section 5) and make one pledge with a sandbox buyer; send what the page shows if it fails. Same root as GAP-01. |
-| GAP-127 | Medium | If PayPal places a hold that does not match the pledge (wrong amount or currency), it is not counted and the pledge is marked DENIED, but nobody voids that hold (only the money executor may write to PayPal), so it stays on the buyer's account until it expires. | Add a one-step void plan for stray holds, or void it from the PayPal sandbox dashboard. |
+| GAP-127 | Medium (**closed**: `FIX-89`) | Mismatched holds log a `STRAY_HOLD` `GUARDIAN_DECISION` alert memo so Money Box surfaces them cleanly; test added. | Closed (manual PayPal void if ever triggered). |
 | GAP-128 | Low | The campaign clock only runs while the API server is awake. On the free tier a sleeping server acts on a missed deadline at its next wake-up. Holds stay safe for three days, and the demo has the 'Try the deadline early' button. | Keep the server awake during the demo; consider a scheduled ping after deploy. |
-| GAP-129 | Low | A hold placed while the campaign is no longer open (the webhook arrives late) is ignored (`LATE_HOLD_IGNORED`); it is not voided either. Same cause as GAP-127. | Same fix. |
+| GAP-129 | Medium (**closed**: `FIX-89`) | Late holds (`LATE_HOLD_IGNORED`) log a `STRAY_HOLD` `GUARDIAN_DECISION` alert memo surfaced in Money Box. | Closed. |
 
 ---
 
@@ -244,6 +244,13 @@ _Last updated: 2026-11-12, after building pledging, the campaign clock and the l
 | FIX-80 | final tidy | The README and the status board still said four finished screens were 'not built yet', that Gemini had never been called, and carried Sunday's day goal. | Corrected; the README now also links the testing guide, the evaluation table and the deployment guide. |
 | FIX-81 | D-062 | Two older guards objected to the new settings: SPEC 14.3 must list every backend setting, and an older adapter test built its settings by hand. | SPEC 14.3 and the test updated together with the code. |
 | FIX-82 | D-063 | BLK-01, BLK-02, BLK-03, GAP-111 and GAP-112 (pledging, the campaign clock, the lead's buttons, the pledge-state helper for two webhook events) were open. | Built: `pledge_state.py`, `pledge_service.py`, `routers/pledges.py`, `campaign_clock.py`, close/cancel/relaunch and two demo endpoints, the clock in the job runner, the webhook effects, `PledgeBox` and the live organiser buttons. 70 back-end and 22 front-end tests added (net); 41 + 29 planted breakages caught. Two older tests that pinned the old 'not handled until BLK-03' behaviour were replaced. |
+| FIX-83 | GAP-07 | `GET /api/jobs/{id}` had no auth check. | Required `current_user` plus `require_member` when the job payload resolves to a project (`project_id`, `campaign_id`, `plan_id`, `submission_id`); added 401/403/200 tests. |
+| FIX-84 | GAP-08 | `ledger_entries` append-only check lived only in ORM listeners. | Added SQLite/PostgreSQL `BEFORE UPDATE` & `BEFORE DELETE` triggers via Alembic `0002` and `after_create` DDL; raw SQL tests verify rejection. |
+| FIX-85 | GAP-09 | Partial captures (`CAPTURING` / `PLEDGING`) had no refund repair path. | Updated `guardian_rules` (`_has_capturing_campaign`), `state_machines` (`PLEDGING -> CANCELLED`, `CAPTURING -> CANCELLED`), `plan_lifecycle._on_done`, and `LeadPanel` Money Plans link; end-to-end test passes. |
+| FIX-86 | GAP-14 | Lead could not remove a mistyped invitee before lock/participation. | Added `project_ops.remove_invitee` + `DELETE /projects/{id}/members/{member_id}` (LEAD-only, refuses after lock/participation); tests added. |
+| FIX-87 | GAP-114 | `LeadPanel` deadline input showed UTC only. | Added live browser local-time preview beneath `Deadline (UTC)`; tested in `campaign-gaps.test.tsx`. |
+| FIX-88 | GAP-123 | Demo pre-fill buttons in `CreateProjectModal` & `ba/page.tsx` were always visible. | Gated behind `DEMO_MODE` (`NEXT_PUBLIC_DEMO_MODE === "true"`). |
+| FIX-89 | GAP-127/129 | Stray or late PayPal holds (`HOLD_MISMATCH` / `LATE_HOLD_IGNORED`) left no visible alert. | Logged `STRAY_HOLD` `GUARDIAN_DECISION` alert memos so `MoneyBox` alerts the lead; also committed `save_proposed` in `campaign_clock._propose` before `review_plan` to prevent SQLite write-lock deadlocks. |
 
 ---
 

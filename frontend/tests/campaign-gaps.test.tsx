@@ -156,6 +156,15 @@ describe("the organiser panel's details", () => {
     expect(screen.queryByRole("button", { name: "Open for pledges" })).toBeNull();
     expect(screen.queryByTestId("blockers")).toBeNull();
   });
+
+  it("shows a local timezone preview when typing a deadline and a Money Plans repair link during CAPTURING", async () => {
+    await open("LEAD", setup());
+    fireEvent.change(screen.getByLabelText("Deadline (UTC)"), { target: { value: "2026-11-12T10:00" } });
+    expect(screen.getByTestId("local-deadline").textContent).toContain("Local time:");
+    cleanup();
+    await open("LEAD", live({ state: "CAPTURING" }));
+    expect(screen.getByTestId("partial-repair-link").textContent).toContain("Money Plans");
+  });
 });
 
 describe("what is shown for a campaign that ended", () => {
